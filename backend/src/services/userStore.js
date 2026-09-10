@@ -203,6 +203,9 @@ export class UserStore {
         WHERE student_id IS NOT NULL;
 
       ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS email TEXT;
+
+      ALTER TABLE users
         ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
 
       ALTER TABLE users
