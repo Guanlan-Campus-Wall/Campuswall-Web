@@ -23,13 +23,6 @@ const initialForm = {
   resolved: false
 }
 
-const messageTags = (message) => {
-  if (Array.isArray(message?.tags)) {
-    return message.tags.map((tag) => typeof tag === 'string' ? tag : (tag?.tag || tag?.name || '')).filter(Boolean)
-  }
-  return String(message?.tags || '').split(',').map((tag) => tag.trim()).filter(Boolean)
-}
-
 export default function LostFound() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [messages, setMessages] = useState([])
@@ -38,12 +31,12 @@ export default function LostFound() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState(initialForm)
   const [submitting, setSubmitting] = useState(false)
+  const [composeOpen, setComposeOpen] = useState(false)
   const loadSequence = useRef(0)
   const alert = useAlert()
   const { community } = usePlatform()
   const { user, loading: userLoading } = useUser()
   const location = useLocation()
-  const canBrowse = Boolean(user)
   const canPublish = Boolean(user) && community.posting_enabled
   const disabledReason = !user
     ? '登录后才能填写失物招领'
@@ -151,32 +144,48 @@ export default function LostFound() {
     }
   }
 
+  if (userLoading) {
+    return (
+      <div className="page-center">
+        <div className="spinner" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="lost-found-page space-y-6">
+        <section className="lost-found-hero">
+          <h1>失物招领</h1>
+        </section>
+        <div className="empty-state-card">
+          <i className="bi bi-lock" />
+          <h3>登录后查看失物招领</h3>
+          <p>启事里可能含联系方式，未登录访客不能浏览列表。</p>
+          <Link className="btn btn-primary" to="/login" state={{ from: location }}>去登录</Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="lost-found-page space-y-6">
       <section className="lost-found-hero">
         <div>
           <h1>失物招领</h1>
         </div>
-        {user ? (
-          <a className="btn btn-primary" href="#lost-found-publish"><i className="bi bi-pencil-square" />发布启事</a>
-        ) : (
-          <Link className="btn btn-primary" to="/login" state={{ from: location }}><i className="bi bi-box-arrow-in-right" />登录后填写</Link>
-        )}
+        <button className="btn btn-primary" type="button" onClick={() => setComposeOpen((open) => !open)}>
+          <i className="bi bi-pencil-square" />{composeOpen ? '收起表单' : '发布启事'}
+        </button>
       </section>
 
+      {composeOpen ? (
       <div className="lost-found-compose-grid">
         <form id="lost-found-publish" className="card lost-found-form" onSubmit={submit}>
           <div className="section-heading">
             <h2>发布启事</h2>
           </div>
 
-          {!user ? (
-            <div className="info-callout status-warning">
-              <i className="bi bi-info-circle-fill" />
-              <span>查看和填写失物招领都需要登录，避免联系方式被游客看到。</span>
-              <Link className="btn btn-sm btn-primary" to="/login" state={{ from: location }}>去登录</Link>
-            </div>
-          ) : null}
           {user && !canPublish ? <div className="info-callout status-warning"><i className="bi bi-info-circle-fill" /><span>{disabledReason}</span></div> : null}
 
           <fieldset className="lost-found-kind" disabled={!canPublish || submitting}>
@@ -222,11 +231,12 @@ export default function LostFound() {
           <Link className="btn btn-outline" to="/rules"><i className="bi bi-shield-check" />查看社区公约</Link>
         </aside>
       </div>
+      ) : null}
 
       <section className="lost-found-feed" aria-labelledby="lost-found-feed-title">
         <div className="lost-found-feed-heading">
           <div>
-            <h2 id="lost-found-feed-title">校内启事</h2>
+            <h2 id="lost-found-feed-title" className="sr-only">校内启事</h2>
           </div>
           <div className="lost-found-filters" role="tablist" aria-label="失物招领筛选">
             {filters.map((filter) => (
@@ -235,16 +245,8 @@ export default function LostFound() {
           </div>
         </div>
 
-        {userLoading || (canBrowse && loading) ? <div className="page-center"><div className="spinner" /><p className="text-sm text-muted">正在寻找最新线索…</p></div> : null}
-        {!userLoading && !user ? (
-          <div className="empty-state-card">
-            <i className="bi bi-lock" />
-            <h3>登录后查看失物招领</h3>
-            <p>启事里可能含联系方式，未登录访客不能浏览列表。</p>
-            <Link className="btn btn-primary" to="/login" state={{ from: location }}>去登录</Link>
-          </div>
-        ) : null}
-        {!userLoading && canBrowse && !loading && !messages.length ? (
+        {loading ? <div className="page-center"><div className="spinner" /><p className="text-sm text-muted">正在寻找最新线索…</p></div> : null}
+        {!loading && !messages.length ? (
           <div className="empty-state-card">
             <i className="bi bi-inbox" />
             <h3>暂时没有{selectedFilter.label === '全部' ? '' : selectedFilter.label}</h3>
@@ -252,21 +254,9 @@ export default function LostFound() {
           </div>
         ) : null}
         <div className="lost-found-message-list">
-          {messages.map((message) => {
-            const tags = messageTags(message)
-            const kind = message.lost_found?.kind || (tags.includes('招领启事') ? 'found' : 'lost')
-            const status = message.lost_found?.resolved || tags.includes('已找回') ? '已找回' : (kind === 'found' ? '待认领' : '寻找中')
-            return (
-              <div className="lost-found-message" key={message.id}>
-                <div className="lost-found-message-status">
-                  <span className={`badge ${status === '已找回' ? 'status-success' : 'status-warning'}`}>{status}</span>
-                  <span>{kind === 'found' ? '招领启事' : '寻物启事'}</span>
-                  {message.lost_found?.contact ? <span><i className="bi bi-chat-dots mr-1" />联系：{message.lost_found.contact}</span> : null}
-                </div>
-                <MessageCard message={message} onRefresh={loadMessages} />
-              </div>
-            )
-          })}
+          {messages.map((message) => (
+            <MessageCard key={message.id} message={message} variant="lost-found" onRefresh={loadMessages} />
+          ))}
         </div>
         {totalPages > 1 ? (
           <nav className="mt-5 flex items-center justify-center gap-3" aria-label="失物招领分页">

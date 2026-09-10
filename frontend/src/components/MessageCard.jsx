@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
@@ -10,6 +10,7 @@ import FilePreviewModal from './FilePreviewModal.jsx'
 import Modal from './Modal.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
+import { useUser } from '../contexts/UserContext.jsx'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -88,6 +89,28 @@ function Attachment({ file, index, onClick, moments = false, remaining = 0 }) {
   )
 }
 
+function lostFoundField(text, label) {
+  const line = String(text || '').split('\n').find((entry) => entry.startsWith(`${label}：`) || entry.startsWith(`${label}:`))
+  return line ? line.replace(/^[^：:]+[：:]/, '').trim() : ''
+}
+
+function describeLostFound(item) {
+  const structured = item?.lost_found && typeof item.lost_found === 'object' ? item.lost_found : {}
+  const tags = Array.isArray(item?.tags) ? item.tags : []
+  const kind = structured.kind || (tags.includes('招领启事') ? 'found' : 'lost')
+  const resolved = Boolean(structured.resolved) || tags.includes('已找回')
+  return {
+    kind,
+    resolved,
+    itemName: structured.item || lostFoundField(item?.text, '物品'),
+    location: structured.location || lostFoundField(item?.text, '地点'),
+    eventTime: structured.time || lostFoundField(item?.text, '时间'),
+    details: structured.details || lostFoundField(item?.text, '特征与说明'),
+    contact: structured.contact || lostFoundField(item?.text, '联系'),
+    status: resolved ? '已找回' : (kind === 'found' ? '待认领' : '寻找中')
+  }
+}
+
 function PollBlock({ poll, busy, onVote }) {
   if (!poll) return null
   const totalVotes = Number(poll.total_votes || 0)
@@ -151,26 +174,55 @@ export default function MessageCard({ message, compact = false, variant = 'defau
   const [commentToDelete, setCommentToDelete] = useState(null)
   const [deletingComment, setDeletingComment] = useState(false)
   const commentInputRef = useRef(null)
+  const textRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [pollBusy, setPollBusy] = useState(false)
+  const [textExpanded, setTextExpanded] = useState(false)
+  const [textOverflows, setTextOverflows] = useState(false)
+  const [commentsExpanded, setCommentsExpanded] = useState(false)
   const alert = useAlert()
   const { community } = usePlatform()
+  const { user } = useUser()
+  const location = useLocation()
 
   useEffect(() => {
     setItem(message)
+    setTextExpanded(false)
+    setCommentsExpanded(false)
   }, [message])
 
   const files = item.files || []
   const isMoments = variant === 'moments'
-  const visibleFiles = isMoments ? files.slice(0, 9) : files
+  const isLostFound = variant === 'lost-found' || Boolean(item.lost_found)
+  const lostFound = isLostFound ? describeLostFound(item) : null
+  const visibleFiles = isMoments || isLostFound ? files.slice(0, 9) : files
   const comments = item.comments || []
+  const visibleComments = (isMoments || isLostFound) && !commentsExpanded ? comments.slice(0, 2) : comments
   const author = useMemo(() => messageAuthor(item), [item])
   const isHidden = item.moderation_status === 'hidden'
   const isPending = item.moderation_status === 'pending'
   const isUnavailable = isHidden || isPending
   const unavailableActionText = isPending ? '待审核的留言暂时不能互动' : '已下架的留言不能互动'
-  const canComment = community.commenting_enabled
-  const commentDisabledReason = community.pause_reason || '管理员暂时关闭了评论功能'
+  const guestNeedsLogin = !user && !community.guest_commenting_enabled
+  const canComment = community.commenting_enabled && Boolean(user || community.guest_commenting_enabled)
+  const commentDisabledReason = !community.commenting_enabled
+    ? (community.pause_reason || '管理员暂时关闭了评论功能')
+    : '登录后才能评论'
+  const postedAgo = item.timestamp ? dayjs(item.timestamp).fromNow() : '刚刚'
+  const visibilityLabel = item.anonymous === false ? '展示昵称' : '匿名'
+  const authorSubtitle = (isMoments || isLostFound) ? `${postedAgo} · ${visibilityLabel}` : ''
+  const bodyText = isLostFound
+    ? (lostFound.details || (!lostFound.itemName ? item.text : ''))
+    : item.text
+
+  useLayoutEffect(() => {
+    const node = textRef.current
+    if (!node || textExpanded) {
+      setTextOverflows(false)
+      return
+    }
+    setTextOverflows(node.scrollHeight > node.clientHeight + 1)
+  }, [bodyText, compact, textExpanded])
 
   const doLike = async () => {
     try {
@@ -330,15 +382,19 @@ export default function MessageCard({ message, compact = false, variant = 'defau
   }
 
   return (
-    <article className={`card message-card ${isMoments ? 'is-moments' : ''}`}>
-      <div className="message-card-body p-5 md:p-6">
-        {/* Author Header */}
-        <div className="message-card-header flex items-center justify-between gap-3">
-          <UserCard user={author} compact />
+    <article className={`card message-card ${isMoments ? 'is-moments' : ''} ${isLostFound ? 'is-lost-found' : ''}`}>
+      <div className="message-card-body p-4 md:p-5">
+        <div className="message-card-header flex items-start justify-between gap-3">
+          <UserCard user={author} compact hideDescription={isMoments || isLostFound} subtitle={authorSubtitle} />
           <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs text-[var(--text-muted)] shrink-0">
             {item.pinned ? <span className="badge status-warning"><i className="bi bi-pin-angle" />置顶</span> : null}
             {item.featured ? <span className="badge status-success"><i className="bi bi-star-fill" />精华</span> : null}
-            {!isMoments ? (
+            {isLostFound ? (
+              <span className={`badge ${lostFound.resolved ? 'status-success' : 'status-warning'}`}>
+                {lostFound.status}
+              </span>
+            ) : null}
+            {!isMoments && !isLostFound ? (
               <>
                 <span className="flex items-center gap-1.5">
                   <i className="bi bi-clock text-[0.8rem]" />
@@ -362,89 +418,97 @@ export default function MessageCard({ message, compact = false, variant = 'defau
           </div>
         ) : null}
 
-        {/* Message Content */}
-        {item.text ? (
-          <p className={`message-text text-[0.98rem] md:text-[1.02rem] leading-relaxed text-[var(--text-primary)] ${compact ? 'line-clamp-3' : ''}`}>
-            {item.text}
-          </p>
+        {isLostFound ? (
+          <div className="lost-found-card-copy">
+            <h3>{lostFound.itemName || (lostFound.kind === 'found' ? '招领启事' : '寻物启事')}</h3>
+            <p>
+              {lostFound.location ? `地点 ${lostFound.location}` : '地点未填写'}
+              {lostFound.eventTime ? ` · ${lostFound.kind === 'found' ? '拾获时间' : '丢失时间'} ${lostFound.eventTime}` : ''}
+            </p>
+            {item.timestamp ? <p className="lost-found-posted">发布于 {dayjs(item.timestamp).format('YYYY年M月D日 HH:mm')}</p> : null}
+          </div>
+        ) : null}
+
+        {bodyText ? (
+          <div className="message-text-block">
+            <p
+              ref={textRef}
+              className={`message-text text-[0.98rem] md:text-[1.02rem] leading-relaxed text-[var(--text-primary)] ${compact ? 'line-clamp-3' : ''} ${(isMoments || isLostFound) && !textExpanded && !compact ? 'is-clamped' : ''}`}
+            >
+              {bodyText}
+            </p>
+            {(isMoments || isLostFound) && textOverflows && !textExpanded && !compact ? (
+              <button className="message-expand-text" type="button" onClick={() => setTextExpanded(true)}>展开全文</button>
+            ) : null}
+          </div>
         ) : null}
 
         <PollBlock poll={item.poll} busy={pollBusy} onVote={votePoll} />
 
-        {/* Tags */}
         {item.tags?.length ? (
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="message-topic-row">
             {item.tags.map((tag) => (
-              <Link className="badge" key={tag} to={`/p/${encodeURIComponent(tag)}`}>
+              <Link className="message-topic-link" key={tag} to={`/p/${encodeURIComponent(tag)}`}>
                 #{tag}
               </Link>
             ))}
           </div>
         ) : null}
 
-        {/* Media Grid */}
+        {isLostFound && lostFound.contact ? (
+          <p className="lost-found-contact">联系：{lostFound.contact}</p>
+        ) : null}
+
         {files.length ? (
-          <div className={`message-attachments pt-1 ${isMoments ? `moments-media-grid moments-media-count-${Math.min(files.length, 9)}` : ''}`}>
+          <div className={`message-attachments pt-1 ${isMoments || isLostFound ? `moments-media-grid moments-media-count-${Math.min(files.length, 9)}` : ''}`}>
             {visibleFiles.map((file, index) => (
               <Attachment
                 key={`${file}-${index}`}
                 file={file}
                 index={index}
-                moments={isMoments}
-                remaining={isMoments && index === 8 ? Math.max(0, files.length - 9) : 0}
+                moments={isMoments || isLostFound}
+                remaining={(isMoments || isLostFound) && index === 8 ? Math.max(0, files.length - 9) : 0}
                 onClick={() => openFilePreview(files, index)}
               />
             ))}
           </div>
         ) : null}
 
-        {isMoments ? (
-          <div className="moments-post-meta">
-            <span>{item.timestamp ? dayjs(item.timestamp).fromNow() : '刚刚'}</span>
-            {item.edited_at ? <span title={`编辑于 ${item.edited_at}`}>已编辑</span> : null}
-            <span className="moments-post-visibility">
-              <i className={`bi ${item.anonymous === false ? 'bi-person-badge' : 'bi-incognito'}`} aria-hidden="true" />
-              {item.anonymous === false ? '展示昵称' : '匿名动态'}
-            </span>
-          </div>
-        ) : null}
-
-        {/* Action Toolbar */}
-        <div className={`message-actions mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-color)] pt-3 ${isMoments ? 'moments-action-bar' : ''}`}>
-          <div className="flex items-center gap-2">
+        <div className={`message-actions mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-color)] pt-3 ${isMoments || isLostFound ? 'moments-action-bar' : ''}`}>
+          <div className="flex items-center gap-1">
             <button
-              className={`btn btn-sm ${item.liked ? 'btn-primary' : 'btn-outline'}`}
+              className={`btn btn-sm ${item.liked ? 'btn-primary' : 'btn-ghost'}`}
               type="button"
               onClick={doLike}
               disabled={isUnavailable}
               title={isUnavailable ? unavailableActionText : '点赞'}
             >
               <i className={`bi ${item.liked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`} />
-              <span>{isMoments ? '赞' : (item.likes || 0)}</span>
+              <span>{isMoments || isLostFound ? `赞 ${item.likes || 0}` : (item.likes || 0)}</span>
             </button>
             <button
-              className={`btn btn-sm ${item.disliked ? 'btn-primary' : 'btn-outline'}`}
+              className={`btn btn-sm ${commentOpen ? 'bg-[var(--primary-light)] text-[var(--primary-color)]' : 'btn-ghost'}`}
+              type="button"
+              onClick={() => setCommentOpen((open) => !open)}
+              disabled={isUnavailable || (!canComment && !guestNeedsLogin)}
+              title={isUnavailable ? (isPending ? '待审核的留言不能评论' : '已下架的留言不能评论') : (canComment || guestNeedsLogin ? '评论' : commentDisabledReason)}
+            >
+              <i className="bi bi-chat-dots" />
+              <span>{isMoments || isLostFound ? `评论 ${comments.length}` : `评论${comments.length ? ` (${comments.length})` : ''}`}</span>
+            </button>
+            <button
+              className={`btn btn-sm ${item.disliked ? 'btn-primary' : 'btn-ghost'}`}
               type="button"
               onClick={doDislike}
               disabled={isUnavailable}
               title={isUnavailable ? unavailableActionText : '点踩'}
             >
               <i className={`bi ${item.disliked ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`} />
-              <span>{isMoments ? '踩' : (item.dislikes || 0)}</span>
-            </button>
-            <button
-              className={`btn btn-sm ${commentOpen ? 'bg-[var(--primary-light)] text-[var(--primary-color)]' : 'btn-outline'}`}
-              type="button"
-              onClick={() => setCommentOpen((open) => !open)}
-              disabled={isUnavailable || !canComment}
-              title={isUnavailable ? (isPending ? '待审核的留言不能评论' : '已下架的留言不能评论') : (canComment ? '评论' : commentDisabledReason)}
-            >
-              <i className="bi bi-chat-dots" />
-              <span>评论{!isMoments && comments.length ? ` (${comments.length})` : ''}</span>
+              <span>{isMoments || isLostFound ? `踩 ${item.dislikes || 0}` : (item.dislikes || 0)}</span>
             </button>
           </div>
 
-          {isMoments ? (
+          {isMoments || isLostFound ? (
             <details className="moments-overflow ml-auto">
               <summary aria-label="更多动态操作" title="更多操作"><span aria-hidden="true">•••</span></summary>
               <div className="moments-overflow-menu">
@@ -500,23 +564,10 @@ export default function MessageCard({ message, compact = false, variant = 'defau
           )}
         </div>
 
-        {isMoments && (Number(item.likes || 0) > 0 || Number(item.dislikes || 0) > 0 || comments.length > 0) ? (
-          <div className="moments-reaction-summary">
-            {Number(item.likes || 0) > 0 ? (
-              <span><i className="bi bi-hand-thumbs-up-fill" aria-hidden="true" />{item.likes} 人觉得很赞</span>
-            ) : null}
-            {Number(item.dislikes || 0) > 0 ? (
-              <span><i className="bi bi-hand-thumbs-down" aria-hidden="true" />{item.dislikes} 人有不同看法</span>
-            ) : null}
-            {comments.length > 0 ? (
-              <button type="button" onClick={() => setCommentOpen(true)}>
-                <i className="bi bi-chat-square-text" aria-hidden="true" />{comments.length} 条讨论
-              </button>
-            ) : null}
-          </div>
+        {guestNeedsLogin && !isUnavailable ? (
+          <Link className="moments-login-prompt" to="/login" state={{ from: location }}>登录后参与讨论</Link>
         ) : null}
 
-        {/* Comment Drawer */}
         {comments.length || commentOpen ? (
           <div className="space-y-3 pt-2">
             {comments.length ? (
@@ -524,12 +575,12 @@ export default function MessageCard({ message, compact = false, variant = 'defau
                 <div className="flex items-center justify-between text-xs font-bold text-[var(--text-secondary)] pb-1 border-b border-[var(--border-color)]">
                   <span className="flex items-center gap-1.5">
                     <i className="bi bi-chat-left-text-fill text-[var(--primary-color)]" />
-                    <span>全部评论</span>
+                    <span>{commentsExpanded || comments.length <= 2 ? '评论' : '评论预览'}</span>
                   </span>
                   <span className="badge">{comments.length} 条</span>
                 </div>
                 <div className="space-y-2">
-                  {comments.map((comment, index) => (
+                  {visibleComments.map((comment, index) => (
                     <div key={comment.id || index} className="comment-item space-y-2">
                       <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                         <span className="flex items-center gap-2 font-semibold text-[var(--text-secondary)]">
@@ -570,7 +621,7 @@ export default function MessageCard({ message, compact = false, variant = 'defau
                           ))}
                         </div>
                       ) : null}
-                      {!isUnavailable ? (
+                      {!isUnavailable && canComment ? (
                         <div className="flex justify-end gap-2">
                           {comment.id ? (
                             <Link
@@ -583,7 +634,7 @@ export default function MessageCard({ message, compact = false, variant = 'defau
                               <span>举报</span>
                             </Link>
                           ) : null}
-                          <button className="comment-reply-button" type="button" disabled={!canComment} title={canComment ? '回复评论' : commentDisabledReason} onClick={() => startReply(comment, index)}>
+                          <button className="comment-reply-button" type="button" title="回复评论" onClick={() => startReply(comment, index)}>
                             <i className="bi bi-reply" />
                             <span>回复</span>
                           </button>
@@ -592,10 +643,19 @@ export default function MessageCard({ message, compact = false, variant = 'defau
                     </div>
                   ))}
                 </div>
+                {comments.length > 2 && !commentsExpanded ? (
+                  <button className="message-expand-text" type="button" onClick={() => { setCommentsExpanded(true); setCommentOpen(true) }}>
+                    展开全部 {comments.length} 条评论
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
-            {commentOpen && !isUnavailable && !canComment ? (
+            {commentOpen && !isUnavailable && guestNeedsLogin ? (
+              <Link className="moments-login-prompt" to="/login" state={{ from: location }}>登录后参与讨论</Link>
+            ) : null}
+
+            {commentOpen && !isUnavailable && !canComment && !guestNeedsLogin ? (
               <div className="info-callout status-warning"><i className="bi bi-info-circle-fill" /><span>{commentDisabledReason}</span></div>
             ) : null}
 

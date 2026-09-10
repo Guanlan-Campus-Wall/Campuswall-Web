@@ -1136,6 +1136,16 @@ GitHub Actions 使用 Node.js 22，并在 Ubuntu runner 上启动系统自带的
 | 服务器发布 | 源站 `b353932` 快进至 `4bcd6dd`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh` 后重启 `campuswall.service` | **通过**；服务于 13:02:50 CST `active`，本机与公网 `/health` 正常。本轮无后端行为变更 | 2026-09-10 13:02 CST / Cursor Agent |
 | Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload；deployment `https://c1692b61.guanlan-campus-wall.pages.dev` | **通过**；`https://guanlan-campus-wall.pages.dev/` 与 `https://wall.zongtech.xyz/` 的 `theme-color` 已回到 `#f5f5f7`/`#121214` | 2026-09-10 13:03 CST / Cursor Agent |
 
+### 15.14 在回退版上按 GPT-ASTRA 做密度与层级整理
+
+上一轮「课间小刊」视觉已撤回。本轮在恢复后的首页结构上整理：保留欢迎卡、常用入口和关于本站；已登录仍默认进入 `/wall`；游客失物招领只显示登录卡。**本轮没有执行压力、容量、长稳或渗透测试。**
+
+| 项目 | 命令/证据 | 状态 | 时间/执行人 |
+| --- | --- | --- | --- |
+| 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | **通过**；15/15 | 2026-09-10 / Cursor Agent |
+| GitHub 发布门禁 | 待推送后补录 | 待补 |  |
+| 生产备份与发布 | 待 CI 通过后按第 17 节执行 | 待补 |  |
+
 ## 16. Git 工作流
 
 1. 从最新 `schoolrepo/main` 开发；

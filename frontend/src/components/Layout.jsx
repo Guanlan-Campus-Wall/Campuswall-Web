@@ -69,18 +69,17 @@ export default function Layout() {
           <div className="navbar-actions flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             {!userLoading && hasAdminAccess ? (
               <Link
-                className="btn btn-sm btn-outline px-2.5 sm:px-3"
+                className="btn btn-sm btn-outline hidden px-2.5 sm:inline-flex sm:px-3"
                 to={adminDestination}
                 aria-label={`进入${adminLabel}`}
                 title={`进入${adminLabel}`}
               >
                 <i className="bi bi-shield-check" />
-                <span className="sm:hidden">{user?.role === 'reviewer' ? '后台' : '管理'}</span>
                 <span className="hidden sm:inline">{adminLabel}</span>
               </Link>
             ) : null}
 
-            {wallEnabled ? (
+            {wallEnabled && user ? (
               <button
                 className="btn btn-sm btn-primary px-3 sm:px-3.5"
                 type="button"

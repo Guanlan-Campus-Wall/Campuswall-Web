@@ -374,8 +374,8 @@ export default function Wall() {
       {/* Wall Header Overview */}
       <section className="wall-overview p-6 md:p-8">
         <div className="wall-overview-copy space-y-2">
-          <h1 className="text-3xl font-black tracking-tight text-[var(--text-primary)] md:text-4xl">
-            观澜中学校园动态
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] md:text-4xl">
+            校园动态
           </h1>
         </div>
       </section>
@@ -432,11 +432,6 @@ export default function Wall() {
             <i className="bi bi-arrow-clockwise" />
             <span className="hidden sm:inline">刷新</span>
           </button>
-
-          <button className="btn btn-primary" type="button" onClick={openPublish}>
-            <i className="bi bi-pencil-square" />
-            <span>我要发帖</span>
-          </button>
         </div>
       </div>
 
@@ -455,7 +450,7 @@ export default function Wall() {
 
       {/* Loading Skeleton */}
       {loading && messages.length === 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="card p-6 space-y-4">
               <div className="flex items-center gap-3">
@@ -486,7 +481,7 @@ export default function Wall() {
       ) : null}
 
       {/* Messages Stream */}
-      <div className="space-y-5">
+      <div className="space-y-3">
         {messages.map((message) => (
           <MessageCard key={message.id} message={message} variant="moments" onRefresh={refreshSpecificMessage} />
         ))}

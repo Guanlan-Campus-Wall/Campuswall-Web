@@ -7,11 +7,11 @@ export const appearanceOptions = Object.freeze([
 ])
 
 export const paletteOptions = Object.freeze([
-  Object.freeze({ id: 'blue', label: '海蓝', color: '#007aff' }),
-  Object.freeze({ id: 'rose', label: '樱粉', color: '#ff2d55' }),
-  Object.freeze({ id: 'violet', label: '紫藤', color: '#7d5cff' }),
-  Object.freeze({ id: 'green', label: '青绿', color: '#00a67e' }),
-  Object.freeze({ id: 'orange', label: '暖橙', color: '#ff7a00' })
+  Object.freeze({ id: 'blue', label: '海蓝', color: '#1765d1' }),
+  Object.freeze({ id: 'rose', label: '樱粉', color: '#c23159' }),
+  Object.freeze({ id: 'violet', label: '紫藤', color: '#6b4dcc' }),
+  Object.freeze({ id: 'green', label: '青绿', color: '#087b5c' }),
+  Object.freeze({ id: 'orange', label: '暖橙', color: '#ae4c0b' })
 ])
 
 const appearanceIds = new Set(appearanceOptions.map((option) => option.id))
@@ -80,7 +80,7 @@ export function ThemeProvider({ children }) {
     root.dataset.theme = resolvedAppearance
     root.dataset.palette = palette
     const themeMeta = document.querySelector('meta[name="theme-color"]')
-    if (themeMeta) themeMeta.content = resolvedAppearance === 'dark' ? '#121214' : '#f5f5f7'
+    if (themeMeta) themeMeta.content = resolvedAppearance === 'dark' ? '#12151b' : '#f3f4f7'
   }, [palette, resolvedAppearance])
 
   useEffect(() => writeStorage(appearanceStorageKey, appearance), [appearance])

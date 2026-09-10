@@ -21,32 +21,32 @@
   --action-fill-hover: var(--color-primary-focus);
 
   --sidebar-width: 260px;
-  --navbar-height: 52px;
+  --navbar-height: 56px;
   --content-max-width: var(--layout-max-width);
-  --transition-fast: 120ms cubic-bezier(0.25, 0.1, 0.25, 1);
-  --transition-normal: 240ms cubic-bezier(0.25, 0.1, 0.25, 1);
-  --transition-bounce: 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-fast: 100ms cubic-bezier(0.23, 1, 0.32, 1);
+  --transition-normal: 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  --transition-bounce: 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Light theme: white canvas, parchment grouping, restrained chrome. */
 [data-theme="light"] {
-  --bg-color: var(--color-canvas-parchment);
-  --bg-subtle: var(--color-surface-pearl);
-  --card-bg: var(--color-canvas);
-  --card-solid-bg: var(--color-canvas);
-  --card-secondary-bg: var(--color-surface-pearl);
-  --navbar-bg: rgba(250, 250, 252, 0.78);
-  --text-primary: var(--color-ink);
-  --text-secondary: var(--color-ink-muted-80);
-  --text-muted: #66666a;
-  --border-color: var(--color-hairline);
-  --control-border: #86868b;
-  --border-hover: var(--color-surface-chip-translucent);
+  --bg-color: #f3f4f7;
+  --bg-subtle: #eceff4;
+  --card-bg: var(--card-solid-bg);
+  --card-solid-bg: #ffffff;
+  --card-secondary-bg: #eceff4;
+  --navbar-bg: #ffffff;
+  --text-primary: #202633;
+  --text-secondary: #626b79;
+  --text-muted: #626b79;
+  --border-color: #dde2ea;
+  --control-border: #8a938c;
+  --border-hover: color-mix(in srgb, var(--border-color) 70%, #202633);
   --border-focus: var(--color-primary-focus);
-  --input-bg: var(--color-canvas);
-  --hover-bg: color-mix(in srgb, var(--color-primary) 6%, transparent);
-  --card-shadow: none;
-  --card-shadow-hover: none;
+  --input-bg: #ffffff;
+  --hover-bg: color-mix(in srgb, var(--primary-color) 8%, transparent);
+  --card-shadow: 0 2px 8px rgb(25 35 55 / 4%);
+  --card-shadow-hover: 0 4px 16px rgb(25 35 55 / 6%);
   --card-shadow-glass: none;
 
   --hero-bg: var(--color-canvas);
@@ -83,24 +83,24 @@
   --warning-color: #fbbf24;
   --action-fill: var(--color-primary);
   --action-fill-hover: var(--color-primary-focus);
-  --bg-color: var(--color-surface-black);
-  --bg-subtle: var(--color-surface-tile-3);
-  --card-bg: var(--color-surface-tile-1);
-  --card-solid-bg: var(--color-surface-tile-1);
-  --card-secondary-bg: var(--color-surface-tile-2);
-  --navbar-bg: rgba(18, 18, 20, 0.58);
-  --text-primary: var(--color-body-on-dark);
-  --text-secondary: rgba(235, 235, 245, 0.72);
-  --text-muted: rgba(235, 235, 245, 0.52);
-  --border-color: rgba(255, 255, 255, 0.07);
-  --control-border: rgba(84, 84, 88, 0.58);
-  --border-hover: rgba(255, 255, 255, 0.14);
+  --bg-color: #12151b;
+  --bg-subtle: #191e26;
+  --card-bg: var(--card-solid-bg);
+  --card-solid-bg: #1c212a;
+  --card-secondary-bg: #252c37;
+  --navbar-bg: #1c212a;
+  --text-primary: #edf0f6;
+  --text-secondary: #a5afbe;
+  --text-muted: #a5afbe;
+  --border-color: #343d4b;
+  --control-border: #4a5565;
+  --border-hover: color-mix(in srgb, var(--border-color) 70%, #edf0f6);
   --border-focus: var(--color-primary-on-dark);
-  --input-bg: color-mix(in srgb, var(--color-surface-tile-2) 88%, #3a3a40);
-  --hover-bg: color-mix(in srgb, var(--color-primary-on-dark) 12%, transparent);
-  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 40px rgba(0, 0, 0, 0.28);
-  --card-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.08), 0 22px 48px rgba(0, 0, 0, 0.34);
-  --card-shadow-glass: 0 12px 36px rgba(0, 0, 0, 0.28);
+  --input-bg: #252c37;
+  --hover-bg: color-mix(in srgb, var(--color-primary-on-dark) 14%, transparent);
+  --card-shadow: none;
+  --card-shadow-hover: none;
+  --card-shadow-glass: none;
 
   --hero-bg: var(--color-surface-black);
   --hero-text: var(--color-body-on-dark);
@@ -138,10 +138,7 @@ html {
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  background:
-    radial-gradient(1180px 680px at 50% -14%, rgba(92, 112, 168, 0.22), transparent 56%),
-    radial-gradient(780px 420px at 100% 0%, rgba(70, 86, 140, 0.12), transparent 48%),
-    var(--bg-color);
+  background: var(--bg-color);
 }
 
 html[data-theme="dark"] body,
@@ -167,7 +164,7 @@ body {
   font-family: var(--font-text);
   font-size: var(--type-body-size);
   line-height: var(--type-body-line-height);
-  letter-spacing: var(--type-body-letter-spacing);
+  letter-spacing: 0;
   color: var(--text-primary);
   background-color: var(--bg-color);
   transition: background-color var(--transition-normal), color var(--transition-normal);
@@ -289,15 +286,15 @@ button:disabled {
   min-height: var(--navbar-height);
   padding-top: env(safe-area-inset-top);
   background: var(--navbar-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
   box-shadow: none;
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
 }
 
 .navbar-inner {
-  width: min(calc(100% - 34px), var(--content-max-width));
+  width: min(calc(100% - 32px), 1120px);
   min-height: var(--navbar-height);
   margin-inline: auto;
   display: flex;
@@ -411,14 +408,14 @@ button:disabled {
   font-size: var(--type-body-size);
   font-weight: 600;
   line-height: var(--type-body-line-height);
-  letter-spacing: var(--type-body-letter-spacing);
+  letter-spacing: 0;
   transition: transform 100ms ease-out, color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
   user-select: none;
   white-space: nowrap;
 }
 
 .btn:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .btn-sm {
@@ -2689,19 +2686,22 @@ button:disabled {
 
 .lost-found-hero {
   display: flex;
-  align-items: end;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: clamp(24px, 4vw, 40px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  background: var(--card-solid-bg);
+  gap: 12px 16px;
+  padding: 8px 2px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .lost-found-hero h1 {
-  margin-top: 0;
-  font-size: clamp(2.25rem, 6vw, 4rem);
-  line-height: 1.02;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 2.5rem;
+  letter-spacing: 0;
 }
 
 .lost-found-compose-grid {
@@ -3266,49 +3266,49 @@ button:disabled {
    Appearance themes — independent light/dark mode and accent palette
    ========================================================================== */
 :root[data-palette="blue"] {
-  --swiftui-accent: #007aff;
-  --swiftui-accent-dark: #0a84ff;
-  --swiftui-action: #0071e3;
-  --swiftui-action-hover: #005fbd;
-  --theme-swatch: #007aff;
+  --swiftui-accent: #1765d1;
+  --swiftui-accent-dark: #82b1ff;
+  --swiftui-action: #1765d1;
+  --swiftui-action-hover: #1356b3;
+  --theme-swatch: #1765d1;
 }
 
 :root[data-palette="rose"] {
-  --swiftui-accent: #e92950;
-  --swiftui-accent-dark: #ff375f;
-  --swiftui-action: #c90038;
-  --swiftui-action-hover: #a9002f;
-  --theme-swatch: #ff2d55;
+  --swiftui-accent: #c23159;
+  --swiftui-accent-dark: #ff91ad;
+  --swiftui-action: #c23159;
+  --swiftui-action-hover: #a4284a;
+  --theme-swatch: #c23159;
 }
 
 :root[data-palette="violet"] {
-  --swiftui-accent: #6f52ed;
-  --swiftui-accent-dark: #9a87ff;
-  --swiftui-action: #5b35c9;
-  --swiftui-action-hover: #4b28ac;
-  --theme-swatch: #7d5cff;
+  --swiftui-accent: #6b4dcc;
+  --swiftui-accent-dark: #b2a0ff;
+  --swiftui-action: #6b4dcc;
+  --swiftui-action-hover: #5840aa;
+  --theme-swatch: #6b4dcc;
 }
 
 :root[data-palette="green"] {
-  --swiftui-accent: #008f6b;
-  --swiftui-accent-dark: #36d6a8;
-  --swiftui-action: #007653;
-  --swiftui-action-hover: #006145;
-  --theme-swatch: #00a67e;
+  --swiftui-accent: #087b5c;
+  --swiftui-accent-dark: #6dd6ae;
+  --swiftui-action: #087b5c;
+  --swiftui-action-hover: #066349;
+  --theme-swatch: #087b5c;
 }
 
 :root[data-palette="orange"] {
-  --swiftui-accent: #d95d00;
-  --swiftui-accent-dark: #ff9f3f;
-  --swiftui-action: #ad3d00;
-  --swiftui-action-hover: #8f3100;
-  --theme-swatch: #ff7a00;
+  --swiftui-accent: #ae4c0b;
+  --swiftui-accent-dark: #ffb574;
+  --swiftui-action: #ae4c0b;
+  --swiftui-action-hover: #8d3d09;
+  --theme-swatch: #ae4c0b;
 }
 
 :root[data-theme="light"][data-palette] {
   --primary-color: var(--swiftui-action);
   --primary-dark: var(--swiftui-action-hover);
-  --primary-light: color-mix(in srgb, var(--swiftui-accent) 12%, transparent);
+  --primary-light: color-mix(in srgb, var(--swiftui-accent) 8%, var(--card-solid-bg));
   --primary-focus: color-mix(in srgb, var(--swiftui-accent) 24%, transparent);
   --action-fill: var(--swiftui-action);
   --action-fill-hover: var(--swiftui-action-hover);
@@ -3317,8 +3317,8 @@ button:disabled {
 :root[data-theme="dark"][data-palette] {
   --primary-color: var(--swiftui-accent-dark);
   --primary-dark: color-mix(in srgb, var(--swiftui-accent-dark) 78%, #ffffff);
-  --primary-light: color-mix(in srgb, var(--swiftui-accent-dark) 16%, transparent);
-  --primary-focus: color-mix(in srgb, var(--swiftui-accent-dark) 30%, transparent);
+  --primary-light: color-mix(in srgb, var(--swiftui-accent-dark) 14%, var(--card-solid-bg));
+  --primary-focus: color-mix(in srgb, var(--swiftui-accent-dark) 28%, transparent);
   --action-fill: var(--swiftui-action);
   --action-fill-hover: var(--swiftui-action-hover);
 }
@@ -3350,21 +3350,21 @@ button:disabled {
   z-index: 1200;
   top: calc(100% + 10px);
   right: 0;
-  width: min(340px, calc(100vw - 24px));
+  width: min(320px, calc(100vw - 32px));
   max-height: min(620px, calc(100dvh - var(--navbar-height) - 24px));
   overflow-y: auto;
   overscroll-behavior: contain;
   display: grid;
-  gap: 18px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
-  border-radius: 20px;
-  padding: 18px;
-  background: color-mix(in srgb, var(--card-solid-bg) 88%, transparent);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  gap: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--card-solid-bg);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   transform-origin: top right;
-  animation: themePickerIn 180ms var(--ease-out) both;
+  animation: themePickerIn 160ms var(--ease-out) both;
 }
 
 .theme-picker-heading {
@@ -3457,6 +3457,7 @@ button:disabled {
 .theme-palette-options button {
   position: relative;
   min-width: 0;
+  min-height: 44px;
   display: grid;
   place-items: center;
   gap: 5px;
@@ -3470,8 +3471,8 @@ button:disabled {
 }
 
 .theme-palette-options button > span {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border: 2px solid color-mix(in srgb, #ffffff 72%, transparent);
   border-radius: 50%;
   background: var(--theme-option-color);
@@ -3611,73 +3612,32 @@ button:disabled {
 }
 
 /* ==========================================================================
-   SwiftUI application refinement
-   The Apple.com tokens remain available, while application surfaces use the
-   semantic grouped-background and material roles defined in the token file.
+   Motion curve aliases. Color tokens stay with the GPT campus palette above;
+   this block must not reset page background, type color, or card surfaces.
    ========================================================================== */
 :root {
-  --primary-color: var(--swiftui-accent);
-  --primary-dark: #006ee6;
-  --primary-light: color-mix(in srgb, var(--swiftui-accent) 12%, transparent);
-  --primary-focus: color-mix(in srgb, var(--swiftui-accent) 24%, transparent);
-  --action-fill: var(--swiftui-action);
-  --action-fill-hover: var(--swiftui-action-hover);
   --navbar-height: 56px;
   --layout-section-gap: 40px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --transition-fast: 160ms var(--ease-out);
-  --transition-normal: 240ms var(--ease-out);
-  --transition-bounce: 300ms var(--ease-drawer);
+  --transition-fast: 100ms var(--ease-out);
+  --transition-normal: 160ms var(--ease-out);
+  --transition-bounce: 160ms var(--ease-out);
 }
 
-[data-theme="light"] {
-  --bg-color: var(--swiftui-grouped-bg);
-  --bg-subtle: var(--swiftui-tertiary-grouped-bg);
-  --card-bg: var(--swiftui-secondary-grouped-bg);
-  --card-solid-bg: var(--swiftui-secondary-grouped-bg);
-  --card-secondary-bg: var(--swiftui-tertiary-grouped-bg);
-  --navbar-bg: var(--swiftui-material);
-  --text-primary: var(--swiftui-label);
-  --text-secondary: var(--swiftui-secondary-label);
-  --text-muted: var(--swiftui-secondary-label);
-  --border-color: var(--swiftui-separator);
-  --control-border: var(--swiftui-separator);
-  --border-hover: color-mix(in srgb, var(--swiftui-accent) 32%, var(--swiftui-separator));
-  --input-bg: var(--swiftui-secondary-fill);
-  --hover-bg: var(--swiftui-fill);
-  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.035);
-}
-
-[data-theme="dark"] {
-  --primary-color: var(--swiftui-accent-dark);
-  --primary-dark: #409cff;
-  --primary-light: color-mix(in srgb, var(--swiftui-accent-dark) 16%, transparent);
-  --primary-focus: color-mix(in srgb, var(--swiftui-accent-dark) 30%, transparent);
-  --action-fill: var(--swiftui-action);
-  --action-fill-hover: var(--swiftui-action-hover);
-  --bg-color: #0e0e10;
-  --bg-subtle: #161618;
-  --card-bg: #1c1c1e;
-  --card-solid-bg: #1c1c1e;
-  --card-secondary-bg: #2c2c2e;
-  --navbar-bg: rgba(14, 14, 16, 0.72);
-  --text-primary: #f5f5f7;
-  --text-secondary: rgba(235, 235, 245, 0.68);
-  --text-muted: rgba(235, 235, 245, 0.52);
-  --border-color: rgba(84, 84, 88, 0.48);
-  --control-border: rgba(84, 84, 88, 0.62);
-  --border-hover: rgba(99, 99, 102, 0.82);
-  --input-bg: rgba(118, 118, 128, 0.18);
-  --hover-bg: rgba(118, 118, 128, 0.18);
-  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 28px rgba(0, 0, 0, 0.38);
+@media (min-width: 768px) {
+  :root {
+    --navbar-height: 60px;
+    --type-large-title-size: 36px;
+    --type-large-title-line-height: 1.22;
+  }
 }
 
 body {
   font-size: var(--type-body-size);
   line-height: 1.47;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 h1,
@@ -3716,7 +3676,7 @@ h2,
 .card,
 .card-solid,
 .card-flat {
-  border-color: transparent;
+  border: 1px solid var(--border-color);
   background: var(--card-solid-bg);
   box-shadow: var(--card-shadow);
 }
@@ -3734,7 +3694,7 @@ h2,
 .card:hover,
 .card-solid:hover,
 .card-flat:hover {
-  border-color: transparent;
+  border-color: var(--border-color);
 }
 
 .btn {
@@ -3742,7 +3702,8 @@ h2,
   padding: 10px 16px;
   font-size: 15px;
   line-height: 1.3;
-  transition: transform 120ms var(--ease-out), color 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease;
+  letter-spacing: 0;
+  transition: transform 100ms var(--ease-out), color 100ms ease, background-color 100ms ease, border-color 100ms ease, opacity 100ms ease;
 }
 
 .btn-sm {
@@ -3863,26 +3824,30 @@ html[data-theme="dark"] .brand-mark {
 
 .search-panel {
   border: 0;
-  border-radius: var(--swiftui-group-radius);
-  background: color-mix(in srgb, var(--card-solid-bg) 78%, transparent);
-  box-shadow: var(--card-shadow);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .search-panel input,
 .search-panel select {
+  min-height: 44px;
   border-radius: var(--swiftui-control-radius);
 }
 
 .message-card {
-  border: 0;
+  border: 1px solid var(--border-color);
   border-radius: var(--swiftui-group-radius);
   background: var(--card-solid-bg);
   box-shadow: var(--card-shadow);
 }
 
 .message-card:hover {
-  border-color: transparent;
-  background: color-mix(in srgb, var(--card-solid-bg) 94%, var(--primary-color));
+  border-color: var(--border-color);
+  background: var(--card-solid-bg);
 }
 
 .comment-composer,
@@ -3902,7 +3867,8 @@ html[data-theme="dark"] .brand-mark {
 
 .auth-tabs button,
 .auth-tabs a {
-  min-height: 32px;
+  width: 100%;
+  min-height: 40px;
   border-radius: 8px;
 }
 
@@ -3947,11 +3913,16 @@ html[data-theme="dark"] .brand-mark {
 
 .lost-found-hero,
 .lost-found-form,
-.lost-found-guide,
-.lost-found-message {
-  border-color: transparent;
+.lost-found-guide {
+  border: 1px solid var(--border-color);
   background: var(--card-solid-bg);
   box-shadow: var(--card-shadow);
+}
+
+.lost-found-hero {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .admin-sidebar {
@@ -3967,13 +3938,12 @@ html[data-theme="dark"] .brand-mark {
   left: 0;
   z-index: 60;
   display: none;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   min-height: calc(56px + env(safe-area-inset-bottom));
   padding: 4px max(8px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px, env(safe-area-inset-left));
-  background: color-mix(in srgb, var(--card-solid-bg) 80%, transparent);
-  box-shadow: 0 -0.5px 0 var(--border-color);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  background: var(--card-solid-bg);
+  box-shadow: 0 -1px 0 var(--border-color);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .mobile-tab-item {
@@ -3987,7 +3957,7 @@ html[data-theme="dark"] .brand-mark {
   gap: 2px;
   border-radius: 10px;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.15;
 }
@@ -4001,7 +3971,7 @@ html[data-theme="dark"] .brand-mark {
 }
 
 .mobile-tab-icon > i {
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .mobile-tab-item.active {
@@ -4010,13 +3980,12 @@ html[data-theme="dark"] .brand-mark {
 
 .nav-link.active > i,
 .mobile-tab-item.active .mobile-tab-icon {
-  animation: routeTabFeedback 160ms var(--ease-out) both;
+  animation: none;
 }
 
 .route-transition {
   min-width: 0;
-  animation: routeContentIn 220ms var(--ease-out) both;
-  will-change: transform, opacity;
+  animation: none;
 }
 
 .mobile-tab-badge {
@@ -4038,9 +4007,9 @@ html[data-theme="dark"] .brand-mark {
 }
 
 .swift-home-page {
-  width: min(100%, 860px);
+  width: min(100%, 800px);
   margin-inline: auto;
-  gap: 32px;
+  gap: 24px;
 }
 
 .swift-home-header {
@@ -4050,10 +4019,10 @@ html[data-theme="dark"] .brand-mark {
 .swift-overline,
 .swift-section-label {
   display: block;
-  color: var(--primary-color);
-  font-size: var(--type-footnote-size);
-  font-weight: 600;
-  line-height: 1.3;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25rem;
 }
 
 .swift-home-header .swift-large-title {
@@ -4191,31 +4160,32 @@ html[data-theme="dark"] .brand-mark {
 
 .swift-welcome-card {
   display: grid;
-  gap: 22px;
-  border-radius: 24px;
-  padding: 28px;
+  gap: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 24px;
   background: var(--card-solid-bg);
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 4px 16px rgb(25 35 55 / 6%);
 }
 
 .swift-welcome-main {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
 }
 
 .swift-welcome-symbol {
-  width: 58px;
-  height: 58px;
-  flex: 0 0 58px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
-  background: var(--primary-color);
+  border-radius: 12px;
+  background: var(--action-fill);
   color: #ffffff;
-  font-size: 25px;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--primary-color) 20%, transparent);
+  font-size: 20px;
+  box-shadow: none;
 }
 
 .swift-welcome-copy {
@@ -4233,9 +4203,11 @@ html[data-theme="dark"] .brand-mark {
   align-items: center;
   gap: 7px;
   border-top: 1px solid var(--border-color);
-  padding-top: 18px;
+  padding-top: 12px;
   color: var(--text-secondary);
-  font-size: var(--type-footnote-size);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .swift-runtime strong {
@@ -4252,9 +4224,14 @@ html[data-theme="dark"] .brand-mark {
 }
 
 .swift-welcome-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.swift-welcome-actions .btn {
+  width: 100%;
+  min-height: 46px;
 }
 
 .swift-home-section {
@@ -4282,6 +4259,7 @@ html[data-theme="dark"] .brand-mark {
 .swift-inset-group,
 .swift-about-card {
   overflow: hidden;
+  border: 1px solid var(--border-color);
   border-radius: var(--swiftui-group-radius);
   background: var(--card-solid-bg);
   box-shadow: var(--card-shadow);
@@ -4290,24 +4268,22 @@ html[data-theme="dark"] .brand-mark {
 .swift-list-row {
   position: relative;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 13px;
-  min-height: 72px;
+  gap: 12px;
+  min-height: 60px;
   padding: 12px 16px;
   color: var(--text-primary);
 }
 
 .swift-list-row::after {
   position: absolute;
-  right: 0;
+  right: 16px;
   bottom: 0;
-  left: 71px;
+  left: 56px;
   height: 1px;
   background: var(--border-color);
   content: '';
-  transform: scaleY(0.5);
-  transform-origin: bottom;
 }
 
 .swift-list-row:last-child::after {
@@ -4320,8 +4296,8 @@ html[data-theme="dark"] .brand-mark {
 }
 
 .swift-list-icon {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4343,9 +4319,9 @@ html[data-theme="dark"] .brand-mark {
 
 .swift-list-copy b {
   color: var(--text-primary);
-  font-size: var(--type-headline-size);
-  font-weight: 600;
-  line-height: var(--type-headline-line-height);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5rem;
 }
 
 .swift-list-chevron {
@@ -4355,8 +4331,10 @@ html[data-theme="dark"] .brand-mark {
 
 .swift-about-card > p {
   margin: 0;
-  padding: 22px 20px;
+  padding: 20px;
   color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5625rem;
   font-size: 15px;
   line-height: 1.65;
 }
@@ -4531,7 +4509,8 @@ html[data-theme="dark"] .brand-mark {
   }
 
   .swift-welcome-actions .btn {
-    flex: 1 1 180px;
+    flex: none;
+    width: 100%;
   }
 
   .swift-section-heading > span {
@@ -4762,14 +4741,20 @@ html[data-theme="dark"] .brand-mark {
   position: relative;
   z-index: 0;
   inset: auto;
-  min-height: 520px;
+  height: 220px;
+  min-height: 220px;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 18px;
   background:
     radial-gradient(circle at 50% 46%, color-mix(in srgb, #ffffff 48%, transparent), transparent 52%),
     linear-gradient(145deg, color-mix(in srgb, #ff2d55 9%, var(--card-solid-bg)), var(--card-solid-bg));
   box-shadow: var(--card-shadow);
   touch-action: manipulation;
+}
+
+.confession-note-stage.is-live .confession-note-viewport {
+  height: auto;
+  min-height: 420px;
 }
 
 [data-theme="dark"] .confession-note-viewport {
@@ -4850,7 +4835,8 @@ html[data-theme="dark"] .brand-mark {
 .confession-note-list {
   min-height: 0;
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   overflow: auto;
   padding: 0 14px 6px;
   scrollbar-gutter: stable;
@@ -4862,25 +4848,27 @@ html[data-theme="dark"] .brand-mark {
   display: grid;
   grid-template-columns: 8px minmax(0, 1fr);
   gap: 4px 10px;
-  border: 0;
-  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
   padding: 14px;
-  background: var(--confession-note-pink);
+  background: var(--card-solid-bg);
   color: var(--text-primary);
   text-align: left;
-  transform: translateZ(0) scale(1);
-  transition: transform 180ms var(--ease-out);
+  transform: none;
+  transition: background-color 160ms var(--ease-out);
 }
 
-.confession-note-list-item:nth-child(5n + 2) { background: var(--confession-note-yellow); }
-.confession-note-list-item:nth-child(5n + 3) { background: var(--confession-note-mint); }
-.confession-note-list-item:nth-child(5n + 4) { background: var(--confession-note-blue); }
-.confession-note-list-item:nth-child(5n) { background: var(--confession-note-lilac); }
+.confession-note-list-item:nth-child(5n + 2),
+.confession-note-list-item:nth-child(5n + 3),
+.confession-note-list-item:nth-child(5n + 4),
+.confession-note-list-item:nth-child(5n) {
+  background: var(--card-solid-bg);
+}
 
 .confession-note-list-item.is-featured {
   z-index: 1;
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--confession-particle) 18%, transparent);
-  transform: scale(1.035);
+  box-shadow: none;
+  transform: none;
 }
 
 .confession-note-list-pin {
@@ -5110,7 +5098,13 @@ html[data-theme="dark"] .brand-mark {
   }
 
   .confession-note-viewport {
-    min-height: 450px;
+    height: 160px;
+    min-height: 160px;
+  }
+
+  .confession-note-stage.is-live .confession-note-viewport {
+    height: auto;
+    min-height: 280px;
   }
 
   .confession-note-browser {
@@ -5141,8 +5135,9 @@ html[data-theme="dark"] .brand-mark {
   }
 
   .confession-note-viewport {
-    min-height: 360px;
-    border-radius: 20px;
+    height: 160px;
+    min-height: 160px;
+    border-radius: 18px;
   }
 
   .confession-note-viewport::before {
@@ -5213,8 +5208,16 @@ html[data-theme="dark"] .brand-mark {
   box-shadow: var(--card-shadow);
 }
 
-.message-card.is-moments .message-card-body {
-  padding: 22px 24px;
+.message-card.is-moments .message-card-body,
+.message-card.is-lost-found .message-card-body {
+  padding: 16px;
+}
+
+@media (min-width: 768px) {
+  .message-card.is-moments .message-card-body,
+  .message-card.is-lost-found .message-card-body {
+    padding: 20px;
+  }
 }
 
 .message-card.is-moments .message-card-header {
@@ -5225,38 +5228,47 @@ html[data-theme="dark"] .brand-mark {
   align-items: flex-start;
 }
 
-.message-card.is-moments .message-card-header .user-card-avatar.is-compact {
-  width: 42px;
-  height: 42px;
-  flex-basis: 42px;
+.message-card.is-moments .message-card-header .user-card-avatar.is-compact,
+.message-card.is-lost-found .message-card-header .user-card-avatar.is-compact {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
-.message-card.is-moments .message-card-header .user-card-avatar img {
-  border-radius: 12px;
+.message-card.is-moments .message-card-header .user-card-avatar img,
+.message-card.is-lost-found .message-card-header .user-card-avatar img {
+  border-radius: 10px;
 }
 
 .message-card.is-moments .message-card-header .user-card > div > div span {
-  color: var(--primary-color);
-  font-size: 0.94rem;
-  font-weight: 650;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
-.message-card.is-moments .message-card-header .user-card p {
+.message-card.is-moments .message-card-header .user-card p,
+.message-card.is-lost-found .message-card-header .user-card p {
   margin-top: 2px;
-  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.25rem;
 }
 
 .message-card.is-moments .message-card-content {
   min-width: 0;
-  max-width: 640px;
-  margin-left: 54px;
+  max-width: none;
+  margin-left: 0;
 }
 
 .message-card.is-moments .message-text {
-  font-size: 0.98rem;
-  line-height: 1.65;
+  font-size: 1.0625rem;
+  line-height: 1.75rem;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .moments-media-grid {
@@ -5267,8 +5279,16 @@ html[data-theme="dark"] .brand-mark {
   gap: 5px;
 }
 
+.message-card.is-moments .message-text.is-clamped,
+.message-card.is-lost-found .message-text.is-clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+
 .moments-media-grid.moments-media-count-1 {
-  width: min(100%, 380px);
+  width: min(100%, 420px);
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -5304,7 +5324,7 @@ html[data-theme="dark"] .brand-mark {
   min-width: min(230px, 100%);
   max-width: 100%;
   height: auto;
-  max-height: 460px;
+  max-height: 420px;
   object-fit: contain;
 }
 
@@ -5354,19 +5374,21 @@ html[data-theme="dark"] .brand-mark {
 }
 
 .message-card.is-moments .moments-action-bar > div:first-child {
-  gap: 2px;
-  border-radius: 10px;
-  padding: 3px;
-  background: var(--card-secondary-bg);
+  gap: 4px;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
 }
 
-.message-card.is-moments .moments-action-bar .btn {
-  min-height: 32px;
+.message-card.is-moments .moments-action-bar .btn,
+.message-card.is-lost-found .moments-action-bar .btn {
+  min-height: 44px;
   border: 0;
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: 0;
+  padding: 6px 8px;
   background: transparent;
   box-shadow: none;
+  font-size: 0.875rem;
 }
 
 .message-card.is-moments .moments-action-bar .btn:hover,
@@ -5494,11 +5516,14 @@ html[data-theme="dark"] .brand-mark {
   color: var(--primary-color);
 }
 
-.message-card.is-moments .comment-panel {
+.message-card.is-moments .comment-panel,
+.message-card.is-lost-found .comment-panel {
   border: 0;
-  border-radius: 11px;
-  padding: 6px 12px 2px;
-  background: var(--card-secondary-bg);
+  border-top: 1px solid var(--border-color);
+  border-radius: 0;
+  padding: 8px 0 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .message-card.is-moments .comment-item {
@@ -5842,11 +5867,11 @@ button.moments-composer-privacy[aria-pressed="true"] {
   }
 
   .message-card.is-moments .message-card-content {
-    margin-left: 48px;
+    margin-left: 0;
   }
 
   .message-card.is-moments .message-card-header .user-card p {
-    display: none;
+    display: block;
   }
 
   .message-card.is-moments .moments-action-bar {
@@ -6725,4 +6750,152 @@ button.moments-composer-privacy[aria-pressed="true"] {
   .notice-priority-option { transition-property: border-color, background-color; }
   .notice-display-card.is-interactive:active,
   .notice-priority-option:active { transform: none; }
+}
+
+.auth-field {
+  min-height: 48px;
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.auth-page .btn-primary {
+  min-height: 48px;
+}
+
+.confession-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.confession-page-heading h1,
+.wall-overview-copy h1,
+.lost-found-hero h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 2.5rem;
+  letter-spacing: 0;
+}
+
+.confession-compose-input,
+.lost-found-details textarea {
+  min-height: 144px;
+}
+
+.lost-found-filters {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.lost-found-filters .btn,
+.lost-found-hero .btn {
+  min-height: 44px;
+}
+
+.lost-found-card-copy h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.625rem;
+}
+
+.lost-found-card-copy p,
+.lost-found-posted,
+.lost-found-contact {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  overflow-wrap: anywhere;
+}
+
+.message-topic-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.message-topic-link {
+  color: var(--primary-color);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.message-expand-text,
+.moments-login-prompt {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  margin-top: 4px;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.message-card.is-moments .poll-card,
+.message-card.is-lost-found .poll-card {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.notice-display-card.is-compact {
+  padding: 14px 16px;
+}
+
+.notice-display-card.is-compact .notice-display-copy > strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+}
+
+.swift-welcome-copy h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+}
+
+.swift-welcome-copy .swift-section-label {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.5rem;
+}
+
+.confession-stage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lost-found-message-list {
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .lost-found-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 360px) {
+  .page-wrap {
+    width: min(calc(100% - 24px), var(--content-max-width));
+  }
 }

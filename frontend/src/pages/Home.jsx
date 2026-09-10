@@ -144,38 +144,15 @@ export default function Home() {
         <h1 className="swift-large-title">校园墙</h1>
       </header>
 
-      {latestNotice ? (
-        <section className="swift-home-section swift-announcement-section" aria-labelledby="campus-announcement-title">
-          <div className="swift-section-heading">
-            <div>
-              <span className="swift-section-label">重要信息</span>
-              <h2 id="campus-announcement-title">校园公告</h2>
-            </div>
-            <span>{notices.length} 条正在展示</span>
-          </div>
-          <NoticeCard notice={latestNotice} compact onClick={openNotices} />
-        </section>
-      ) : null}
-
       <section className="swift-welcome-card" aria-labelledby="home-welcome-title">
         <div className="swift-welcome-main">
           <span className="swift-welcome-symbol" aria-hidden="true">
             <i className="bi bi-chat-heart-fill" />
           </span>
           <div className="swift-welcome-copy">
-            <span className="swift-section-label">今天想分享什么？</span>
-            <h2 id="home-welcome-title">欢迎回到观澜中学校园墙</h2>
+            <span className="swift-section-label">今天，校园里有什么新鲜事？</span>
+            <h2 id="home-welcome-title">欢迎来到校园墙</h2>
           </div>
-        </div>
-
-        <div
-          className="swift-runtime"
-          aria-label={`本站已上线 ${runTime.days} 天 ${runTime.hours} 小时 ${runTime.minutes} 分钟 ${runTime.seconds} 秒`}
-          title="自 2026 年 8 月 25 日 01:48:50（北京时间）首次公开访问起计算"
-        >
-          <span className="swift-status-dot" aria-hidden="true" />
-          <span>本站已上线</span>
-          <strong>{runTime.days} 天 {runTime.hours} 小时 {runTime.minutes} 分钟 {runTime.seconds} 秒</strong>
         </div>
 
         {wallEnabled ? (
@@ -184,26 +161,44 @@ export default function Home() {
               <i className="bi bi-chat-square-dots" aria-hidden="true" />
               <span>浏览校园动态</span>
             </Link>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={triggerPublishModal}
-              disabled={!canPublish}
-              title={canPublish ? '快速发帖' : publishDisabledReason}
-            >
-              <i className="bi bi-pencil-square" aria-hidden="true" />
-              <span>发布动态</span>
-            </button>
+            {canPublish ? (
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={triggerPublishModal}
+                title="快速发帖"
+              >
+                <i className="bi bi-pencil-square" aria-hidden="true" />
+                <span>发布动态</span>
+              </button>
+            ) : (
+              <Link to="/login" className="btn btn-outline">
+                <i className="bi bi-box-arrow-in-right" aria-hidden="true" />
+                <span>登录参与</span>
+              </Link>
+            )}
           </div>
         ) : null}
+
+        <div
+          className="swift-runtime"
+          aria-label={`本站已上线 ${runTime.days} 天 ${runTime.hours} 小时 ${runTime.minutes} 分钟 ${runTime.seconds} 秒`}
+          title="自 2026 年 8 月 25 日 01:48:50（北京时间）首次公开访问起计算"
+        >
+          <span>已运行 {runTime.days} 天 · {String(runTime.hours).padStart(2, '0')}:{String(runTime.minutes).padStart(2, '0')}:{String(runTime.seconds).padStart(2, '0')}</span>
+        </div>
       </section>
+
+      {latestNotice ? (
+        <section className="swift-home-section swift-announcement-section" aria-labelledby="campus-announcement-title">
+          <h2 id="campus-announcement-title" className="sr-only">校园公告</h2>
+          <NoticeCard notice={latestNotice} compact onClick={openNotices} />
+        </section>
+      ) : null}
 
       <section className="swift-home-section" aria-labelledby="campus-services-title">
         <div className="swift-section-heading">
-          <div>
-            <span className="swift-section-label">校园服务</span>
-            <h2 id="campus-services-title">常用入口</h2>
-          </div>
+          <h2 id="campus-services-title">常用入口</h2>
         </div>
 
         <nav className="swift-inset-group" aria-label="校园功能入口">
@@ -219,10 +214,7 @@ export default function Home() {
 
       <section className="swift-home-section swift-about-section" aria-labelledby="about-campus-wall-title">
         <div className="swift-section-heading">
-          <div>
-            <span className="swift-section-label">关于</span>
-            <h2 id="about-campus-wall-title">由学生为校园搭建</h2>
-          </div>
+          <h2 id="about-campus-wall-title">关于本站</h2>
         </div>
         <div className="swift-about-card">
           <p>

@@ -4,9 +4,9 @@
  */
 :root {
   /* Color */
-  --color-primary: #0066cc;
-  --color-primary-focus: #0071e3;
-  --color-primary-on-dark: #2997ff;
+  --color-primary: #1765d1;
+  --color-primary-focus: #1356b3;
+  --color-primary-on-dark: #82b1ff;
   --color-ink: #1d1d1f;
   --color-body: #1d1d1f;
   --color-body-on-dark: #f5f5f7;
@@ -104,7 +104,7 @@
   --layout-section-gap: 80px;
   --layout-card-padding: 24px;
   --layout-element-gap: 17px;
-  --layout-max-width: 1200px;
+  --layout-max-width: 1120px;
 
   /* SwiftUI application semantics. The extracted Apple.com values above stay
      available for brand/marketing surfaces; these roles drive the app UI. */
@@ -121,9 +121,9 @@
   --swiftui-secondary-fill: rgba(120, 120, 128, 0.08);
   --swiftui-material: rgba(249, 249, 249, 0.78);
 
-  --type-large-title-size: 34px;
-  --type-large-title-line-height: 1.18;
-  --type-large-title-letter-spacing: -0.68px;
+  --type-large-title-size: 32px;
+  --type-large-title-line-height: 1.25;
+  --type-large-title-letter-spacing: 0;
   --type-title-2-size: 22px;
   --type-title-2-line-height: 1.27;
   --type-headline-size: 17px;
@@ -134,5 +134,5 @@
   --swiftui-control-radius: 12px;
   --swiftui-group-radius: 18px;
   --swiftui-sheet-radius: 26px;
-  --swiftui-reading-width: 760px;
+  --swiftui-reading-width: 720px;
 }

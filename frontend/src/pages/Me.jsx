@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
+import { firstAdminDestination } from '../services/permissions.js'
 import { toApiUrl } from '../services/urls'
 import { genderText, getAvatarUrl, getGenderIcon, handleAvatarError } from '../utils/user'
 
@@ -31,6 +32,8 @@ export default function Me() {
   const alert = useAlert()
   const avatarInputRef = useRef(null)
   const bindFeishuHref = toApiUrl('/api/user/feishu/start?intent=bind&next=/me')
+  const adminDestination = firstAdminDestination(user)
+  const adminLabel = user?.role === 'reviewer' ? '运营后台' : '管理后台'
 
   useEffect(() => {
     if (user) {
@@ -248,6 +251,12 @@ export default function Me() {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2.5 self-end md:self-auto">
+            {adminDestination ? (
+              <Link className="btn btn-outline" to={adminDestination}>
+                <i className="bi bi-shield-check" />
+                <span>{adminLabel}</span>
+              </Link>
+            ) : null}
             <Link className="btn btn-outline" to="/me/posts">
               <i className="bi bi-journal-text" />
               <span>我的发布</span>

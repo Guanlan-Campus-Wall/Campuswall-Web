@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import HeartParticles from '../components/HeartParticles.jsx'
@@ -10,50 +10,12 @@ import { useUser } from '../contexts/UserContext.jsx'
 const CONFESSION_TAG = '表白'
 const CONFESSION_LIMIT = 280
 const CONFESSION_FETCH_LIMIT = 72
-const FEATURE_INTERVAL_MS = 4000
 
 const timestampValue = (value) => String(value || '')
 const compareNewestFirst = (left, right) => (
   timestampValue(right.timestamp).localeCompare(timestampValue(left.timestamp))
   || Number(right.id || 0) - Number(left.id || 0)
 )
-const compareOldestFirst = (left, right) => (
-  timestampValue(left.timestamp).localeCompare(timestampValue(right.timestamp))
-  || Number(left.id || 0) - Number(right.id || 0)
-)
-
-const hashString = (value) => {
-  let hash = 2166136261
-  for (const character of String(value || '')) {
-    hash ^= character.codePointAt(0)
-    hash = Math.imul(hash, 16777619)
-  }
-  return hash >>> 0
-}
-
-const createSeededRandom = (seed) => {
-  let state = seed >>> 0
-  return () => {
-    state += 0x6d2b79f5
-    let next = state
-    next = Math.imul(next ^ (next >>> 15), next | 1)
-    next ^= next + Math.imul(next ^ (next >>> 7), next | 61)
-    return ((next ^ (next >>> 14)) >>> 0) / 4294967296
-  }
-}
-
-const pickFeaturedNotes = (notes, sessionSeed) => {
-  if (!notes.length) return []
-  const signature = notes.map((note) => `${note.id}:${note.timestamp || ''}`).join('|')
-  const random = createSeededRandom(hashString(signature) ^ sessionSeed)
-  const pool = [...notes]
-  for (let index = pool.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1))
-    ;[pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]]
-  }
-  const count = Math.min(pool.length, 3 + Math.floor(random() * 3))
-  return pool.slice(0, count).sort(compareOldestFirst)
-}
 
 const formatConfessionTime = (value) => {
   if (!value) return '发布时间未知'
@@ -77,7 +39,6 @@ export default function ConfessionWall() {
   const alert = useAlert()
   const { community } = usePlatform()
   const { user } = useUser()
-  const sessionSeedRef = useRef(Math.floor(Math.random() * 0xffffffff))
   const [confessions, setConfessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -86,10 +47,9 @@ export default function ConfessionWall() {
   const [submitting, setSubmitting] = useState(false)
   const [submissionReceipt, setSubmissionReceipt] = useState(null)
   const [selectedConfession, setSelectedConfession] = useState(null)
-  const [heartHovered, setHeartHovered] = useState(false)
-  const [pageHidden, setPageHidden] = useState(() => typeof document !== 'undefined' && document.hidden)
   const [reducedMotion, setReducedMotion] = useState(initialReducedMotion)
-  const [featuredIndex, setFeaturedIndex] = useState(0)
+  const [composeOpen, setComposeOpen] = useState(false)
+  const [heartLive, setHeartLive] = useState(false)
 
   const canPublish = community.posting_enabled && Boolean(user || community.guest_posting_enabled)
   const publishDisabledReason = !community.posting_enabled
@@ -136,41 +96,6 @@ export default function ConfessionWall() {
       else motionQuery.removeListener?.(updateMotion)
     }
   }, [])
-
-  useEffect(() => {
-    const updateVisibility = () => setPageHidden(document.hidden)
-    document.addEventListener('visibilitychange', updateVisibility)
-    return () => document.removeEventListener('visibilitychange', updateVisibility)
-  }, [])
-
-  const featuredNotes = useMemo(
-    () => pickFeaturedNotes(confessions, sessionSeedRef.current),
-    [confessions]
-  )
-  const featuredSignature = featuredNotes.map((note) => note.id).join('|')
-
-  useEffect(() => {
-    setFeaturedIndex(0)
-  }, [featuredSignature])
-
-  useEffect(() => {
-    const paused = (
-      reducedMotion
-      || heartHovered
-      || Boolean(selectedConfession)
-      || pageHidden
-      || featuredNotes.length < 2
-    )
-    if (paused) return undefined
-    const timer = window.setInterval(() => {
-      setFeaturedIndex((current) => (current + 1) % featuredNotes.length)
-    }, FEATURE_INTERVAL_MS)
-    return () => window.clearInterval(timer)
-  }, [featuredNotes.length, heartHovered, pageHidden, reducedMotion, selectedConfession])
-
-  const featuredNote = featuredNotes.length
-    ? featuredNotes[featuredIndex % featuredNotes.length]
-    : null
 
   const submitConfession = async (event) => {
     event.preventDefault()
@@ -222,31 +147,42 @@ export default function ConfessionWall() {
   return (
     <div className="confession-page confession-notes-page">
       <header className="confession-copy confession-page-intro">
-        <h1>表白墙</h1>
+        <div className="confession-page-heading">
+          <h1>表白墙</h1>
+          <button className="btn btn-primary" type="button" onClick={() => setComposeOpen((open) => !open)}>
+            <i className="bi bi-pencil-square" aria-hidden="true" />
+            {composeOpen ? '收起编辑' : '写一张便签'}
+          </button>
+        </div>
       </header>
 
-      <section className="confession-stage confession-note-stage" aria-label="便签爱心">
+      <section className={`confession-stage confession-note-stage${heartLive ? ' is-live' : ''}`} aria-label="便签爱心">
         <div className="confession-stage-toolbar">
           <div className="confession-stage-status" aria-live="polite">
             {loading ? <><span className="spinner" />正在装好便签...</> : null}
             {!loading && loadError ? <span className="text-danger">{loadError}</span> : null}
             {!loading && !loadError ? <span>{confessions.length} 张便签已经公开</span> : null}
           </div>
-          <button className="btn btn-sm btn-outline" type="button" onClick={loadConfessions} disabled={loading}>
-            <i className="bi bi-arrow-clockwise" aria-hidden="true" />
-            刷新
-          </button>
+          <div className="confession-stage-actions">
+            <button className="btn btn-sm btn-outline" type="button" onClick={() => setHeartLive((open) => !open)} disabled={reducedMotion}>
+              {heartLive ? '收起爱心' : '展开互动爱心'}
+            </button>
+            <button className="btn btn-sm btn-outline" type="button" onClick={loadConfessions} disabled={loading}>
+              <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+              刷新
+            </button>
+          </div>
         </div>
 
         <HeartParticles
           notes={confessions}
-          activeId={featuredNote?.id || null}
-          reducedMotion={reducedMotion}
-          onHoverChange={setHeartHovered}
+          activeId={null}
+          reducedMotion={reducedMotion || !heartLive}
           onSelect={setSelectedConfession}
         />
       </section>
 
+      {composeOpen ? (
       <section className="confession-compose card" aria-labelledby="confession-compose-title">
         <h2 id="confession-compose-title">写一张便签</h2>
 
@@ -254,6 +190,7 @@ export default function ConfessionWall() {
           <div className="info-callout status-warning">
             <i className="bi bi-info-circle-fill" aria-hidden="true" />
             <span>{publishDisabledReason}</span>
+            {!user ? <Link className="btn btn-sm btn-primary" to="/login">去登录</Link> : null}
           </div>
         ) : null}
 
@@ -305,6 +242,7 @@ export default function ConfessionWall() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
       <Modal
         visible={Boolean(selectedConfession)}
