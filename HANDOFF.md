@@ -891,7 +891,7 @@ npm run build
 git diff --check
 ```
 
-GitHub Actions 使用 Node.js 22，并在 Ubuntu runner 上启动系统自带的原生 PostgreSQL、创建一次性测试角色和数据库、以该角色实际执行 `SELECT 1` 后，再执行安装、审计、构建、语法检查与健康冒烟测试。CI 的数据库主版本跟随 runner image，作为 SQL 兼容性下限；生产当前实测为 PostgreSQL 17.11，本地新环境推荐 18。CI 不依赖容器服务；修改数据库初始化时必须同时验证 PostgreSQL 17 兼容性、新版 PostgreSQL 和 CI 原生服务，不能只让其中一个环境通过。
+GitHub Actions 使用 Node.js 22，并固定跑在仓库自托管 Runner `instance-20260908-1753`（标签 `self-hosted`、`Linux`、`ARM64`）上，不再使用 `ubuntu-latest`。Job 启动系统 PostgreSQL，确保测试角色 `campus_wall` 存在后重建测试库，以该角色实际执行 `SELECT 1`，再执行安装、审计、构建、语法检查与健康冒烟。CI 的数据库主版本跟随该 Runner 的系统 PostgreSQL，作为 SQL 兼容性下限；生产当前实测为 PostgreSQL 17.11，本地新环境推荐 18。CI 不依赖容器服务；修改数据库初始化时必须同时验证 PostgreSQL 17 兼容性、新版 PostgreSQL 和 CI 原生服务，不能只让其中一个环境通过。自托管机器会保留上次运行的文件，因此每次必须 `dropdb --if-exists` 再建库，不能假设干净的 ephemeral 环境。
 
 还应人工验证：
 
@@ -1160,6 +1160,14 @@ Codex `gpt-6-astra` xhigh 直接改 `frontend` 的 CSS/JSX：新增 `campus-ui.c
 | 生产备份 | `/www/backups/campuswall/20260910-141350-before-deploy` | **通过**；PostgreSQL custom dump/restore-list、运行文件、环境、systemd、Nginx、UFW、Origin 证书 | 2026-09-10 14:13 CST / Cursor Agent |
 | 服务器发布 | 源站 `57a344a` 快进至 `3c08984`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh` 后重启 `campuswall.service` | **通过**；服务于 14:14:08 CST `active`，本机与公网 `/health` 正常。本轮无后端行为变更 | 2026-09-10 14:14 CST / Cursor Agent |
 | Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload；deployment `https://9b1c0440.guanlan-campus-wall.pages.dev` | **通过**；`https://guanlan-campus-wall.pages.dev/` 与 `https://wall.zongtech.xyz/` 的 `theme-color` 为 `#f6f7f3`/`#151d19`，资源 `index-B5Lx1NZb.js`；未登录失物招领接口 401 | 2026-09-10 14:16 CST / Cursor Agent |
+
+### 15.16 CI 改到仓库自托管 ARM64 Runner
+
+发布门禁 `verify` 改为 `runs-on: [self-hosted, Linux, ARM64]`，对应仓库 Runner `instance-20260908-1753`。PostgreSQL 准备改为幂等：角色不存在则创建，已存在则重置密码，每次删除并重建测试库。本轮只改 CI 与交接文档，不重启生产服务。**本轮没有执行压力、容量、长稳或渗透测试。**
+
+| 项目 | 命令/证据 | 状态 | 时间/执行人 |
+| --- | --- | --- | --- |
+| GitHub 发布门禁 | 待该提交在自托管 Runner 上跑完后补录 | 待验证 |  |
 
 ## 16. Git 工作流
 

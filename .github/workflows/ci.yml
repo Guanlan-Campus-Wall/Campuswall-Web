@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: [self-hosted, Linux, ARM64]
+    timeout-minutes: 25
     env:
       PGHOST: 127.0.0.1
       PGPORT: 5432
@@ -32,9 +32,24 @@ jobs:
       - name: Start native PostgreSQL
         shell: bash
         run: |
-          sudo systemctl start postgresql.service
-          sudo -u postgres psql --set=ON_ERROR_STOP=on \
-            --command "CREATE ROLE campus_wall LOGIN PASSWORD 'campus_wall_ci'"
+          set -euo pipefail
+          if command -v systemctl >/dev/null; then
+            sudo systemctl start postgresql.service 2>/dev/null || sudo systemctl start postgresql
+          else
+            sudo service postgresql start
+          fi
+          sudo -u postgres psql --set=ON_ERROR_STOP=on <<'SQL'
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'campus_wall') THEN
+              CREATE ROLE campus_wall LOGIN PASSWORD 'campus_wall_ci';
+            ELSE
+              ALTER ROLE campus_wall WITH LOGIN PASSWORD 'campus_wall_ci';
+            END IF;
+          END
+          $$;
+          SQL
+          sudo -u postgres dropdb --if-exists campus_wall
           sudo -u postgres createdb --owner=campus_wall campus_wall
           PGPASSWORD="$PGPASSWORD" psql \
             --host=127.0.0.1 --port=5432 --username=campus_wall --dbname=campus_wall \
