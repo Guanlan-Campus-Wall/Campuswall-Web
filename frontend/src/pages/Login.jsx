@@ -163,8 +163,16 @@ export default function Login() {
   const isRegister = mode === 'register'
 
   return (
-    <div className="auth-page mx-auto max-w-[420px] py-8">
-      <section className="card space-y-5 p-5 sm:p-6">
+    <div className="auth-page campus-auth">
+      <aside className="auth-welcome">
+        <Link className="auth-home-link" to="/"><i className="bi bi-arrow-left" aria-hidden="true" />返回首页</Link>
+        <img src="/school-badge.webp" alt="观澜中学校徽" width="68" height="68" />
+        <span className="campus-eyebrow">YOUR CAMPUS, YOUR CONNECTION</span>
+        <h2>熟悉的校园，<br />更多的连接。</h2>
+        <p>从围观到参与，<br />让校园生活里，多一个你的声音。</p>
+        <div className="auth-welcome-bottom"><i className="bi bi-chat-square-heart" aria-hidden="true" />观澜中学 · 校园墙</div>
+      </aside>
+      <section className="card auth-form-card space-y-5 p-5 sm:p-6">
         <div className="space-y-2">
           <h1 className="text-[1.75rem] font-bold leading-9 text-[var(--text-primary)]">登录校园墙</h1>
           <p className="text-[0.9375rem] leading-6 text-[var(--text-secondary)]">登录后发帖、评论，查看失物招领。</p>

@@ -5,6 +5,7 @@ import App from './App.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 import { UserProvider } from './contexts/UserContext.jsx'
 import './styles.css'
+import './campus-ui.css'
 
 const loadAnalytics = () => {
   const script = document.createElement('script')

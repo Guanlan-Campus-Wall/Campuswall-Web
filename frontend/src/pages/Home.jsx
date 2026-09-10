@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import Modal from '../components/Modal.jsx'
 import NoticeCard from '../components/NoticeCard.jsx'
+import { campusEntries } from '../components/CampusGuide.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
@@ -28,13 +29,6 @@ const noticeSeenKey = (notice) => {
 
 const isAttentionNotice = (notice) => ['important', 'urgent'].includes(notice?.priority)
 
-const serviceEntries = Object.freeze([
-  { id: 'confessions', to: '/confessions', label: '表白墙', icon: 'bi-heart-fill', tone: 'pink', className: 'confession-entry-card' },
-  { id: 'lost-found', to: '/lost-found', label: '失物招领', icon: 'bi-search', tone: 'blue' },
-  { id: 'topics', to: '/p', label: '话题分类', icon: 'bi-hash', tone: 'indigo' },
-  { id: 'help', to: '/help', label: '帮助与反馈', icon: 'bi-life-preserver', tone: 'green' }
-])
-
 export default function Home() {
   const [runTime, setRunTime] = useState(emptyRunTime)
   const [notices, setNotices] = useState([])
@@ -51,7 +45,7 @@ export default function Home() {
     : !community.posting_enabled
       ? (community.pause_reason || '管理员暂时关闭了发帖功能')
       : '登录后才能发布'
-  const visibleServiceEntries = serviceEntries.filter((entry) => enabledModuleIds.has(entry.id))
+  const visibleServiceEntries = campusEntries.filter((entry) => enabledModuleIds.has(entry.id))
 
   useEffect(() => {
     const serverTimestamp = Date.parse(community.server_time || '')
@@ -138,90 +132,91 @@ export default function Home() {
   }
 
   return (
-    <div className="home-page swift-home-page">
-      <header className="swift-home-header">
-        <span className="swift-overline">龙华区观澜中学</span>
-        <h1 className="swift-large-title">校园墙</h1>
-      </header>
+    <div className="campus-home">
+      <section className="campus-welcome" aria-labelledby="home-welcome-title">
+        <div className="welcome-copy">
+          <span className="campus-eyebrow"><span className="campus-dot" /> 龙华区观澜中学 · 我们的校园社区</span>
+          <h1>校园里的小事，<br /><em>都值得被看见。</em></h1>
+          <h2 id="home-welcome-title">欢迎来到校园墙</h2>
+          <p className="welcome-description">分享日常、传递心意、寻找失物。<br />从一句「你好」开始，让我们的校园更近一点。</p>
 
-      <section className="swift-welcome-card" aria-labelledby="home-welcome-title">
-        <div className="swift-welcome-main">
-          <span className="swift-welcome-symbol" aria-hidden="true">
-            <i className="bi bi-chat-heart-fill" />
-          </span>
-          <div className="swift-welcome-copy">
-            <span className="swift-section-label">今天，校园里有什么新鲜事？</span>
-            <h2 id="home-welcome-title">欢迎来到校园墙</h2>
+          {wallEnabled ? (
+            <div className="welcome-actions">
+              <Link to="/wall" className="btn btn-primary">
+                <span>浏览校园动态</span>
+                <i className="bi bi-arrow-right" aria-hidden="true" />
+              </Link>
+              {canPublish ? (
+                <button type="button" className="btn btn-outline" onClick={triggerPublishModal} title="快速发帖">
+                  <i className="bi bi-pencil-square" aria-hidden="true" />
+                  <span>发布动态</span>
+                </button>
+              ) : (
+                <Link to="/login" className="btn btn-outline">
+                  <i className="bi bi-box-arrow-in-right" aria-hidden="true" />
+                  <span>登录参与</span>
+                </Link>
+              )}
+            </div>
+          ) : null}
+
+          <div
+            className="campus-runtime"
+            aria-label={`本站已上线 ${runTime.days} 天 ${runTime.hours} 小时 ${runTime.minutes} 分钟 ${runTime.seconds} 秒`}
+            title="自 2026 年 8 月 25 日 01:48:50（北京时间）首次公开访问起计算"
+          >
+            <i className="bi bi-clock" aria-hidden="true" />
+            <span>已陪伴校园 {runTime.days} 天 <span className="runtime-clock">{String(runTime.hours).padStart(2, '0')}:{String(runTime.minutes).padStart(2, '0')}:{String(runTime.seconds).padStart(2, '0')}</span></span>
           </div>
         </div>
-
-        {wallEnabled ? (
-          <div className="swift-welcome-actions">
-            <Link to="/wall" className="btn btn-primary">
-              <i className="bi bi-chat-square-dots" aria-hidden="true" />
-              <span>浏览校园动态</span>
-            </Link>
-            {canPublish ? (
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={triggerPublishModal}
-                title="快速发帖"
-              >
-                <i className="bi bi-pencil-square" aria-hidden="true" />
-                <span>发布动态</span>
-              </button>
-            ) : (
-              <Link to="/login" className="btn btn-outline">
-                <i className="bi bi-box-arrow-in-right" aria-hidden="true" />
-                <span>登录参与</span>
-              </Link>
-            )}
-          </div>
-        ) : null}
-
-        <div
-          className="swift-runtime"
-          aria-label={`本站已上线 ${runTime.days} 天 ${runTime.hours} 小时 ${runTime.minutes} 分钟 ${runTime.seconds} 秒`}
-          title="自 2026 年 8 月 25 日 01:48:50（北京时间）首次公开访问起计算"
-        >
-          <span>已运行 {runTime.days} 天 · {String(runTime.hours).padStart(2, '0')}:{String(runTime.minutes).padStart(2, '0')}:{String(runTime.seconds).padStart(2, '0')}</span>
+        <div className="welcome-board" aria-hidden="true">
+          <div className="board-heading"><span>校园生活手记</span><span>GUANLAN / 日常</span></div>
+          <div className="board-orbit" />
+          <div className="board-note note-main"><span className="note-pin" /><i className="bi bi-chat-square-heart" /><span>今天，校园里<br />有什么新鲜事？</span><small>每一种声音，都值得被听见</small></div>
+          <div className="board-note note-heart"><i className="bi bi-heart" /><span>把心意<br />说给你听。</span></div>
+          <div className="board-note note-together"><i className="bi bi-people" /><span>很高兴，<br />在这里遇见你。</span></div>
+          <span className="board-caption">把平凡的日子，写成我们的故事。</span>
         </div>
       </section>
 
       {latestNotice ? (
-        <section className="swift-home-section swift-announcement-section" aria-labelledby="campus-announcement-title">
+        <section className="campus-announcement" aria-labelledby="campus-announcement-title">
           <h2 id="campus-announcement-title" className="sr-only">校园公告</h2>
           <NoticeCard notice={latestNotice} compact onClick={openNotices} />
         </section>
       ) : null}
 
-      <section className="swift-home-section" aria-labelledby="campus-services-title">
-        <div className="swift-section-heading">
-          <h2 id="campus-services-title">常用入口</h2>
+      <section className="campus-section" aria-labelledby="campus-services-title">
+        <div className="campus-section-heading">
+          <div><span className="campus-eyebrow">EXPLORE CAMPUS</span><h2 id="campus-services-title">在这里，连接校园生活</h2></div>
+          <span>找到你想去的地方 <i className="bi bi-arrow-right" aria-hidden="true" /></span>
         </div>
 
-        <nav className="swift-inset-group" aria-label="校园功能入口">
+        <nav className="campus-entry-grid" aria-label="校园功能入口">
           {visibleServiceEntries.map((entry) => (
-            <Link className={`swift-list-row ${entry.className || ''}`.trim()} to={entry.to} key={entry.id}>
-              <span className={`swift-list-icon swift-list-icon-${entry.tone}`} aria-hidden="true"><i className={`bi ${entry.icon}`} /></span>
-              <span className="swift-list-copy"><b>{entry.label}</b></span>
-              <i className="bi bi-chevron-right swift-list-chevron" aria-hidden="true" />
+            <Link className="campus-entry" to={entry.to} key={entry.id}>
+              <span className={`entry-symbol tone-${entry.tone}`} aria-hidden="true"><i className={`bi ${entry.icon}`} /></span>
+              <i className="bi bi-arrow-up-right entry-arrow" aria-hidden="true" />
+              <h3>{entry.label}</h3>
+              <p>{entry.description}</p>
+              <small>{entry.id === 'lost-found' ? '登录后查看' : '去看看'} <i className={`bi ${entry.id === 'lost-found' ? 'bi-lock' : 'bi-arrow-right'}`} aria-hidden="true" /></small>
             </Link>
           ))}
         </nav>
       </section>
 
-      <section className="swift-home-section swift-about-section" aria-labelledby="about-campus-wall-title">
-        <div className="swift-section-heading">
+      <section className="campus-about" aria-labelledby="about-campus-wall-title">
+        <div className="about-heading">
+          <span className="campus-eyebrow">MADE BY STUDENTS</span>
           <h2 id="about-campus-wall-title">关于本站</h2>
+          <span className="about-signature">一面墙，连接你我。</span>
         </div>
-        <div className="swift-about-card">
+        <div className="about-copy">
           <p>
             龙华区观澜中学校园墙由学生自主搭建与维护，旨在为师生提供一个平等、自由、温馨的交流互动平台。
             欢迎大家提出宝贵建议，共同建设美好的校园社区。
           </p>
-          <nav className="swift-about-links" aria-label="关于本站链接">
+          <nav className="about-links" aria-label="关于本站链接">
             <a href="https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan" target="_blank" rel="noreferrer">
               <i className="bi bi-github" aria-hidden="true" /><span>开源代码仓库</span><i className="bi bi-arrow-up-right" aria-hidden="true" />
             </a>

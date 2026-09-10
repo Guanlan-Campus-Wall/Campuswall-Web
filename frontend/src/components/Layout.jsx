@@ -44,15 +44,16 @@ export default function Layout() {
   const adminLabel = user?.role === 'reviewer' ? '运营后台' : '管理后台'
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${location.pathname.startsWith('/admin') ? 'admin-app-shell' : 'public-shell'}`}>
+      <a className="skip-to-content" href="#main-content">跳转到主要内容</a>
       <header className="app-navbar">
         <div className="navbar-inner">
           {/* Brand Mark */}
-          <Link to={user ? '/wall' : '/'} className="brand-link" aria-label="龙华区观澜中学校园墙首页">
+          <Link to={user ? '/wall' : '/'} className="brand-link" aria-label={user ? '观澜中学校园墙 · 校园动态' : '观澜中学校园墙 · 首页'}>
             <span className="brand-mark shrink-0" aria-hidden="true">
               <img src="/school-badge.webp" alt="" width="32" height="32" />
             </span>
-            <span className="brand-copy font-semibold text-[var(--text-primary)]">观澜中学</span>
+            <span className="brand-copy font-semibold text-[var(--text-primary)]"><span>观澜中学 <b>校园墙</b></span><small>GUANLAN CAMPUS</small></span>
           </Link>
 
           {/* Desktop Navigation Links */}
@@ -111,7 +112,7 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="page-wrap">
+      <main className="page-wrap" id="main-content" tabIndex={-1}>
         <div className="route-transition" key={location.pathname}>
           <Outlet />
         </div>
@@ -164,6 +165,7 @@ export default function Layout() {
           <p className="footer-brand text-sm font-semibold text-[var(--text-primary)]">
             龙华区观澜中学 · 校园墙
           </p>
+          <p className="footer-caption">由学生搭建，为校园里的每一个你。</p>
         </div>
       </footer>
     </div>

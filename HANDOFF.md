@@ -203,9 +203,9 @@ campuswall-react/
 
 ### 6.1 前端视觉、主题与动效
 
-- 视觉基线是校园阅读面：微暖纸白、墨色正文、强调色只用于操作和选中。权威设计变量在 `frontend/src/apple-design-tokens.css`，`frontend/src/styles.css` 建立应用语义；新增颜色、圆角、字号、间距前优先复用已有 token；
+- 视觉基线仍是校园阅读面：微暖纸白、墨色正文、强调色只用于操作和选中。权威设计变量在 `frontend/src/apple-design-tokens.css`，`frontend/src/styles.css` 建立应用语义；前台公共路由另有 `frontend/src/campus-ui.css`，只作用在 `.public-shell`，后台保持原样式。新增颜色、圆角、字号、间距前优先复用已有 token；
 - 字体栈优先系统字体、苹方与微软雅黑；中文正文 16/26px、字距 0。浅色与深色必须分别验收；不要用霓虹光晕、全屏玻璃或 iOS Settings 式彩色图标方块充当校园入口；
-- `ThemePicker` 已提供完整主题入口：`theme-preference` 保存 `system/light/dark`，`theme-palette` 保存 `blue/rose/violet/green/orange`；用户可在界面中随时恢复“跟随系统”，不需要清 localStorage。解析后的明暗写入 `<html data-theme>`，强调色写入 `<html data-palette>`，同时更新 `meta[name=theme-color]`；同源标签页通过 `storage` 事件同步，存储不可用时安全回退；
+- `ThemePicker` 已提供完整主题入口：`theme-preference` 保存 `system/light/dark`，`theme-palette` 保存 `blue/rose/violet/green/orange`；未选过强调色时默认 `green`。用户可在界面中随时恢复“跟随系统”，不需要清 localStorage。解析后的明暗写入 `<html data-theme>`，强调色写入 `<html data-palette>`，同时更新 `meta[name=theme-color]`；同源标签页通过 `storage` 事件同步，存储不可用时安全回退；
 - 所有页面组件已经通过 `React.lazy` 按路由拆分。页面路径变化时由 `.route-transition` 提供轻量进入动效，路由切换同时回到页面顶部；
 - CSS 和 Three.js 场景都尊重 `prefers-reduced-motion`，毛玻璃降级尊重 `prefers-reduced-transparency`，高对比偏好使用 `prefers-contrast: more`。新增动效必须是非阻塞、可中断的辅助反馈，不能影响点击、键盘焦点或阅读；
 - 响应式基线：游客不宽于 1080px 时底部五栏为首页、动态、表白、失物、我的；已登录隐藏首页入口，默认打开校园动态。不宽于 768px 时后台侧栏折叠、共享 Modal 呈底部 sheet；不宽于 520px 时失物字段单列；不宽于 360px 时品牌和发帖文案进一步收缩。布局已处理 iOS safe-area；新增固定按钮、sheet 或底部表单时必须继续加上 `env(safe-area-inset-*)`，并在窄屏、横屏及软键盘弹出场景验收；
@@ -213,12 +213,12 @@ campuswall-react/
 - `styles.css` 是长期演进的层叠文件：前部有基础主题/Modal/media，约 3087 行后是当前 SwiftUI 覆盖，底部导航与路由动效在后半部，表白墙新版样式位于更后。后定义的同名 selector 会覆盖前文，仅修改早期规则可能看似无效；`mobile-menu-toggle/mobile-nav-drawer` 等规则目前没有 JSX 引用，清理前先用 `rg` 和浏览器回归确认；
 - 图标来自本地 Bootstrap Icons 子集，不依赖外网字体。新增图标后必须同步子集文件并在生产构建中确认显示，避免再次出现空方框。网站 favicon 与顶栏品牌使用 `frontend/public/school-badge.webp` 校徽，不要再换回聊天气泡；
 - 页面标题只保留一行主标题。不要使用 `page-kicker` + `h1`，也不要在主标题下再挂说明段形成双行标题。提示放到操作按钮旁或社区公约。后续新功能同样遵守；
-- 深色主题使用近墨底 `#111413` 和阅读面 `#181c1a`，靠留白、细分隔线和文字强弱分层，普通帖子无阴影；弹层才使用阴影。`meta[name=theme-color]` 深色值为 `#111413`，浅色为 `#f6f6f3`。
+- 深色主题使用近墨底和抬升卡片分层；弹层才强调阴影。当前 `meta[name=theme-color]` 浅色为 `#f6f7f3`，深色为 `#151d19`。
 
 ### 6.2 校园动态与发布器
 
 - `/wall` 的动态流参考微信朋友圈的熟悉阅读层级，但只参考“作者 → 正文 → 媒体 → 时间/状态 → 互动/讨论”的信息组织，不复制微信品牌、图标、颜色、文案或像素尺寸。页面继续使用本项目的 Apple/SwiftUI token、圆角、材质、焦点样式和浅深色主题；后续不能为了更像参考图而引入品牌素材；
-- 动态页顶部只保留栏目标签与主标题，搜索、筛选和排序紧随其后；旧版说明副标题与“当前已展示/全部分类/最新发布”三格概览已删除，不应以另一组重复摘要重新引入；
+- 动态页顶部保留栏目标签与主标题，其下是发帖引导卡、搜索/筛选/排序和信息流；宽屏右侧有校园指南。旧版“当前已展示/全部分类/最新发布”三格概览已删除，不应以另一组重复摘要重新引入；
 - `Wall.jsx` 只为动态列表传入 `MessageCard variant="moments"`。详情、个人发布、收藏和其他复用 `MessageCard` 的页面默认仍使用通用卡片；修改朋友圈式布局前应先确认目标 selector 带有 `.is-moments`，避免样式泄漏到后台和详情页；
 - 桌面端头像/作者位于卡片顶部，正文与头像左缘对齐、不再向右缩进整列；正文、投票、标签、媒体和操作组成连续主列。置顶、精华、待审、下架、已编辑、匿名或公开身份仍按真实数据展示，视觉重排不得改变公开性或审核状态。公开接口对 `anonymous === false` 的帖子保留 `user_id` 与 `display_name_snapshot`（仍删除登录 `username` 与审核操作者字段），匿名帖继续去掉 `user_id` 并把快照改成「匿名用户」。作者名下一行显示相对时间与「展示昵称」或「匿名动态」，不得写死匿名；
 - 媒体网格是稳定产品规则：1 个媒体保留自然比例并限制最大宽高；2 个和 4 个媒体使用两列；3 个以及 5–9 个媒体使用三列；超过 9 个时信息流只渲染前 9 个，第 9 个覆盖 `+N` 剩余数量。点击任一可见项必须把完整附件数组和正确索引交给预览器，因此第 9 项仍能继续浏览第 10 项及以后附件；音频、视频和其他文件在相同网格中保留明确的类型、播放或查看语义；
@@ -1147,6 +1147,19 @@ GitHub Actions 使用 Node.js 22，并在 Ubuntu runner 上启动系统自带的
 | 生产备份 | `/www/backups/campuswall/20260910-133402-before-deploy` | **通过**；PostgreSQL custom dump/restore-list、运行文件、环境、systemd、Nginx、UFW、Origin 证书 | 2026-09-10 13:34 CST / Cursor Agent |
 | 服务器发布 | 源站快进至 `d116706`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh` 后重启 `campuswall.service` | **通过**；服务于 13:34:17 CST `active`，本机与公网 `/health` 正常。本轮无后端行为变更 | 2026-09-10 13:34 CST / Cursor Agent |
 | Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload；deployment `https://a8b6d9da.guanlan-campus-wall.pages.dev` | **通过**；`https://guanlan-campus-wall.pages.dev/` 与 `https://wall.zongtech.xyz/` 的 `theme-color` 为 `#f3f4f7`/`#12151b`，资源 `index-9ksGC-dA.js` | 2026-09-10 13:35 CST / Cursor Agent |
+
+### 15.15 Codex 直接重构前台 UI
+
+Codex `gpt-6-astra` xhigh 直接改 `frontend` 的 CSS/JSX：新增 `campus-ui.css` 与 `CampusGuide`，整理首页、校园动态和登录页。产品规则未改：未登录打开网站仍是首页（欢迎卡、常用入口、关于本站都在）；已登录打开网站或点校徽进入 `/wall`；游客默认不能发帖/评论；失物招领必须登录才能看。**本轮没有执行压力、容量、长稳或渗透测试。** Windows Application Control 仍拦住本机 Git HTTPS，推送走 isomorphic-git，完整测试与前端构建走源站 Linux。
+
+| 项目 | 命令/证据 | 状态 | 时间/执行人 |
+| --- | --- | --- | --- |
+| 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | **通过**；15/15 | 2026-09-10 / Cursor Agent |
+| 前台交互冒烟 | Codex Playwright 检查（游客首页/欢迎卡/关于本站、已登录 `/`→`/wall`、游客失物招领登录卡、游客无评论框） | **通过**；41 项 | 2026-09-10 / Cursor Agent |
+| GitHub 发布门禁 | 待推送后补录 | 待发布 |  |
+| 生产备份 | 待发布后补录 | 待发布 |  |
+| 服务器发布 | 待发布后补录 | 待发布 |  |
+| Pages 发布 | 待发布后补录 | 待发布 |  |
 
 ## 16. Git 工作流
 

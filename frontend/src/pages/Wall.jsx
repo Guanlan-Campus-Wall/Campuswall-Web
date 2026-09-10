@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import MessageCard from '../components/MessageCard.jsx'
 import Modal from '../components/Modal.jsx'
 import UserCard from '../components/UserCard.jsx'
+import CampusGuide from '../components/CampusGuide.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
@@ -370,17 +371,25 @@ export default function Wall() {
   }
 
   return (
-    <div className="wall-page space-y-6">
-      {/* Wall Header Overview */}
-      <section className="wall-overview p-6 md:p-8">
-        <div className="wall-overview-copy space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] md:text-4xl">
-            校园动态
-          </h1>
+    <div className="campus-wall">
+      <header className="feed-heading">
+        <div>
+          <span className="campus-eyebrow">THE CAMPUS FEED</span>
+          <h1>校园动态<span className="heading-dot">.</span></h1>
+          <p>课间、放学后，还有此刻想分享的小事。</p>
         </div>
-      </section>
+        <span className="feed-heading-note"><i className="bi bi-chat-square-heart" aria-hidden="true" /> 让每一种声音，都有回响</span>
+      </header>
+      <div className="feed-layout">
+      <section className="wall-page" aria-label="校园动态列表">
 
-      {!canPublish ? (
+      <div className="feed-compose-card">
+        <span className="compose-symbol" aria-hidden="true"><i className={`bi ${user ? 'bi-pencil-square' : 'bi-chat-dots'}`} /></span>
+        <div><h2>{user ? `${user.nickname || user.username}，今天想分享什么？` : '校园里的故事，等你一起续写'}</h2><p>{canPublish ? '一段日常、一个问题，或一次小小的发现。' : publishDisabledReason}</p></div>
+        {canPublish ? <button className="btn btn-primary" type="button" onClick={openPublish}><i className="bi bi-plus-lg" aria-hidden="true" />发布动态</button> : !user ? <Link className="btn btn-primary" to="/login" state={{ from: location }}>登录参与<i className="bi bi-arrow-right" aria-hidden="true" /></Link> : null}
+      </div>
+
+      {!canPublish && user ? (
         <div className="info-callout status-warning">
           <i className="bi bi-info-circle-fill" />
           <span>{publishDisabledReason}</span>
@@ -388,39 +397,38 @@ export default function Wall() {
       ) : null}
 
       {/* Filter & Search Bar */}
-      <div className="search-panel">
-        <form className="min-w-64 flex-1" onSubmit={(event) => { event.preventDefault(); refresh() }}>
+      <div className="feed-toolbar">
+        <form className="feed-search" role="search" onSubmit={(event) => { event.preventDefault(); refresh() }}>
           <label className="sr-only" htmlFor="wall-search">搜索留言关键词或标签</label>
-          <div className="relative">
-            <i className="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <i className="bi bi-search" aria-hidden="true" />
             <input
               id="wall-search"
-              className="field pl-10 w-full"
+              className="field"
               value={searchWord}
               onChange={(event) => setSearchWord(event.target.value)}
-              placeholder="搜索留言关键词或标签..."
+              placeholder="搜索校园里的新鲜事、关键词或标签"
             />
             {searchWord ? (
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                className="feed-search-clear"
                 onClick={() => { setSearchWord(''); loadMessages({ reset: true, wordValue: '' }) }}
                 aria-label="清空搜索关键词"
               >
                 <i className="bi bi-x-circle-fill" />
               </button>
             ) : null}
-          </div>
+          <button className="feed-search-submit" type="submit" aria-label="搜索动态"><i className="bi bi-arrow-right" aria-hidden="true" /></button>
         </form>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor="wall-content-filter">内容类型</label>
-          <select id="wall-content-filter" className="field w-auto" value={filter} onChange={(e) => handleFilterChange(e.target.value)}>
-            <option value="all">全部内容</option>
-            <option value="files">有图/视频/音频</option>
-            <option value="polls">投票帖</option>
-          </select>
+        <div className="feed-filter-row">
+          <div className="feed-tabs" role="group" aria-label="内容类型">
+            {[['all', '全部动态'], ['files', '图影音'], ['polls', '投票']].map(([value, label]) => (
+              <button type="button" key={value} aria-pressed={filter === value} onClick={() => handleFilterChange(value)}>{label}</button>
+            ))}
+          </div>
 
+          <div className="feed-sort">
           <label className="sr-only" htmlFor="wall-sort-order">排序方式</label>
           <select id="wall-sort-order" className="field w-auto" value={sortBy} onChange={(e) => handleSortChange(e.target.value)}>
             <option value="newest">最新发布</option>
@@ -428,10 +436,10 @@ export default function Wall() {
             <option value="dislikes">点踩最多</option>
           </select>
 
-          <button className="btn btn-outline" type="button" onClick={refresh} title="刷新列表">
+          <button className="btn btn-ghost" type="button" onClick={refresh} disabled={loading} title="刷新列表" aria-label="刷新列表">
             <i className="bi bi-arrow-clockwise" />
-            <span className="hidden sm:inline">刷新</span>
           </button>
+          </div>
         </div>
       </div>
 
@@ -471,21 +479,23 @@ export default function Wall() {
       {!loading && messages.length === 0 ? (
         <div className="empty-state-card">
           <i className="bi bi-chat-square-dots" />
-          <p className="mt-4 text-base font-bold text-[var(--text-primary)]">暂无相关留言</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-1">来发表第一条内容，开启大家的讨论吧！</p>
-          <button className="btn btn-primary mt-5" type="button" disabled={!canPublish} onClick={openPublish}>
+          <p className="mt-4 text-base font-bold text-[var(--text-primary)]">{searchWord || filter !== 'all' ? '还没有找到相关动态' : '校园故事，从第一条动态开始'}</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">{searchWord || filter !== 'all' ? '试试其他关键词，或切换到全部动态。' : '分享一件小事，让大家的讨论从这里开始。'}</p>
+          {canPublish ? <button className="btn btn-primary mt-5" type="button" onClick={openPublish}>
             <i className="bi bi-pencil-square" />
             <span>立即发帖</span>
-          </button>
+          </button> : !user ? <Link className="btn btn-primary mt-5" to="/login" state={{ from: location }}>登录参与</Link> : null}
         </div>
       ) : null}
 
       {/* Messages Stream */}
-      <div className="space-y-3">
+      <div className="feed-stream" aria-busy={loading}>
         {messages.map((message) => (
           <MessageCard key={message.id} message={message} variant="moments" onRefresh={refreshSpecificMessage} />
         ))}
       </div>
+
+      {!loading && !hasMore && messages.length > 0 ? <p className="feed-end">你已看完这些动态，去创造新的故事吧。</p> : null}
 
       {/* Load More */}
       {hasMore && messages.length ? (
@@ -786,6 +796,9 @@ export default function Wall() {
           ) : null}
         </div>
       </Modal>
+      </section>
+      <CampusGuide />
+      </div>
     </div>
   )
 }

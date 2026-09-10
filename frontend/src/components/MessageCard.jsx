@@ -483,7 +483,7 @@ export default function MessageCard({ message, compact = false, variant = 'defau
               disabled={isUnavailable}
               title={isUnavailable ? unavailableActionText : '点赞'}
             >
-              <i className={`bi ${item.liked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`} />
+              <i className={`bi ${item.liked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`} aria-hidden="true" />
               <span>{isMoments || isLostFound ? `赞 ${item.likes || 0}` : (item.likes || 0)}</span>
             </button>
             <button
@@ -493,7 +493,7 @@ export default function MessageCard({ message, compact = false, variant = 'defau
               disabled={isUnavailable || (!canComment && !guestNeedsLogin)}
               title={isUnavailable ? (isPending ? '待审核的留言不能评论' : '已下架的留言不能评论') : (canComment || guestNeedsLogin ? '评论' : commentDisabledReason)}
             >
-              <i className="bi bi-chat-dots" />
+              <i className="bi bi-chat-dots" aria-hidden="true" />
               <span>{isMoments || isLostFound ? `评论 ${comments.length}` : `评论${comments.length ? ` (${comments.length})` : ''}`}</span>
             </button>
             <button
@@ -503,7 +503,7 @@ export default function MessageCard({ message, compact = false, variant = 'defau
               disabled={isUnavailable}
               title={isUnavailable ? unavailableActionText : '点踩'}
             >
-              <i className={`bi ${item.disliked ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`} />
+              <i className={`bi ${item.disliked ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`} aria-hidden="true" />
               <span>{isMoments || isLostFound ? `踩 ${item.dislikes || 0}` : (item.dislikes || 0)}</span>
             </button>
           </div>
@@ -649,10 +649,6 @@ export default function MessageCard({ message, compact = false, variant = 'defau
                   </button>
                 ) : null}
               </div>
-            ) : null}
-
-            {commentOpen && !isUnavailable && guestNeedsLogin ? (
-              <Link className="moments-login-prompt" to="/login" state={{ from: location }}>登录后参与讨论</Link>
             ) : null}
 
             {commentOpen && !isUnavailable && !canComment && !guestNeedsLogin ? (

@@ -46,7 +46,7 @@ const ThemeContext = createContext(null)
 
 export function ThemeProvider({ children }) {
   const [appearance, setAppearance] = useState(() => readStorage(appearanceStorageKey, appearanceIds, 'system'))
-  const [palette, setPalette] = useState(() => readStorage(paletteStorageKey, paletteIds, 'blue'))
+  const [palette, setPalette] = useState(() => readStorage(paletteStorageKey, paletteIds, 'green'))
   const [systemAppearance, setSystemAppearance] = useState(getSystemAppearance)
   const resolvedAppearance = appearance === 'system' ? systemAppearance : appearance
 
@@ -68,7 +68,7 @@ export function ThemeProvider({ children }) {
         setAppearance(appearanceIds.has(event.newValue) ? event.newValue : 'system')
       }
       if (event.key === paletteStorageKey) {
-        setPalette(paletteIds.has(event.newValue) ? event.newValue : 'blue')
+        setPalette(paletteIds.has(event.newValue) ? event.newValue : 'green')
       }
     }
     window.addEventListener('storage', syncAcrossTabs)
@@ -80,7 +80,7 @@ export function ThemeProvider({ children }) {
     root.dataset.theme = resolvedAppearance
     root.dataset.palette = palette
     const themeMeta = document.querySelector('meta[name="theme-color"]')
-    if (themeMeta) themeMeta.content = resolvedAppearance === 'dark' ? '#12151b' : '#f3f4f7'
+    if (themeMeta) themeMeta.content = resolvedAppearance === 'dark' ? '#151d19' : '#f6f7f3'
   }, [palette, resolvedAppearance])
 
   useEffect(() => writeStorage(appearanceStorageKey, appearance), [appearance])
@@ -91,7 +91,7 @@ export function ThemeProvider({ children }) {
     setAppearance: (next) => setAppearance(appearanceIds.has(next) ? next : 'system'),
     resolvedAppearance,
     palette,
-    setPalette: (next) => setPalette(paletteIds.has(next) ? next : 'blue'),
+    setPalette: (next) => setPalette(paletteIds.has(next) ? next : 'green'),
     appearanceOptions,
     paletteOptions
   }), [appearance, palette, resolvedAppearance])
