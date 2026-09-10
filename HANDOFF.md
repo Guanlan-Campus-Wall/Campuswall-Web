@@ -1228,11 +1228,11 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 
 | 项目 | 命令/证据 | 状态 | 时间/执行人 |
 | --- | --- | --- | --- |
-| 学号与审核回归 | 公网登录页仍为学号登录；飞书 410 | 待补录 | 2026-09-11 / Cursor Agent |
-| GitHub 发布门禁 | 待推送后填写 Actions run | 待补录 | 2026-09-11 / GitHub Actions |
-| 生产备份 | 待部署时填写 | 待补录 | 2026-09-11 / Cursor Agent |
-| 服务器发布 | `TELECOM_PREFER_HOST` 与 `ALLOWED_ORIGINS` 改为 `:12345` 后重启后端 | 待补录 | 2026-09-11 / Cursor Agent |
-| homelab Nginx | `listen 12345 ssl`；本机与公网探测 | 待补录 | 2026-09-11 / Cursor Agent |
+| 学号与审核回归 | 公网登录页仍为学号登录；`/api/user/feishu/start` 410 | **通过** | 2026-09-11 01:34 CST / Cursor Agent |
+| GitHub 发布门禁 | Actions run `34508244974`（提交 `523b60e`） | **通过** | 2026-09-11 / GitHub Actions |
+| 生产备份 | `/www/backups/campuswall/20260911-013306-before-deploy` | **通过** | 2026-09-11 01:33 CST / Cursor Agent |
+| 服务器发布 | 源站快进至 `523b60e`，后端测试 145/145，`TELECOM_PREFER_HOST=https://home.zongtech.xyz:12345`，CORS 允许该来源后重启 | **通过**；服务 `active`，`/health` 正常 | 2026-09-11 01:33 CST / Cursor Agent |
+| homelab Nginx | `listen 12345 ssl`；公网 `https://home.zongtech.xyz:12345/login` 200 | **通过** | 2026-09-11 01:25 CST / Cursor Agent |
 
 ## 16. Git 工作流
 
