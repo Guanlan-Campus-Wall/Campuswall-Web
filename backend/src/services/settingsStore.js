@@ -28,8 +28,8 @@ const notificationEncryptionKey = () => createHash('sha256')
 export const communityDefaults = Object.freeze({
   posting_enabled: true,
   commenting_enabled: true,
-  guest_posting_enabled: true,
-  guest_commenting_enabled: true,
+  guest_posting_enabled: false,
+  guest_commenting_enabled: false,
   require_post_approval: true,
   pause_reason: '',
   community_rules: [
@@ -159,11 +159,7 @@ const fail = (message) => {
 const normalizeCommunity = (data = {}) => ({
   posting_enabled: boolValue(data.posting_enabled, communityDefaults.posting_enabled),
   commenting_enabled: boolValue(data.commenting_enabled, communityDefaults.commenting_enabled),
-  // Posting is intentionally open to visitors. Global posting, rate limits,
-  // origin checks and content policy remain in force. This flag describes the
-  // ordinary-post workflow; privileged authors and dedicated sections use the
-  // publication policy in publicationPolicy.js.
-  guest_posting_enabled: true,
+  guest_posting_enabled: boolValue(data.guest_posting_enabled, communityDefaults.guest_posting_enabled),
   guest_commenting_enabled: boolValue(data.guest_commenting_enabled, communityDefaults.guest_commenting_enabled),
   require_post_approval: true,
   pause_reason: String(data.pause_reason || '').trim().slice(0, 300),
@@ -555,7 +551,7 @@ export class SettingsStore {
         error: policy.pause_reason || `管理员暂时关闭了${actionText}功能`
       }
     }
-    if (isComment && !user && !guestEnabled) {
+    if (!user && !guestEnabled) {
       return {
         success: false,
         statusCode: 401,

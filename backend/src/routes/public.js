@@ -8,7 +8,7 @@ import { feedbackStore } from '../services/feedbackStore.js'
 import { feedbackRateLimit } from '../services/rateLimit.js'
 import { settingsStore } from '../services/settingsStore.js'
 import { reportStore } from '../services/reportStore.js'
-import { isLostFoundMessage, isLostFoundTag } from '../services/lostFound.js'
+import { filterLostFoundForViewer, isLostFoundMessage, isLostFoundTag, isRestrictedLostFoundTag, viewerMayReadLostFound } from '../services/lostFound.js'
 import { publicNotices, readNotices } from '../services/noticeStore.js'
 import { publicModuleManifest } from '../services/moduleRegistry.js'
 import { redactPublicMessage } from '../services/publicMessageView.js'
@@ -94,13 +94,14 @@ publicRouter.get('/modules', (req, res) => {
 })
 
 publicRouter.get('/topics', asyncRoute(async (req, res) => {
+  const account = await authenticatedAccount(req)
   const query = String(req.query.q || '').trim().slice(0, config.maxTagLength).toLocaleLowerCase()
   const requestedSort = String(req.query.s || 'popular')
   const sort = ['popular', 'newest', 'name'].includes(requestedSort) ? requestedSort : 'popular'
   const start = queryIndex(req.query.start, 0)
   const requestedEnd = queryIndex(req.query.end, start + 50)
   const end = Math.max(start + 1, Math.min(requestedEnd, start + 100))
-  let topics = messageStore.getTopics({ includeLostFound: true })
+  let topics = messageStore.getTopics({ includeLostFound: Boolean(account) })
   if (query) topics = topics.filter((topic) => topic.tag.toLocaleLowerCase().includes(query))
   topics.sort((left, right) => {
     if (sort === 'newest') return right.latest_at.localeCompare(left.latest_at) || left.tag.localeCompare(right.tag, 'zh-CN')
@@ -124,8 +125,8 @@ publicRouter.get('/get_messages', asyncRoute(async (req, res) => {
     tag: req.query.tag || '',
     filterType: req.query.f || 'all'
   })
-  if (!account && !isLostFoundTag(req.query.tag)) {
-    messages = messages.filter((message) => !isLostFoundMessage(message))
+  if (!account) {
+    messages = filterLostFoundForViewer(messages, account)
   }
   res.json({ data: await publicMessages(req, messages.slice(start, end)), total: messages.length })
 }))
@@ -144,23 +145,38 @@ publicRouter.get('/get_page_size', (req, res) => {
 })
 
 publicRouter.post('/get_message_details/:messageId', asyncRoute(async (req, res) => {
+  const account = await authenticatedAccount(req)
   const message = messageStore.getMessage(req.params.messageId, cookieIds(req, 'likes'), cookieIds(req, 'dislikes'))
-  if (messageStore.isPublicMessage(message)) res.json({ success: true, message: await publicMessages(req, message) })
-  else res.status(404).json({ success: false, error: 'Message not found' })
+  if (!messageStore.isPublicMessage(message) || !viewerMayReadLostFound(account, message)) {
+    res.status(404).json({ success: false, error: 'Message not found' })
+    return
+  }
+  res.json({ success: true, message: await publicMessages(req, message) })
 }))
 
 publicRouter.post('/get_message_partitions/:messageId', asyncRoute(async (req, res) => {
+  const account = await authenticatedAccount(req)
   const message = messageStore.getMessage(req.params.messageId, cookieIds(req, 'likes'), cookieIds(req, 'dislikes'))
-  if (messageStore.isPublicMessage(message)) res.json({ success: true, partition: message.tags || [] })
-  else res.status(404).json({ success: false, error: 'Message not found' })
+  if (!messageStore.isPublicMessage(message) || !viewerMayReadLostFound(account, message)) {
+    res.status(404).json({ success: false, error: 'Message not found' })
+    return
+  }
+  res.json({ success: true, partition: message.tags || [] })
 }))
 
 publicRouter.post('/get_tags', asyncRoute(async (req, res) => {
-  res.json(messageStore.getTags())
+  const account = await authenticatedAccount(req)
+  const tags = messageStore.getTags()
+  res.json(account ? tags : tags.filter((tag) => !isRestrictedLostFoundTag(tag)))
 }))
 
 publicRouter.post('/get_partition_messages', asyncRoute(async (req, res) => {
+  const account = await authenticatedAccount(req)
   const partition = req.body?.partition || ''
+  if (isLostFoundTag(partition) && !account) {
+    res.json({ success: true, data: [] })
+    return
+  }
   const ids = messageStore.getTagMessageIds(partition)
   res.json({ success: true, data: ids })
 }))

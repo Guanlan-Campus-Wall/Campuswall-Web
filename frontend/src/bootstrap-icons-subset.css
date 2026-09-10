@@ -79,6 +79,7 @@
 .bi-heart::before { content: "\f417"; }
 .bi-heart-fill::before { content: "\f415"; }
 .bi-house::before { content: "\f425"; }
+.bi-house-fill::before { content: "\f424"; }
 .bi-hourglass-split::before { content: "\f41f"; }
 .bi-image::before { content: "\f42a"; }
 .bi-download::before { content: "\f30a"; }
@@ -137,6 +138,7 @@
 .bi-chat-left-quote::before { content: "\f250"; }
 .bi-chat-quote-fill::before { content: "\f254"; }
 .bi-chat-square-dots::before { content: "\f25f"; }
+.bi-chat-square-dots-fill::before { content: "\f25e"; }
 .bi-chat-square-heart::before { content: "\f71a"; }
 .bi-chat-square-heart-fill::before { content: "\f719"; }
 .bi-chat-square-quote-fill::before { content: "\f261"; }

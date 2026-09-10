@@ -6,7 +6,7 @@ import api from '../../services/api'
 
 const emptyStats = {
   messages: { total: 0, visible: 0, hidden: 0, deleted: 0, pending_review: 0, pending_posts: 0, pending_confessions: 0, approved: 0, awaiting_publication: 0, pinned: 0, featured: 0, comments: 0, comments_hidden: 0, comments_deleted: 0, likes: 0, dislikes: 0, last_24_hours: 0, last_7_days: 0, daily: [], top_tags: [] },
-  community: { posting_enabled: true, commenting_enabled: true, guest_posting_enabled: true, guest_commenting_enabled: true, require_post_approval: false },
+  community: { posting_enabled: true, commenting_enabled: true, guest_posting_enabled: false, guest_commenting_enabled: false, require_post_approval: false },
   feedback: { total: 0, pending: 0, in_progress: 0, resolved: 0, closed: 0 },
   reports: { total: 0, affected_messages: 0, comment_reports: 0, processed_total: 0, processed_last_7_days: 0 },
   managers: { total: 0, active: 0, disabled: 0, super_admins: 0 },

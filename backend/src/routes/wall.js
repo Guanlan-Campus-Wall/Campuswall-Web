@@ -88,10 +88,16 @@ const rememberPollSelection = (req, res, messageId, optionId) => {
 const reactionIdentity = async (req, res) => {
   const user = await currentUser(req)
   if (user) return { user, key: `user:${user.id}` }
-  return {
-    user: null,
-    key: visitorKeyFromRequest(req, res, { issue: true, cookieOptions: cookieSettings(req, 365 * 24 * 60 * 60 * 1000) })
-  }
+  const existingKey = visitorKeyFromRequest(req)
+  if (existingKey) return { user: null, key: existingKey }
+  const issuedKey = visitorKeyFromRequest(req, res, { issue: true, cookieOptions: cookieSettings(req, 365 * 24 * 60 * 60 * 1000) })
+  return { user: null, key: issuedKey, freshlyIssued: true }
+}
+
+const rejectFreshVisitorVote = (res, identity) => {
+  if (!identity?.freshlyIssued) return false
+  res.status(401).json({ success: false, error: '登录后才能互动，或刷新页面后再试' })
+  return true
 }
 
 const allowLostFoundInteraction = async (req, res, messageId) => {
@@ -188,6 +194,7 @@ wallRouter.post('/like/:messageId', interactionRateLimit, asyncRoute(async (req,
   const messageId = Number(req.params.messageId)
   if (!await allowLostFoundInteraction(req, res, messageId)) return
   const identity = await reactionIdentity(req, res)
+  if (rejectFreshVisitorVote(res, identity)) return
   const legacyReaction = identity.user && cookieIds(req, 'likes').includes(messageId)
     ? 1
     : (identity.user && cookieIds(req, 'dislikes').includes(messageId) ? -1 : 0)
@@ -200,6 +207,7 @@ wallRouter.post('/dislike/:messageId', interactionRateLimit, asyncRoute(async (r
   const messageId = Number(req.params.messageId)
   if (!await allowLostFoundInteraction(req, res, messageId)) return
   const identity = await reactionIdentity(req, res)
+  if (rejectFreshVisitorVote(res, identity)) return
   const legacyReaction = identity.user && cookieIds(req, 'likes').includes(messageId)
     ? 1
     : (identity.user && cookieIds(req, 'dislikes').includes(messageId) ? -1 : 0)
@@ -217,6 +225,7 @@ wallRouter.post('/poll/:messageId/vote', interactionRateLimit, asyncRoute(async 
   }
   if (!await allowLostFoundInteraction(req, res, messageId)) return
   const identity = await reactionIdentity(req, res)
+  if (rejectFreshVisitorVote(res, identity)) return
   const result = await messageStore.votePoll(messageId, optionId, identity.key)
   if (result.selected_option_id) rememberPollSelection(req, res, messageId, result.selected_option_id)
   res.json(result)

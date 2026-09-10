@@ -10,7 +10,7 @@ test('visitor tokens require a matching HMAC and reject unsigned or tampered val
   assert.equal(parseVisitorToken(''), '')
 })
 
-test('read-only visitor lookup does not mint a cookie, interaction paths do', () => {
+test('read-only visitor lookup does not mint a cookie; interaction paths still can', () => {
   const cookies = {}
   const req = { cookies: {} }
   const res = {

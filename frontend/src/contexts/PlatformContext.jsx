@@ -11,8 +11,8 @@ const defaultRules = [
 export const defaultCommunity = Object.freeze({
   posting_enabled: true,
   commenting_enabled: true,
-  guest_posting_enabled: true,
-  guest_commenting_enabled: true,
+  guest_posting_enabled: false,
+  guest_commenting_enabled: false,
   require_post_approval: false,
   pause_reason: '',
   community_rules: defaultRules,

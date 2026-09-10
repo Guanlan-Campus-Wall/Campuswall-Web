@@ -95,8 +95,8 @@ export default function AdminSettings() {
       const response = await api.adminUpdateCommunitySettings({
         posting_enabled: communityForm.posting_enabled,
         commenting_enabled: communityForm.commenting_enabled,
-        guest_posting_enabled: true,
-        guest_commenting_enabled: true,
+        guest_posting_enabled: communityForm.guest_posting_enabled,
+        guest_commenting_enabled: communityForm.guest_commenting_enabled,
         require_post_approval: communityForm.require_post_approval,
         pause_reason: communityForm.pause_reason,
         community_rules: communityForm.community_rules,
@@ -185,8 +185,8 @@ export default function AdminSettings() {
             <div className="grid gap-3 md:grid-cols-2">
               <ToggleRow label="允许发布留言" description="关闭后所有访客都不能发布留言" checked={communityForm.posting_enabled} disabled={!canUpdateCommunity || savingCommunity} onChange={(value) => updateCommunity('posting_enabled', value)} />
               <ToggleRow label="允许发表评论" description="关闭后所有留言暂停新增评论和回复" checked={communityForm.commenting_enabled} disabled={!canUpdateCommunity || savingCommunity} onChange={(value) => updateCommunity('commenting_enabled', value)} />
-              <div className="info-callout"><i className="bi bi-incognito" /><span><b>游客匿名发帖默认开放</b><br />账号登录不再作为发帖前置；仍可通过“允许发布留言”暂停全站发布。</span></div>
-              <div className="info-callout"><i className="bi bi-chat-dots" /><span><b>游客评论默认开放</b><br />仍可通过“允许发表评论”暂停全站评论与回复。</span></div>
+              <ToggleRow label="允许游客发帖" description="关闭后未登录访客不能发布动态或表白；默认关闭，需登录后发帖" checked={communityForm.guest_posting_enabled} disabled={!canUpdateCommunity || savingCommunity || !communityForm.posting_enabled} onChange={(value) => updateCommunity('guest_posting_enabled', value)} />
+              <ToggleRow label="允许游客评论" description="关闭后未登录访客不能评论或回复；默认关闭" checked={communityForm.guest_commenting_enabled} disabled={!canUpdateCommunity || savingCommunity || !communityForm.commenting_enabled} onChange={(value) => updateCommunity('guest_commenting_enabled', value)} />
               <ToggleRow label="普通动态与表白需要审核" description="适用于游客和普通用户；管理角色发布的内容与登录后的失物招领仍会立即公开" checked={communityForm.require_post_approval} disabled={!canUpdateCommunity || savingCommunity} onChange={(value) => updateCommunity('require_post_approval', value)} />
             </div>
 

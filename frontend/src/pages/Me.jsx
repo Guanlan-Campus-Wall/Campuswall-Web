@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
+import { firstAdminDestination } from '../services/permissions.js'
 import { toApiUrl } from '../services/urls'
 import { genderText, getAvatarUrl, getGenderIcon, handleAvatarError } from '../utils/user'
 
@@ -77,6 +78,9 @@ export default function Me() {
   }
 
   if (!user) return <Navigate to="/login" replace />
+
+  const adminDestination = firstAdminDestination(user)
+  const adminLabel = user.role === 'reviewer' ? '运营后台' : '管理后台'
 
   const saveProfile = async (event) => {
     event.preventDefault()
@@ -221,13 +225,7 @@ export default function Me() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="page-kicker text-xs">
-                  <i className="bi bi-person-fill" />
-                  <span>已登录校园用户</span>
-                </span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)]">
+              <h1 className="text-2xl md:text-3xl font-semibold text-[var(--text-primary)]">
                 {user.nickname || '未设置昵称'}
               </h1>
               <div className="profile-meta-grid">
@@ -248,6 +246,12 @@ export default function Me() {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2.5 self-end md:self-auto">
+            {adminDestination ? (
+              <Link className="btn btn-outline" to={adminDestination}>
+                <i className="bi bi-shield-check" />
+                <span>{adminLabel}</span>
+              </Link>
+            ) : null}
             <Link className="btn btn-outline" to="/me/posts">
               <i className="bi bi-journal-text" />
               <span>我的发布</span>

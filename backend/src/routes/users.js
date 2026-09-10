@@ -10,7 +10,7 @@ import { userCookieOptions, userSessionCookieName, userStore } from '../services
 import { visitorKeyFromRequest } from '../services/visitorIdentity.js'
 import { settingsStore } from '../services/settingsStore.js'
 import { reportStore } from '../services/reportStore.js'
-import { isLostFoundMessage, isLostFoundTag, lostFoundTag, lostFoundTags, normalizeLostFoundType } from '../services/lostFound.js'
+import { filterLostFoundForViewer, isLostFoundMessage, isLostFoundTag, lostFoundTag, lostFoundTags, normalizeLostFoundType } from '../services/lostFound.js'
 import { AvatarImageError, processAvatarImage } from '../services/avatarProcessor.js'
 import { acquireAvatarProcessingSlot } from '../services/avatarProcessingGate.js'
 import { storeAvatarReplacement } from '../services/avatarStorage.js'
@@ -301,7 +301,7 @@ usersRouter.post('/me/email/notify', requireTrustedOrigin, form, requireUser, as
   res.json({ success: true, user })
 }))
 
-usersRouter.get('/lost-found', asyncRoute(async (req, res) => {
+usersRouter.get('/lost-found', requireUser, asyncRoute(async (req, res) => {
   const viewer = await authenticatedAccount(req)
   const filter = String(req.query.filter || 'all').trim().toLowerCase()
   const page = Math.max(1, Number(req.query.page) || 1)
@@ -677,6 +677,7 @@ usersRouter.get('/:userId/messages', asyncRoute(async (req, res) => {
   const viewer = await authenticatedAccount(req)
   let messages = messageStore.getMessages()
     .filter((message) => Number(message.user_id ?? -1) === userId && message.anonymous === false)
+  messages = filterLostFoundForViewer(messages, viewer)
   const decorated = await decorateMessages(req, messages, viewer)
   res.json({ messages: decorated.map((message) => publicMessage(message, viewer?.id)), total: decorated.length })
 }))

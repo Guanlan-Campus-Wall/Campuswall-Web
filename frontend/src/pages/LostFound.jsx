@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import MessageCard from '../components/MessageCard.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
@@ -38,14 +37,16 @@ export default function LostFound() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState(initialForm)
   const [submitting, setSubmitting] = useState(false)
+  const [composeOpen, setComposeOpen] = useState(false)
   const loadSequence = useRef(0)
   const alert = useAlert()
   const { community } = usePlatform()
   const { user } = useUser()
   const location = useLocation()
   const canPublish = Boolean(user) && community.posting_enabled
+  const canBrowse = Boolean(user)
   const disabledReason = !user
-    ? '登录后才能填写失物招领'
+    ? '登录后才能查看和填写失物招领'
     : (community.pause_reason || '管理员暂时关闭了发帖功能')
   const selectedFilter = useMemo(
     () => filters.find((filter) => filter.value === activeFilter) || filters[0],
@@ -54,6 +55,12 @@ export default function LostFound() {
 
   const loadMessages = useCallback(async () => {
     const sequence = ++loadSequence.current
+    if (!canBrowse) {
+      setMessages([])
+      setTotalPages(1)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const response = await api.userGetLostFound({
@@ -76,11 +83,21 @@ export default function LostFound() {
     } finally {
       if (sequence === loadSequence.current) setLoading(false)
     }
-  }, [alert, page, selectedFilter.tag, selectedFilter.value])
+  }, [alert, canBrowse, page, selectedFilter.tag, selectedFilter.value])
 
   useEffect(() => {
     loadMessages()
   }, [loadMessages])
+
+  useEffect(() => {
+    const openCompose = () => {
+      if (!user) return
+      setComposeOpen(true)
+      window.setTimeout(() => document.getElementById('lost-found-publish')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+    }
+    window.addEventListener('open-lost-found-compose', openCompose)
+    return () => window.removeEventListener('open-lost-found-compose', openCompose)
+  }, [user])
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }))
@@ -148,40 +165,29 @@ export default function LostFound() {
   return (
     <div className="lost-found-page space-y-6">
       <section className="lost-found-hero">
-        <div>
-          <h1>失物招领</h1>
-        </div>
+        <h1 className="campus-page-title">失物招领</h1>
         {user ? (
-          <a className="btn btn-primary" href="#lost-found-publish"><i className="bi bi-pencil-square" />发布启事</a>
+          <button className="btn btn-primary" type="button" onClick={() => setComposeOpen((open) => !open)}>
+            {composeOpen ? '收起表单' : '发布启事'}
+          </button>
         ) : (
-          <Link className="btn btn-primary" to="/login" state={{ from: location }}><i className="bi bi-box-arrow-in-right" />登录后填写</Link>
+          <Link className="btn btn-primary" to="/login" state={{ from: location }}>登录后查看</Link>
         )}
       </section>
 
-      <div className="lost-found-compose-grid">
-        <form id="lost-found-publish" className="card lost-found-form" onSubmit={submit}>
-          <div className="section-heading">
-            <h2>发布启事</h2>
-          </div>
-
-          {!user ? (
-            <div className="info-callout status-warning">
-              <i className="bi bi-info-circle-fill" />
-              <span>浏览公开，填写需要登录。账号用于发布和持续管理启事。</span>
-              <Link className="btn btn-sm btn-primary" to="/login" state={{ from: location }}>去登录</Link>
-            </div>
-          ) : null}
-          {user && !canPublish ? <div className="info-callout status-warning"><i className="bi bi-info-circle-fill" /><span>{disabledReason}</span></div> : null}
+      {composeOpen && user ? (
+        <form id="lost-found-publish" className="lost-found-form lost-found-compose" onSubmit={submit}>
+          {!canPublish ? <div className="info-callout status-warning"><i className="bi bi-info-circle-fill" /><span>{disabledReason}</span></div> : null}
 
           <fieldset className="lost-found-kind" disabled={!canPublish || submitting}>
             <legend className="sr-only">启事类型</legend>
             <label className={form.kind === 'lost' ? 'is-selected' : ''}>
               <input type="radio" name="lost-found-kind" value="lost" checked={form.kind === 'lost'} onChange={() => updateForm('kind', 'lost')} />
-              <i className="bi bi-search" /><span><b>我丢了物品</b></span>
+              <span>我丢了物品</span>
             </label>
             <label className={form.kind === 'found' ? 'is-selected' : ''}>
               <input type="radio" name="lost-found-kind" value="found" checked={form.kind === 'found'} onChange={() => updateForm('kind', 'found')} />
-              <i className="bi bi-inbox" /><span><b>我捡到物品</b></span>
+              <span>我捡到物品</span>
             </label>
           </fieldset>
 
@@ -190,38 +196,26 @@ export default function LostFound() {
             <label><span>相关地点 *</span><input className="field" maxLength={80} required disabled={!canPublish || submitting} value={form.location} onChange={(event) => updateForm('location', event.target.value)} placeholder="例如：教学楼二楼连廊" /></label>
             <label><span>大致时间</span><input className="field" maxLength={60} disabled={!canPublish || submitting} value={form.time} onChange={(event) => updateForm('time', event.target.value)} placeholder="例如：周二午休前后" /></label>
             <label><span>公开联系方式</span><input className="field" maxLength={80} disabled={!canPublish || submitting} value={form.contact} onChange={(event) => updateForm('contact', event.target.value)} placeholder="可留空，改用评论区沟通" /></label>
-            <label className="lost-found-details"><span>特征与说明</span><textarea className="field" maxLength={500} disabled={!canPublish || submitting} value={form.details} onChange={(event) => updateForm('details', event.target.value)} placeholder="描述颜色、型号或不宜公开的核验线索提示；请勿填写身份证号等敏感信息。" /></label>
+            <label className="lost-found-details"><span>特征与说明</span><textarea className="field" maxLength={500} disabled={!canPublish || submitting} value={form.details} onChange={(event) => updateForm('details', event.target.value)} placeholder="描述颜色、型号；请勿填写身份证号等敏感信息。" /></label>
           </div>
 
           <label className="lost-found-resolved">
             <input type="checkbox" checked={form.resolved} disabled={!canPublish || submitting} onChange={(event) => updateForm('resolved', event.target.checked)} />
-            <span><b>这是“已找回”状态更新</b><small>勾选后启事会进入已找回筛选，提醒大家停止扩散。</small></span>
+            <span>这是“已找回”状态更新</span>
           </label>
 
           <div className="lost-found-form-footer">
-            <p><i className="bi bi-shield-check" />请保留一项未公开特征，用于领取时核验。</p>
+            <p>请保留一项未公开特征，用于领取时核验。</p>
             <button className="btn btn-primary" type="submit" disabled={!canPublish || submitting || !form.item.trim() || !form.location.trim()}>
-              <i className="bi bi-send-fill" />{submitting ? '提交中…' : '提交启事'}
+              {submitting ? '提交中…' : '提交启事'}
             </button>
           </div>
         </form>
-
-        <aside className="card lost-found-guide" aria-labelledby="lost-found-guide-title">
-          <h2 id="lost-found-guide-title">处理指南</h2>
-          <ol>
-            <li><span>1</span><div><b>写清时间地点</b><p>描述能帮助同学判断是否相关。</p></div></li>
-            <li><span>2</span><div><b>领取前先核验</b><p>请对方说出未公开的物品特征。</p></div></li>
-            <li><span>3</span><div><b>找回后更新状态</b><p>可发布带 #已找回 的简短更新，提醒大家停止扩散。</p></div></li>
-          </ol>
-          <Link className="btn btn-outline" to="/rules"><i className="bi bi-shield-check" />查看社区公约</Link>
-        </aside>
-      </div>
+      ) : null}
 
       <section className="lost-found-feed" aria-labelledby="lost-found-feed-title">
         <div className="lost-found-feed-heading">
-          <div>
-            <h2 id="lost-found-feed-title">校内启事</h2>
-          </div>
+          <h2 id="lost-found-feed-title" className="campus-section-head">校内启事</h2>
           <div className="lost-found-filters" role="tablist" aria-label="失物招领筛选">
             {filters.map((filter) => (
               <button className={`btn btn-sm ${activeFilter === filter.value ? 'btn-primary' : 'btn-outline'}`} type="button" role="tab" aria-selected={activeFilter === filter.value} key={filter.value} onClick={() => { setActiveFilter(filter.value); setPage(1) }}>{filter.label}</button>
@@ -229,28 +223,41 @@ export default function LostFound() {
           </div>
         </div>
 
-        {loading ? <div className="page-center"><div className="spinner" /><p className="text-sm text-muted">正在寻找最新线索…</p></div> : null}
-        {!loading && !messages.length ? (
+        {!canBrowse ? (
           <div className="empty-state-card">
-            <i className="bi bi-inbox" />
-            <h3>暂时没有{selectedFilter.label === '全部' ? '' : selectedFilter.label}</h3>
-            <p>如果你有相关信息，登录后可以在上方发布第一条启事。</p>
+            <h3>登录后查看失物招领</h3>
+            <p>启事里可能含有联系方式，未登录访客不能读取列表。</p>
+            <Link className="btn btn-primary mt-3" to="/login" state={{ from: location }}>去登录</Link>
           </div>
         ) : null}
-        <div className="lost-found-message-list">
+        {canBrowse && loading ? <div className="page-center"><div className="spinner" /><p className="text-sm text-muted">正在载入启事…</p></div> : null}
+        {canBrowse && !loading && !messages.length ? (
+          <div className="empty-state-card">
+            <h3>暂时没有{selectedFilter.label === '全部' ? '启事' : selectedFilter.label}</h3>
+          </div>
+        ) : null}
+        <div className="lost-found-entry-list">
           {messages.map((message) => {
             const tags = messageTags(message)
             const kind = message.lost_found?.kind || (tags.includes('招领启事') ? 'found' : 'lost')
             const status = message.lost_found?.resolved || tags.includes('已找回') ? '已找回' : (kind === 'found' ? '待认领' : '寻找中')
+            const itemName = message.lost_found?.item || String(message.text || '').split('\n').find((line) => line.startsWith('物品：'))?.slice(3) || '失物招领'
+            const location = message.lost_found?.location || ''
+            const time = message.lost_found?.time || ''
             return (
-              <div className="lost-found-message" key={message.id}>
-                <div className="lost-found-message-status">
+              <article className="lost-found-entry" key={message.id}>
+                <div className="lost-found-entry-head">
+                  <h3>{itemName}</h3>
                   <span className={`badge ${status === '已找回' ? 'status-success' : 'status-warning'}`}>{status}</span>
-                  <span>{kind === 'found' ? '招领启事' : '寻物启事'}</span>
-                  {message.lost_found?.contact ? <span><i className="bi bi-chat-dots mr-1" />联系：{message.lost_found.contact}</span> : null}
                 </div>
-                <MessageCard message={message} onRefresh={loadMessages} />
-              </div>
+                <p className="lost-found-entry-meta">
+                  {kind === 'found' ? '招领启事' : '寻物启事'}
+                  {location ? ` · ${location}` : ''}
+                  {time ? ` · ${time}` : ''}
+                </p>
+                {message.lost_found?.contact ? <p className="lost-found-entry-meta">联系：{message.lost_found.contact}</p> : null}
+                <Link className="text-sm font-semibold text-[var(--text-secondary)]" to={`/wall/message/${message.id}`}>查看详情</Link>
+              </article>
             )
           })}
         </div>

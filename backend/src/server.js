@@ -81,10 +81,15 @@ const app = express()
 // loopback prevents remote clients from forging X-Forwarded-For to evade limits.
 app.set('trust proxy', 'loopback')
 
+app.disable('x-powered-by')
 app.use((req, res, next) => {
   res.set('X-Content-Type-Options', 'nosniff')
   res.set('Referrer-Policy', 'same-origin')
   res.set('X-Frame-Options', 'SAMEORIGIN')
+  res.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  if (req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https') {
+    res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
   next()
 })
 

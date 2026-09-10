@@ -10,17 +10,18 @@ import FilePreviewModal from './FilePreviewModal.jsx'
 import Modal from './Modal.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
+import { useUser } from '../contexts/UserContext.jsx'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
-function Attachment({ file, index, onClick, moments = false, remaining = 0 }) {
+function Attachment({ file, index, onClick, moments = false, remaining = 0, solo = false }) {
   const type = fileType(file)
-  const mediaClass = moments ? 'moments-media-item' : ''
+  const mediaClass = `${moments ? 'moments-media-item' : ''}${solo && type === 'image' ? ' is-solo' : ''}`.trim()
   if (type === 'image') {
     return (
       <button
-        className={`group relative aspect-square overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--card-secondary-bg)] cursor-pointer ${mediaClass}`}
+        className={`group relative overflow-hidden rounded-[10px] border border-[var(--border-color)] bg-[var(--card-secondary-bg)] cursor-pointer ${solo ? '' : 'aspect-square'} ${mediaClass}`}
         type="button"
         onClick={onClick}
         aria-label={`预览第 ${index + 1} 张图片`}
@@ -153,6 +154,7 @@ export default function MessageCard({ message, compact = false, variant = 'defau
   const commentInputRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [pollBusy, setPollBusy] = useState(false)
+  const [textOpen, setTextOpen] = useState(false)
   const alert = useAlert()
   const { community } = usePlatform()
 
@@ -165,12 +167,26 @@ export default function MessageCard({ message, compact = false, variant = 'defau
   const visibleFiles = isMoments ? files.slice(0, 9) : files
   const comments = item.comments || []
   const author = useMemo(() => messageAuthor(item), [item])
+  const authorMeta = isMoments
+    ? [
+        item.timestamp ? dayjs(item.timestamp).fromNow() : '刚刚',
+        item.edited_at ? '已编辑' : '',
+        item.anonymous === false ? '展示昵称' : '匿名动态'
+      ].filter(Boolean).join(' · ')
+    : ''
+  const textNeedsClamp = isMoments && !compact && (
+    String(item.text || '').split(/\n/).length > 8
+    || String(item.text || '').length > 280
+  )
   const isHidden = item.moderation_status === 'hidden'
   const isPending = item.moderation_status === 'pending'
   const isUnavailable = isHidden || isPending
   const unavailableActionText = isPending ? '待审核的留言暂时不能互动' : '已下架的留言不能互动'
-  const canComment = community.commenting_enabled
-  const commentDisabledReason = community.pause_reason || '管理员暂时关闭了评论功能'
+  const { user } = useUser()
+  const canComment = community.commenting_enabled && Boolean(user || community.guest_commenting_enabled)
+  const commentDisabledReason = !community.commenting_enabled
+    ? (community.pause_reason || '管理员暂时关闭了评论功能')
+    : '登录后才能评论'
 
   const doLike = async () => {
     try {
@@ -334,7 +350,7 @@ export default function MessageCard({ message, compact = false, variant = 'defau
       <div className="message-card-body p-5 md:p-6">
         {/* Author Header */}
         <div className="message-card-header flex items-center justify-between gap-3">
-          <UserCard user={author} compact />
+          <UserCard user={author} compact hideBio={isMoments} meta={authorMeta} />
           <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs text-[var(--text-muted)] shrink-0">
             {item.pinned ? <span className="badge status-warning"><i className="bi bi-pin-angle" />置顶</span> : null}
             {item.featured ? <span className="badge status-success"><i className="bi bi-star-fill" />精华</span> : null}
@@ -364,18 +380,23 @@ export default function MessageCard({ message, compact = false, variant = 'defau
 
         {/* Message Content */}
         {item.text ? (
-          <p className={`message-text text-[0.98rem] md:text-[1.02rem] leading-relaxed text-[var(--text-primary)] ${compact ? 'line-clamp-3' : ''}`}>
+          <p className={`message-text text-[var(--text-primary)] ${compact ? 'line-clamp-3' : ''} ${textNeedsClamp && !textOpen ? 'is-clamped' : ''}`}>
             {item.text}
           </p>
+        ) : null}
+        {textNeedsClamp ? (
+          <button className="message-expand" type="button" onClick={() => setTextOpen((open) => !open)}>
+            {textOpen ? '收起' : '展开全文'}
+          </button>
         ) : null}
 
         <PollBlock poll={item.poll} busy={pollBusy} onVote={votePoll} />
 
         {/* Tags */}
         {item.tags?.length ? (
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
             {item.tags.map((tag) => (
-              <Link className="badge" key={tag} to={`/p/${encodeURIComponent(tag)}`}>
+              <Link className="text-[14px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]" key={tag} to={`/p/${encodeURIComponent(tag)}`}>
                 #{tag}
               </Link>
             ))}
@@ -392,20 +413,10 @@ export default function MessageCard({ message, compact = false, variant = 'defau
                 index={index}
                 moments={isMoments}
                 remaining={isMoments && index === 8 ? Math.max(0, files.length - 9) : 0}
+                solo={isMoments && files.length === 1}
                 onClick={() => openFilePreview(files, index)}
               />
             ))}
-          </div>
-        ) : null}
-
-        {isMoments ? (
-          <div className="moments-post-meta">
-            <span>{item.timestamp ? dayjs(item.timestamp).fromNow() : '刚刚'}</span>
-            {item.edited_at ? <span title={`编辑于 ${item.edited_at}`}>已编辑</span> : null}
-            <span className="moments-post-visibility">
-              <i className={`bi ${item.anonymous === false ? 'bi-person-badge' : 'bi-incognito'}`} aria-hidden="true" />
-              {item.anonymous === false ? '展示昵称' : '匿名动态'}
-            </span>
           </div>
         ) : null}
 
@@ -420,7 +431,7 @@ export default function MessageCard({ message, compact = false, variant = 'defau
               title={isUnavailable ? unavailableActionText : '点赞'}
             >
               <i className={`bi ${item.liked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`} />
-              <span>{isMoments ? '赞' : (item.likes || 0)}</span>
+              <span>{item.likes || 0}</span>
             </button>
             <button
               className={`btn btn-sm ${item.disliked ? 'btn-primary' : 'btn-outline'}`}
@@ -430,17 +441,18 @@ export default function MessageCard({ message, compact = false, variant = 'defau
               title={isUnavailable ? unavailableActionText : '点踩'}
             >
               <i className={`bi ${item.disliked ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`} />
-              <span>{isMoments ? '踩' : (item.dislikes || 0)}</span>
+              <span>{item.dislikes || 0}</span>
             </button>
             <button
               className={`btn btn-sm ${commentOpen ? 'bg-[var(--primary-light)] text-[var(--primary-color)]' : 'btn-outline'}`}
               type="button"
               onClick={() => setCommentOpen((open) => !open)}
               disabled={isUnavailable || !canComment}
+              aria-label="评论"
               title={isUnavailable ? (isPending ? '待审核的留言不能评论' : '已下架的留言不能评论') : (canComment ? '评论' : commentDisabledReason)}
             >
               <i className="bi bi-chat-dots" />
-              <span>评论{!isMoments && comments.length ? ` (${comments.length})` : ''}</span>
+              <span>{comments.length || 0}</span>
             </button>
           </div>
 
@@ -499,22 +511,6 @@ export default function MessageCard({ message, compact = false, variant = 'defau
             </div>
           )}
         </div>
-
-        {isMoments && (Number(item.likes || 0) > 0 || Number(item.dislikes || 0) > 0 || comments.length > 0) ? (
-          <div className="moments-reaction-summary">
-            {Number(item.likes || 0) > 0 ? (
-              <span><i className="bi bi-hand-thumbs-up-fill" aria-hidden="true" />{item.likes} 人觉得很赞</span>
-            ) : null}
-            {Number(item.dislikes || 0) > 0 ? (
-              <span><i className="bi bi-hand-thumbs-down" aria-hidden="true" />{item.dislikes} 人有不同看法</span>
-            ) : null}
-            {comments.length > 0 ? (
-              <button type="button" onClick={() => setCommentOpen(true)}>
-                <i className="bi bi-chat-square-text" aria-hidden="true" />{comments.length} 条讨论
-              </button>
-            ) : null}
-          </div>
-        ) : null}
 
         {/* Comment Drawer */}
         {comments.length || commentOpen ? (

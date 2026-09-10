@@ -28,10 +28,24 @@ const reservedLostFoundTags = new Set([lostFoundTag, lostItemTag, foundItemTag])
 
 export const isLostFoundTag = (tag = '') => reservedLostFoundTags.has(String(tag || '').trim())
 
+const lostFoundStatusTags = new Set(['已找回', '待找回', '待认领'])
+
+export const isRestrictedLostFoundTag = (tag = '') => {
+  const value = String(tag || '').trim()
+  return isLostFoundTag(value) || lostFoundStatusTags.has(value)
+}
+
 export const isLostFoundMessage = (message) => Boolean(message) && (
   Boolean(message.lost_found)
   || (Array.isArray(message.tags) && message.tags.some(isLostFoundTag))
 )
+
+export const viewerMayReadLostFound = (account, message) => Boolean(account) || !isLostFoundMessage(message)
+
+export const filterLostFoundForViewer = (messages, account) => {
+  if (account) return messages
+  return (Array.isArray(messages) ? messages : []).filter((message) => !isLostFoundMessage(message))
+}
 
 export const lostFoundPublicConfig = Object.freeze({
   enabled: true,

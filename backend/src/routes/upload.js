@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import express from 'express'
 import multer from 'multer'
 import { config } from '../config.js'
-import { requireTrustedOrigin } from '../services/auth.js'
+import { authenticatedAccount, authenticatedAdmin, requireTrustedOrigin } from '../services/auth.js'
 import { allowedFile, assertAllowedFileContents, chunkRoot, FileContentError, isImageFile, isVideoFile, normalisedImageName, processUploadedFile, removeUploadedFiles, reserveUploadCapacity, safeBasename, tinyPath, uniqueUploadName, uploadPath } from '../services/fileTools.js'
 import { PostImageError } from '../services/postImageProcessor.js'
 import { consumeUploadBytes, uploadConcurrencyLimit, uploadRateLimit } from '../services/rateLimit.js'
@@ -22,9 +22,28 @@ const directForm = multer({
 })
 const chunkCountAccountingSize = Math.min(config.maxChunkSize, 512 * 1024)
 const maxChunkCount = Math.max(1, Math.min(1000, Math.ceil(config.maxContentLength / chunkCountAccountingSize)))
-const uploadOwnerKey = (req) => createHash('sha256')
-  .update(String(req.ip || req.socket?.remoteAddress || 'unknown'))
-  .digest('hex')
+const uploadOwnerKey = (req) => {
+  if (req.uploadAccountId) return `user:${req.uploadAccountId}`
+  return createHash('sha256')
+    .update(String(req.ip || req.socket?.remoteAddress || 'unknown'))
+    .digest('hex')
+}
+
+const requireUploadAccount = async (req, res, next) => {
+  try {
+    const user = await authenticatedAccount(req)
+    const admin = user ? null : await authenticatedAdmin(req)
+    const account = user || admin?.user
+    if (!account?.id) {
+      res.status(401).json({ success: false, error: '登录后才能上传附件' })
+      return
+    }
+    req.uploadAccountId = Number(account.id)
+    next()
+  } catch (error) {
+    next(error)
+  }
+}
 
 const transformedCandidate = (filename) => {
   const extension = path.extname(filename).toLowerCase()
@@ -74,7 +93,7 @@ const processUploadWithinCapacity = async (originalFilename, reservedOriginalByt
   }
 }
 
-uploadRouter.post('/chunked_upload', requireTrustedOrigin, uploadRateLimit, uploadConcurrencyLimit, chunkForm.single('chunk'), (req, res) => {
+uploadRouter.post('/chunked_upload', requireTrustedOrigin, requireUploadAccount, uploadRateLimit, uploadConcurrencyLimit, chunkForm.single('chunk'), (req, res) => {
   try {
     const { chunkIndex, totalChunks, fileKey, originalName } = req.body
     const index = Number(chunkIndex)
@@ -130,7 +149,7 @@ uploadRouter.post('/chunked_upload', requireTrustedOrigin, uploadRateLimit, uplo
   }
 })
 
-uploadRouter.post('/merge_chunks', requireTrustedOrigin, uploadRateLimit, uploadConcurrencyLimit, async (req, res) => {
+uploadRouter.post('/merge_chunks', requireTrustedOrigin, requireUploadAccount, uploadRateLimit, uploadConcurrencyLimit, async (req, res) => {
   let outputFilename = ''
   let completedChunkDir = ''
   let mergeLockPath = ''
@@ -225,7 +244,7 @@ uploadRouter.post('/merge_chunks', requireTrustedOrigin, uploadRateLimit, upload
   }
 })
 
-uploadRouter.post('/direct_upload', requireTrustedOrigin, uploadRateLimit, uploadConcurrencyLimit, directForm.single('file'), async (req, res) => {
+uploadRouter.post('/direct_upload', requireTrustedOrigin, requireUploadAccount, uploadRateLimit, uploadConcurrencyLimit, directForm.single('file'), async (req, res) => {
   let outputFilename = ''
   try {
     const originalName = req.body.originalName || req.file?.originalname

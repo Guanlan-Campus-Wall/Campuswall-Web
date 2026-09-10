@@ -51,7 +51,7 @@ const submittedOrigin = (req) => {
 
 export const isTrustedAdminOrigin = (req) => {
   const origin = submittedOrigin(req)
-  if (!origin) return true
+  if (!origin) return false
   return origin === requestOrigin(req) || config.allowedOrigins.includes(origin)
 }
 

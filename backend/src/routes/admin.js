@@ -811,7 +811,7 @@ adminRouter.put('/settings/community', requireAdmin, asyncRoute(async (req, res)
   }
   try {
     const settings = await settingsStore.updateCommunity(req.body || {})
-    appendAdminLog(`${nowText()}    ${req.adminUser} 更新社区运营设置：发帖${settings.posting_enabled ? '开启' : '关闭'}，评论${settings.commenting_enabled ? '开启' : '关闭'}，发帖审核固定开启，敏感词 ${settings.sensitive_words.length} 个`)
+    appendAdminLog(`${nowText()}    ${req.adminUser} 更新社区运营设置：发帖${settings.posting_enabled ? '开启' : '关闭'}，评论${settings.commenting_enabled ? '开启' : '关闭'}，游客发帖${settings.guest_posting_enabled ? '开启' : '关闭'}，游客评论${settings.guest_commenting_enabled ? '开启' : '关闭'}，发帖审核固定开启，敏感词 ${settings.sensitive_words.length} 个`)
     res.json({ success: true, settings, released_pending: 0 })
   } catch (error) {
     if (!sendAdminError(res, error)) throw error
