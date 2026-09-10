@@ -33,6 +33,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cd /tmp
           if [ -f /etc/os-release ]; then
             . /etc/os-release
             echo "CI runner OS: ${PRETTY_NAME:-$ID} $(uname -m)"
@@ -71,6 +72,23 @@ jobs:
               exit 1
             fi
           }
+          allow_tcp_password() {
+            local pgdata hba
+            pgdata="$(sudo -u postgres psql -tAc 'SHOW data_directory')"
+            hba="$pgdata/pg_hba.conf"
+            test -f "$hba"
+            sudo sed -i -E \
+              -e 's#^(host[[:space:]]+all[[:space:]]+all[[:space:]]+127\.0\.0\.1/32[[:space:]]+)(ident|peer)#\1md5#' \
+              -e 's#^(host[[:space:]]+all[[:space:]]+all[[:space:]]+::1/128[[:space:]]+)(ident|peer)#\1md5#' \
+              "$hba"
+            if command -v systemctl >/dev/null; then
+              sudo systemctl reload postgresql 2>/dev/null \
+                || sudo systemctl reload postgresql.service 2>/dev/null \
+                || sudo systemctl restart postgresql
+            else
+              sudo -u postgres pg_ctl reload -D "$pgdata" 2>/dev/null || sudo service postgresql reload || true
+            fi
+          }
           start_postgres
           if ! postgres_ready; then
             echo "PostgreSQL is not running; installing the system package"
@@ -95,6 +113,7 @@ jobs:
           SQL
           sudo -u postgres dropdb --if-exists campus_wall
           sudo -u postgres createdb --owner=campus_wall campus_wall
+          allow_tcp_password
           PGPASSWORD="$PGPASSWORD" psql \
             --host=127.0.0.1 --port=5432 --username=campus_wall --dbname=campus_wall \
             --set=ON_ERROR_STOP=on --command 'SELECT 1'

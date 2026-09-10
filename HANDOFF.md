@@ -891,7 +891,7 @@ npm run build
 git diff --check
 ```
 
-GitHub Actions 使用 Node.js 22，并固定跑在仓库自托管 Runner `instance-20260908-1753`（标签 `self-hosted`、`Linux`、`ARM64`）上，不再使用 `ubuntu-latest`。Job 先确认系统 PostgreSQL 可登录：服务或 cluster 未安装时由 workflow 安装发行版软件包并启动，再幂等创建测试角色 `campus_wall`、删除并重建测试库，以该角色实际执行 `SELECT 1`，然后安装、审计、构建、语法检查与健康冒烟。CI 的数据库主版本跟随该 Runner 的系统 PostgreSQL，作为 SQL 兼容性下限；生产当前实测为 PostgreSQL 17.11，本地新环境推荐 18。CI 不依赖容器服务；修改数据库初始化时必须同时验证 PostgreSQL 17 兼容性、新版 PostgreSQL 和 CI 原生服务，不能只让其中一个环境通过。自托管机器会保留上次运行的文件，因此每次必须 `dropdb --if-exists` 再建库，不能假设干净的 ephemeral 环境。
+GitHub Actions 使用 Node.js 22，并固定跑在仓库自托管 Runner `instance-20260908-1753`（标签 `self-hosted`、`Linux`、`ARM64`）上，不再使用 `ubuntu-latest`。该机是 Oracle Linux 9.8 aarch64；若尚未安装系统 PostgreSQL，workflow 会安装发行版软件包（当前 AppStream 为 PostgreSQL 13）并 `initdb`。Oracle Linux 默认 `pg_hba.conf` 对 `127.0.0.1` 使用 ident，workflow 会改成本机 md5，再幂等创建测试角色 `campus_wall`、删除并重建测试库，以该角色经 TCP 执行 `SELECT 1`，然后安装、审计、构建、语法检查与健康冒烟。CI 的数据库主版本跟随该 Runner 的系统 PostgreSQL，作为 SQL 兼容性下限；生产当前实测为 PostgreSQL 17.11，本地新环境推荐 18。CI 不依赖容器服务；修改数据库初始化时必须同时验证 PostgreSQL 17 兼容性、新版 PostgreSQL 和 CI 原生服务，不能只让其中一个环境通过。自托管机器会保留上次运行的文件，因此每次必须 `dropdb --if-exists` 再建库，不能假设干净的 ephemeral 环境。
 
 还应人工验证：
 
