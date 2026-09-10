@@ -75,19 +75,16 @@ jobs:
           allow_tcp_password() {
             local pgdata hba
             pgdata="$(sudo -u postgres psql -tAc 'SHOW data_directory')"
+            pgdata="${pgdata//$'\r'/}"
             hba="$pgdata/pg_hba.conf"
-            test -f "$hba"
+            sudo test -f "$hba"
+            echo "Rewriting $hba for localhost md5"
             sudo sed -i -E \
-              -e 's#^(host[[:space:]]+all[[:space:]]+all[[:space:]]+127\.0\.0\.1/32[[:space:]]+)(ident|peer)#\1md5#' \
-              -e 's#^(host[[:space:]]+all[[:space:]]+all[[:space:]]+::1/128[[:space:]]+)(ident|peer)#\1md5#' \
+              -e 's#^(host[[:space:]]+all[[:space:]]+all[[:space:]]+127\.0\.0\.1/32[[:space:]]+)(ident|peer|scram-sha-256)#\1md5#' \
+              -e 's#^(host[[:space:]]+all[[:space:]]+all[[:space:]]+::1/128[[:space:]]+)(ident|peer|scram-sha-256)#\1md5#' \
               "$hba"
-            if command -v systemctl >/dev/null; then
-              sudo systemctl reload postgresql 2>/dev/null \
-                || sudo systemctl reload postgresql.service 2>/dev/null \
-                || sudo systemctl restart postgresql
-            else
-              sudo -u postgres pg_ctl reload -D "$pgdata" 2>/dev/null || sudo service postgresql reload || true
-            fi
+            sudo grep -E '^host[[:space:]]+all' "$hba"
+            sudo systemctl reload postgresql || sudo systemctl restart postgresql
           }
           start_postgres
           if ! postgres_ready; then
