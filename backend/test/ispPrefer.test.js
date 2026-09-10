@@ -10,7 +10,7 @@ test('private client IPs never redirect to the telecom origin', async () => {
   assert.equal(result.success, true)
   assert.equal(result.telecom, false)
   assert.equal(result.redirect, false)
-  assert.equal(result.prefer_origin, 'https://home.zongtech.xyz')
+  assert.equal(result.prefer_origin, 'https://home.zongtech.xyz:12345')
 })
 
 test('client IP prefers Cloudflare connecting IP', () => {

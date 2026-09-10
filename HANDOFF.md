@@ -5,8 +5,8 @@
 > - 适用分支：`main`
 > - 代码仓库：<https://github.com/Guanlan-Campus-Wall/Campuswall-Web>（**public**）
 > - 学校名称：龙华区观澜中学
-> - 最近一次架构基线：宝塔 Nginx 直出前端 + 独立 HTTPS API 源站；电信用户可跳到 `home.zongtech.xyz`
-> - 最近一次生产发布：见 §15.19
+> - 最近一次架构基线：宝塔 Nginx 直出前端 + 独立 HTTPS API 源站；电信用户可跳到 `home.zongtech.xyz:12345`
+> - 最近一次生产发布：见 §15.20
 
 本文档用于开发、审核、运维和应急接管。它说明当前产品规则、代码结构、账号权限、审核流程、数据位置、本地运行、生产部署、备份恢复和常见故障。功能细节以 `main` 分支代码为最终事实来源；每次完成新功能、修复、主要交互或运维变更，都必须在同一提交同步更新本文件，不能把交接文档留到后续补写。
 
@@ -38,7 +38,7 @@
 | GitHub Web | 公开仓库 `Guanlan-Campus-Wall/Campuswall-Web` 的 `main` | 唯一 Web 交付分支 |
 | GitHub App | 公开仓库 `Guanlan-Campus-Wall/Campuswall-App` | App 仓库；当前仅占位，不参与 Web 发布 |
 | 正式前端 | `https://wall.zongtech.xyz` | 源站宝塔 Nginx 直出 `frontend/dist`；Cloudflare 橙云代理，Origin Rule 把边缘 443 回源 8443 |
-| 电信优选入口 | `https://home.zongtech.xyz` | 家庭实验室反向代理同一套前端，并把 `/api` `/static` 转到正式 API |
+| 电信优选入口 | `https://home.zongtech.xyz:12345` | 家庭实验室反向代理同一套前端，并把 `/api` `/static` 转到正式 API；不占用家里 443 |
 | 正式 API | `https://api-wall.zongtech.xyz` | Cloudflare 代理后的后端、健康检查与受保护静态资源入口 |
 | 生产项目目录 | `/www/wwwroot/campuswall-react` | 服务器当前检出的代码 |
 | 前端构建目录 | `frontend/dist` | 源站 Nginx 的网站根目录；不再上传 Cloudflare Pages |
@@ -79,7 +79,7 @@
   │                                  └─ Origin Rule：目的端口改写为 8443
   │                                     └─ 源站 Nginx TLS :8443（server_name wall）
   │                                        └─ frontend/dist SPA
-  ├─ home.zongtech.xyz（电信优选）──> homelab Nginx
+  ├─ home.zongtech.xyz:12345（电信优选）──> homelab Nginx
   │                                  ├─ /        → 同步后的 frontend/dist
   │                                  └─ /api /static /health → api-wall.zongtech.xyz
   └─ api-wall.zongtech.xyz ─────────> Cloudflare 代理（边缘 HTTPS 443）
@@ -93,7 +93,7 @@
                                                └─ SMTP 邮箱（验证信、用户通知、审核提醒）
 ```
 
-登录、发帖、审核、上传和数据均由同一源站后端处理。默认浏览器构建中的 API 基址是 `https://api-wall.zongtech.xyz`；在 `home.zongtech.xyz` 上运行时改走同源 `/api` 与 `/static`，由 homelab Nginx 再转到正式 API。生产 Nginx 对 `wall.zongtech.xyz` 返回 SPA，对 `api-wall.zongtech.xyz` 只反向代理后端允许的路径，其他路径 404。
+登录、发帖、审核、上传和数据均由同一源站后端处理。默认浏览器构建中的 API 基址是 `https://api-wall.zongtech.xyz`；在 `home.zongtech.xyz:12345` 上运行时改走同源 `/api` 与 `/static`，由 homelab Nginx 再转到正式 API。生产 Nginx 对 `wall.zongtech.xyz` 返回 SPA，对 `api-wall.zongtech.xyz` 只反向代理后端允许的路径，其他路径 404。
 
 Cloudflare Origin Rule 需要两条，精确表达式必须为：
 
@@ -748,7 +748,7 @@ CAPTCHA_PROTECT_ADMIN_LOGIN=true
 CAPTCHA_ALLOWED_HOSTNAMES=wall.zongtech.xyz,home.zongtech.xyz
 ```
 
-正式前端和 API 均使用 HTTPS，生产必须保持 `SESSION_COOKIE_SECURE=true`。`ALLOWED_ORIGINS` 使用完整来源（协议、域名、端口），当前允许 `https://wall.zongtech.xyz` 与 `https://home.zongtech.xyz`；不要加入 Pages 预览域名、旧 IP 或带凭据的通配符。需要临时验收某个预览部署时，应建立有时限的单独变更记录，验收后立即移除并重启后端。会话 Cookie 使用 `SESSION_COOKIE_SAMESITE=Lax`（不要改成 `Strict`）。
+正式前端和 API 均使用 HTTPS，生产必须保持 `SESSION_COOKIE_SECURE=true`。`ALLOWED_ORIGINS` 使用完整来源（协议、域名、端口），当前允许 `https://wall.zongtech.xyz` 与 `https://home.zongtech.xyz:12345`；不要加入 Pages 预览域名、旧 IP 或带凭据的通配符。需要临时验收某个预览部署时，应建立有时限的单独变更记录，验收后立即移除并重启后端。会话 Cookie 使用 `SESSION_COOKIE_SAMESITE=Lax`（不要改成 `Strict`）。
 
 验证码数据库设置优先于上述环境变量，后台保存后无需重启。正式 Cloudflare Widget 只允许 `wall.zongtech.xyz`；Secret 使用 AES-256-GCM 保存且 API 永不回显。生产启用时后端拒绝 Cloudflare 官方 always-pass 测试密钥。轮换 `SECRET_KEY` 会改变验证码密文派生密钥，必须先关闭/备份并在轮换后重新填写 Turnstile Secret。创建 Widget、完整自检、轮换、紧急停用和排障见 `docs/TURNSTILE.md`。
 
@@ -1222,6 +1222,18 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 | 双重异机备份 | 资产包 `/www/backups/campuswall/20260911-001054-assets`；OCI US SanJose 与 Grok Bot 均为 `campuswall-backups/20260911-001054`；timer 03:22 | **通过** | 2026-09-11 00:10 CST / Cursor Agent |
 | 邮箱验证页 | 公网 `/email/status?email=verified` | **通过**；独立居中卡片「邮箱已验证」，按钮「去学号登录」 | 2026-09-11 00:43 CST / Cursor Agent |
 
+### 15.20 电信优选改走 12345
+
+家庭网关占用公网 443，校园墙 homelab 入口改为 `https://home.zongtech.xyz:12345`。Nginx 不再为该站点监听 443；Turnstile 仍用主机名 `home.zongtech.xyz`（不含端口）。**本轮没有执行压力、容量、长稳或渗透测试。** 密钥与 SSH 密码不写入本表。
+
+| 项目 | 命令/证据 | 状态 | 时间/执行人 |
+| --- | --- | --- | --- |
+| 学号与审核回归 | 公网登录页仍为学号登录；飞书 410 | 待补录 | 2026-09-11 / Cursor Agent |
+| GitHub 发布门禁 | 待推送后填写 Actions run | 待补录 | 2026-09-11 / GitHub Actions |
+| 生产备份 | 待部署时填写 | 待补录 | 2026-09-11 / Cursor Agent |
+| 服务器发布 | `TELECOM_PREFER_HOST` 与 `ALLOWED_ORIGINS` 改为 `:12345` 后重启后端 | 待补录 | 2026-09-11 / Cursor Agent |
+| homelab Nginx | `listen 12345 ssl`；本机与公网探测 | 待补录 | 2026-09-11 / Cursor Agent |
+
 ## 16. Git 工作流
 
 1. 从最新 `schoolrepo/main` 开发；
@@ -1273,7 +1285,7 @@ Cloudflare 配置必须同时满足下表。DNS、Pages 自定义域名和 Origi
 | Configuration Rule | `Campus Wall API strict TLS` 只对 API 设 Strict；网站主机保持区域 `Full`（可用自签证书） |
 | 源站 Nginx | `api-wall` 反代 5412；`wall` 的 `root` 为 `frontend/dist`；均监听 `8443` |
 | 源站 TLS | API 继续用 Cloudflare Origin CA；网站可用自签或 ACME，私钥留在源站 |
-| 电信优选 | `home.zongtech.xyz`；Turnstile 与 `ALLOWED_ORIGINS` 必须包含该主机 |
+| 电信优选 | `home.zongtech.xyz:12345`；Turnstile hostname 仍为 `home.zongtech.xyz`，`ALLOWED_ORIGINS` 必须含端口 |
 
 `wall.zongtech.xyz` 不再绑定 Pages 自定义域名。若控制台里仍看得到旧 Pages 域名，应删除以免和橙云 A 记录抢解析。当前区域全局 SSL/TLS 模式为 `Full`，不得为本项目直接改动这个区域级设置。生产使用 Configuration Rule `Campus Wall API strict TLS` 只对 `api-wall.zongtech.xyz` 设为 `Strict`。
 
@@ -1421,11 +1433,11 @@ test -f frontend/dist/index.html
 NODE_ENV=production
 HOST=127.0.0.1
 PORT=5412
-ALLOWED_ORIGINS=https://wall.zongtech.xyz,https://home.zongtech.xyz
+ALLOWED_ORIGINS=https://wall.zongtech.xyz,https://home.zongtech.xyz:12345
 PUBLIC_SITE_URL=https://wall.zongtech.xyz
 PUBLIC_API_URL=https://api-wall.zongtech.xyz
 TELECOM_PREFER_ENABLED=true
-TELECOM_PREFER_HOST=https://home.zongtech.xyz
+TELECOM_PREFER_HOST=https://home.zongtech.xyz:12345
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_SAMESITE=Lax
 ```
@@ -1492,9 +1504,9 @@ curl.exe -i -X OPTIONS https://api-wall.zongtech.xyz/api/user/session `
   -H "Access-Control-Request-Method: GET"
 ```
 
-SPA 深链接 `/wall` 必须返回页面而不是 404；API 健康检查必须经过正式域名成功。预检响应必须允许 `https://wall.zongtech.xyz` 与 `https://home.zongtech.xyz`。
+SPA 深链接 `/wall` 必须返回页面而不是 404；API 健康检查必须经过正式域名成功。预检响应必须允许 `https://wall.zongtech.xyz` 与 `https://home.zongtech.xyz:12345`。
 
-最后核对：`wall` 与 `api-wall` DNS 均为 Proxied、两条 Origin Rule 命中 8443、源站 Nginx 同时有 web/api vhost、homelab `home.zongtech.xyz` 可打开同一套前端。只有网站、API、CORS/Cookie、服务日志和主要业务回归全部通过，才算发布完成。
+最后核对：`wall` 与 `api-wall` DNS 均为 Proxied、两条 Origin Rule 命中 8443、源站 Nginx 同时有 web/api vhost、homelab `https://home.zongtech.xyz:12345` 可打开同一套前端。只有网站、API、CORS/Cookie、服务日志和主要业务回归全部通过，才算发布完成。
 
 数字资产双重备份：把 `/etc/campuswall/backup.env` 配成 OCI US SanJose 与 Grok Bot 两个 SSH 目标（密码不入库），安装 `deploy/campuswall-backup.service` 与 timer，首次执行 `deploy/backup-digital-assets.sh`。两次推送都必须成功才算完成。
 

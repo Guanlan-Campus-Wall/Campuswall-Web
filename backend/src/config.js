@@ -147,7 +147,7 @@ export const config = {
   feishuRedirectUri: String(process.env.FEISHU_REDIRECT_URI || '').trim(),
   feishuTimeoutMs: intEnv('FEISHU_TIMEOUT_MS', 8000, { min: 1000, max: 30000 }),
   telecomPreferEnabled: boolEnv('TELECOM_PREFER_ENABLED', true),
-  telecomPreferHost: String(process.env.TELECOM_PREFER_HOST || 'https://home.zongtech.xyz').trim().replace(/\/+$/, ''),
+  telecomPreferHost: String(process.env.TELECOM_PREFER_HOST || 'https://home.zongtech.xyz:12345').trim().replace(/\/+$/, ''),
   studentIdLength: 10,
   notificationMasterKey: String(process.env.NOTIFICATION_MASTER_KEY || '').trim(),
   moderationNotifyEnabled: boolEnv('MODERATION_NOTIFY_ENABLED', false),

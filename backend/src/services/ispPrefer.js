@@ -72,7 +72,7 @@ const lookupIsp = async (ip) => {
 }
 
 export const networkPreferenceFor = async (req) => {
-  const preferOrigin = String(config.telecomPreferHost || 'https://home.zongtech.xyz').trim().replace(/\/+$/, '') || 'https://home.zongtech.xyz'
+  const preferOrigin = String(config.telecomPreferHost || 'https://home.zongtech.xyz:12345').trim().replace(/\/+$/, '') || 'https://home.zongtech.xyz:12345'
   const enabled = config.telecomPreferEnabled !== false
   const ip = clientIpFromRequest(req)
   const empty = {

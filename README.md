@@ -17,7 +17,7 @@
 ## 生产架构
 
 - 正式前端：`https://wall.zongtech.xyz`，由源站宝塔 Nginx 直出 `frontend/dist`；Cloudflare 橙云代理后 Origin Rule 回源 8443。
-- 电信优选：`https://home.zongtech.xyz` 提供同一套前端，并把 `/api` `/static` 转到正式 API。
+- 电信优选：`https://home.zongtech.xyz:12345` 提供同一套前端，并把 `/api` `/static` 转到正式 API。不走家里机 443。
 - 正式 API：`https://api-wall.zongtech.xyz`，Cloudflare 橙云代理后通过 Origin Rule 回源到服务器 Nginx 的 HTTPS 8443，再反向代理到 `127.0.0.1:5412`。
 - Origin Rule：`api-wall.zongtech.xyz` 与 `wall.zongtech.xyz` 的边缘 443 都回源 `8443`。
 - 源站 443 被同机既有服务占用，不能为本项目抢占。8443 只允许 Cloudflare 官方 IPv4/IPv6 网段；PostgreSQL 5432 与 Node 5412 不向公网开放。
