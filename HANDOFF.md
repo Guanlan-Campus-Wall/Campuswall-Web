@@ -1,6 +1,6 @@
 # 龙华区观澜中学校园墙——项目交接文档
 
-> - 最后更新：2026-09-10
+> - 最后更新：2026-09-11
 > - 文档版本：3.12
 > - 适用分支：`main`
 > - 代码仓库：<https://github.com/Guanlan-Campus-Wall/Campuswall-Web>（**public**）
@@ -116,7 +116,7 @@ Cloudflare Origin Rule 需要两条，精确表达式必须为：
 - 后端：Node.js 22.12+（推荐当前 LTS）、Express 4、`pg`、`multer`、`sharp`、`cookie-parser`、`compression`、`express-rate-limit`；
 - 数据库：PostgreSQL 17+；生产实测为 17.11，本地新环境推荐 18；
 - 媒体处理：图片由 Sharp 处理，视频依赖系统 `ffmpeg`；
-- 前端托管与边缘代理：Cloudflare Pages、Cloudflare DNS/Origin Rules；
+- 前端托管与边缘代理：源站宝塔 Nginx 直出 `frontend/dist`，Cloudflare DNS/Origin Rules 橙云回源 8443；不再使用 Cloudflare Pages 作为正式前端；
 - 源站代理：Nginx（HTTPS 8443）；
 - 进程管理：systemd 的 `campuswall.service`；
 - 密码与会话：Node `crypto.scrypt` 密码哈希、HMAC 签名 Cookie、`session_version` 会话失效机制。
@@ -745,10 +745,10 @@ CAPTCHA_SECRET_KEY=
 CAPTCHA_PROTECT_LOGIN=true
 CAPTCHA_PROTECT_REGISTER=true
 CAPTCHA_PROTECT_ADMIN_LOGIN=true
-CAPTCHA_ALLOWED_HOSTNAMES=wall.zongtech.xyz
+CAPTCHA_ALLOWED_HOSTNAMES=wall.zongtech.xyz,home.zongtech.xyz
 ```
 
-正式前端和 API 均使用 HTTPS，生产必须保持 `SESSION_COOKIE_SECURE=true`。`ALLOWED_ORIGINS` 使用完整来源（协议、域名、端口），当前只允许 `https://wall.zongtech.xyz`；不要加入 Pages 预览域名、旧 IP 或带凭据的通配符。需要临时验收某个预览部署时，应建立有时限的单独变更记录，验收后立即移除并重启后端。飞书 OAuth 回跳要求 `SESSION_COOKIE_SAMESITE=Lax`（不要改成 `Strict`）。
+正式前端和 API 均使用 HTTPS，生产必须保持 `SESSION_COOKIE_SECURE=true`。`ALLOWED_ORIGINS` 使用完整来源（协议、域名、端口），当前允许 `https://wall.zongtech.xyz` 与 `https://home.zongtech.xyz`；不要加入 Pages 预览域名、旧 IP 或带凭据的通配符。需要临时验收某个预览部署时，应建立有时限的单独变更记录，验收后立即移除并重启后端。会话 Cookie 使用 `SESSION_COOKIE_SAMESITE=Lax`（不要改成 `Strict`）。
 
 验证码数据库设置优先于上述环境变量，后台保存后无需重启。正式 Cloudflare Widget 只允许 `wall.zongtech.xyz`；Secret 使用 AES-256-GCM 保存且 API 永不回显。生产启用时后端拒绝 Cloudflare 官方 always-pass 测试密钥。轮换 `SECRET_KEY` 会改变验证码密文派生密钥，必须先关闭/备份并在轮换后重新填写 Turnstile Secret。创建 Widget、完整自检、轮换、紧急停用和排障见 `docs/TURNSTILE.md`。
 
@@ -1210,15 +1210,17 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 
 ### 15.19 3.12 学号登录、AI 审核、源站前端、权限开关、电信优选与双重备份
 
-本轮把前台飞书登录改为 10 位学号注册登录；新增辱骂词库 + 可选 OpenAI 兼容审核；前端改由宝塔 Nginx 直出；超级管理员可给非超管配置单项权限（AI 密钥除外）；电信访问可跳到 `home.zongtech.xyz`；数字资产并行备份到 OCI US SanJose 与 Grok Bot。**本轮没有执行压力、容量、长稳或渗透测试。** 密钥与 SSH 密码不写入本表。
+本轮把前台飞书登录改为 10 位学号注册登录；新增辱骂词库 + 可选 OpenAI 兼容审核；前端改由宝塔 Nginx 直出；超级管理员可给非超管配置单项权限（AI 密钥除外）；电信访问可跳到 `home.zongtech.xyz`；数字资产并行备份到 OCI US SanJose 与 Grok Bot。公网 `wall.zongtech.xyz` 已切到源站 Nginx。`home.zongtech.xyz` 的 IPv4 443 仍由家庭网关占用，homelab Nginx 已在内网与 IPv6 上就绪。**本轮没有执行压力、容量、长稳或渗透测试。** 密钥与 SSH 密码不写入本表。
 
 | 项目 | 命令/证据 | 状态 | 时间/执行人 |
 | --- | --- | --- | --- |
-| 学号与审核定向测试 | `node --test` studentId / contentReview / publicationPolicy / ispPrefer / roles / userStore | **待源站完整测试补录** | 2026-09-10 / Cursor Agent |
-| GitHub 发布门禁 | 本轮提交的 Actions | **待补录** | 2026-09-10 / Cursor Agent |
-| 生产备份 | `/www/backups/campuswall/*-before-deploy` | **待补录** | 2026-09-10 / Cursor Agent |
-| 服务器发布 | 快进 `origin/main`、`npm ci`、后端测试、源站构建 `frontend/dist`、安装 web vhost、重启服务 | **待补录** | 2026-09-10 / Cursor Agent |
-| 双重异机备份 | OCI US SanJose 与 Grok Bot 同时写入 `campuswall-backups/<stamp>/` | **待补录** | 2026-09-10 / Cursor Agent |
+| 学号与审核定向测试 | 源站完整后端测试已随 `c6b40b1` 发布；公网登录页为「学号登录 / 学号注册」，飞书入口已去掉 | **通过** | 2026-09-11 00:42 CST / Cursor Agent |
+| GitHub 发布门禁 | Actions run `34496550492`（提交 `c6b40b1b53ffcf682626a34fb2e8f73b47456a3b`） | **通过**；verify 含 test/build/syntax/smoke | 2026-09-10 / GitHub Actions |
+| 生产备份 | `/www/backups/campuswall/20260910-233821-before-deploy` | **通过** | 2026-09-10 23:38 CST / Cursor Agent |
+| 服务器发布 | 源站 HEAD `c6b40b1`，`campuswall.service` active，`/health` 正常；宝塔 Nginx 直出 `frontend/dist` | **通过** | 2026-09-10 23:38 CST / Cursor Agent |
+| 前端切离 Pages | 解绑 Pages 自定义域名 `wall.zongtech.xyz`；DNS `wall` 改为橙云 A `160.236.110.133`；Origin Rule `Campus Wall Web to 8443` | **通过**；公网 `/login` 返回源站 SPA（`index-BPsZ4BZl.js`），深链 `/wall` 200 | 2026-09-11 00:41 CST / Cursor Agent |
+| 双重异机备份 | 资产包 `/www/backups/campuswall/20260911-001054-assets`；OCI US SanJose 与 Grok Bot 均为 `campuswall-backups/20260911-001054`；timer 03:22 | **通过** | 2026-09-11 00:10 CST / Cursor Agent |
+| 邮箱验证页 | 公网 `/email/status?email=verified` | **通过**；独立居中卡片「邮箱已验证」，按钮「去学号登录」 | 2026-09-11 00:43 CST / Cursor Agent |
 
 ## 16. Git 工作流
 
