@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "wrangler": "4.125.0"
+    "wrangler": "4.129.0"
   },
   "overrides": {
     "multer": "^2.3.0",
