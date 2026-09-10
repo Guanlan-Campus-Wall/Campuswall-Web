@@ -6,7 +6,7 @@
 > - 代码仓库：<https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan>
 > - 学校名称：龙华区观澜中学
 > - 最近一次架构基线：Cloudflare Pages 前端 + 独立 HTTPS API 源站
-> - 最近一次生产发布：2026-09-10 13:35 CST（应用提交 `d1167069ea763ea54fc15fefc77e24be8400a96c`，Pages `https://a8b6d9da.guanlan-campus-wall.pages.dev`；游客首页保留欢迎卡与关于本站，已登录默认进入校园动态）
+> - 最近一次生产发布：2026-09-10 14:14 CST（应用提交 `3c0898468c5ef1299ea1a30aac7115c7efb32a97`，Pages `https://9b1c0440.guanlan-campus-wall.pages.dev`；Codex 重构前台 UI，游客首页保留欢迎卡与关于本站，已登录默认进入校园动态）
 
 本文档用于开发、审核、运维和应急接管。它说明当前产品规则、代码结构、账号权限、审核流程、数据位置、本地运行、生产部署、备份恢复和常见故障。功能细节以 `main` 分支代码为最终事实来源；每次完成新功能、修复、主要交互或运维变更，都必须在同一提交同步更新本文件，不能把交接文档留到后续补写。
 
@@ -1156,10 +1156,10 @@ Codex `gpt-6-astra` xhigh 直接改 `frontend` 的 CSS/JSX：新增 `campus-ui.c
 | --- | --- | --- | --- |
 | 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | **通过**；15/15 | 2026-09-10 / Cursor Agent |
 | 前台交互冒烟 | Codex Playwright 检查（游客首页/欢迎卡/关于本站、已登录 `/`→`/wall`、游客失物招领登录卡、游客无评论框） | **通过**；41 项 | 2026-09-10 / Cursor Agent |
-| GitHub 发布门禁 | 待推送后补录 | 待发布 |  |
-| 生产备份 | 待发布后补录 | 待发布 |  |
-| 服务器发布 | 待发布后补录 | 待发布 |  |
-| Pages 发布 | 待发布后补录 | 待发布 |  |
+| GitHub 发布门禁 | Actions run `34444180041`（提交 `3c08984`） | **通过**；verify 含 `npm ci`、audit、后端测试、前端构建、语法检查与健康冒烟 | 2026-09-10 14:12 CST / Cursor Agent |
+| 生产备份 | `/www/backups/campuswall/20260910-141350-before-deploy` | **通过**；PostgreSQL custom dump/restore-list、运行文件、环境、systemd、Nginx、UFW、Origin 证书 | 2026-09-10 14:13 CST / Cursor Agent |
+| 服务器发布 | 源站 `57a344a` 快进至 `3c08984`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh` 后重启 `campuswall.service` | **通过**；服务于 14:14:08 CST `active`，本机与公网 `/health` 正常。本轮无后端行为变更 | 2026-09-10 14:14 CST / Cursor Agent |
+| Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload；deployment `https://9b1c0440.guanlan-campus-wall.pages.dev` | **通过**；`https://guanlan-campus-wall.pages.dev/` 与 `https://wall.zongtech.xyz/` 的 `theme-color` 为 `#f6f7f3`/`#151d19`，资源 `index-B5Lx1NZb.js`；未登录失物招领接口 401 | 2026-09-10 14:16 CST / Cursor Agent |
 
 ## 16. Git 工作流
 
