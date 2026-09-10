@@ -1175,7 +1175,7 @@ Codex `gpt-6-astra` xhigh 直接改 `frontend` 的 CSS/JSX：新增 `campus-ui.c
 
 | 项目 | 命令/证据 | 状态 | 时间/执行人 |
 | --- | --- | --- | --- |
-| 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | 待执行 |  |
+| 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | **通过**；15/15 | 2026-09-10 / Cursor Agent |
 | GitHub 发布门禁 | 待该提交在自托管 Runner 上跑完后补录 | 待验证 |  |
 | 生产备份 | 待 CI 通过后按第 17 节执行 | 待执行 |  |
 | 服务器发布 | 本轮以后端无行为变更为前提；CI 通过后再快进 | 待执行 |  |
