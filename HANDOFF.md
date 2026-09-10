@@ -6,7 +6,7 @@
 > - 代码仓库：<https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan>（**private**）
 > - 学校名称：龙华区观澜中学
 > - 最近一次架构基线：Cloudflare Pages 前端 + 独立 HTTPS API 源站
-> - 最近一次生产发布：2026-09-10 14:14 CST（应用提交 `3c0898468c5ef1299ea1a30aac7115c7efb32a97`，Pages `https://9b1c0440.guanlan-campus-wall.pages.dev`；Codex 重构前台 UI，游客首页保留欢迎卡与关于本站，已登录默认进入校园动态）
+> - 最近一次生产发布：2026-09-10 18:06 CST（应用提交 `412b9062b738e7c115fade4215b488ff58e9576f`，Pages `https://57df53cf.guanlan-campus-wall.pages.dev`；论坛风前台与「联系我」入口，学校仓库保持 private）
 
 本文档用于开发、审核、运维和应急接管。它说明当前产品规则、代码结构、账号权限、审核流程、数据位置、本地运行、生产部署、备份恢复和常见故障。功能细节以 `main` 分支代码为最终事实来源；每次完成新功能、修复、主要交互或运维变更，都必须在同一提交同步更新本文件，不能把交接文档留到后续补写。
 
@@ -1176,10 +1176,10 @@ Codex `gpt-6-astra` xhigh 直接改 `frontend` 的 CSS/JSX：新增 `campus-ui.c
 | 项目 | 命令/证据 | 状态 | 时间/执行人 |
 | --- | --- | --- | --- |
 | 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | **通过**；15/15 | 2026-09-10 / Cursor Agent |
-| GitHub 发布门禁 | 待该提交在自托管 Runner 上跑完后补录 | 待验证 |  |
-| 生产备份 | 待 CI 通过后按第 17 节执行 | 待执行 |  |
-| 服务器发布 | 本轮以后端无行为变更为前提；CI 通过后再快进 | 待执行 |  |
-| Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload | 待执行 |  |
+| GitHub 发布门禁 | Actions run `34463915465`（提交 `412b9062b738e7c115fade4215b488ff58e9576f`） | **通过**；自托管 Oracle Linux 9.8 ARM64 安装并启动 PostgreSQL 13、改 localhost md5、`npm ci`、audit、后端测试、前端构建、语法检查与健康冒烟 | 2026-09-10 18:02 CST / GitHub Actions |
+| 生产备份 | `/www/backups/campuswall/20260910-180535-before-deploy` | **通过**；PostgreSQL custom dump/restore-list、运行文件、环境、systemd、Nginx、UFW、Origin 证书 | 2026-09-10 18:05 CST / Cursor Agent |
+| 服务器发布 | 源站 `37b4e80` 快进至 `412b906`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh` 后重启 `campuswall.service` | **通过**；服务于 18:05:50 CST `active`，本机与公网 `/health` 正常。本轮无后端行为变更。源站拉取已改为 private 仓库的一次性 Git 凭证 | 2026-09-10 18:05 CST / Cursor Agent |
+| Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload；deployment `https://57df53cf.guanlan-campus-wall.pages.dev` | **通过**；`https://guanlan-campus-wall.pages.dev/` 与 `https://wall.zongtech.xyz/` 的 `theme-color` 为 `#f2f3f5`/`#17191c`，资源 `index-CFosWNEx.js`；游客首页有欢迎、最新讨论、板块目录、关于本站与「联系我」→`/help/form`，无 GitHub 按钮；未登录 `/api/user/lost-found` 为 401；游客动态为「登录后参与讨论」 | 2026-09-10 18:06 CST / Cursor Agent |
 
 ## 16. Git 工作流
 
@@ -1358,6 +1358,14 @@ git fetch origin main
 git merge --ff-only origin/main
 target_commit="$(git rev-parse origin/main)"
 test "$(git rev-parse HEAD)" = "$target_commit"
+```
+
+交付仓库现为 **private**。源站 `git fetch origin main` 必须带具备 `repo` 权限的一次性凭证，例如临时 `credential.helper` 向 Git 提供 `x-access-token` 与短时 token。不要把 token 写入仓库、`backend.env` 或长期明文配置。`gh` 用户令牌（`gho_`）不能当作 HTTP Bearer `http.extraHeader` 使用。
+
+```bash
+set -euo pipefail
+umask 022
+cd /www/wwwroot/campuswall-react
 npm ci
 runuser -u campuswall -- test -r backend/src/config.js
 runuser -u campuswall -- test -r node_modules/pg/package.json
