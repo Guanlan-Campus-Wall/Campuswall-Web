@@ -227,16 +227,22 @@ const api = {
   getCaptchaConfig() {
     return http.get('/api/user/captcha/config')
   },
+  getNetworkPrefer() {
+    return http.get('/api/network/prefer')
+  },
   userLogin(data) {
     const formData = new FormData()
-    formData.append('username', data.username || '')
+    formData.append('student_id', data.student_id || data.username || '')
+    formData.append('username', data.username || data.student_id || '')
     formData.append('password', data.password || '')
     formData.append('captcha_token', data.captcha_token || '')
     return http.post('/api/user/login', formData)
   },
   userRegister(data) {
     const formData = new FormData()
-    formData.append('username', data.username || '')
+    formData.append('student_id', data.student_id || data.username || '')
+    formData.append('username', data.student_id || data.username || '')
+    formData.append('nickname', data.nickname || '')
     formData.append('password', data.password || '')
     formData.append('captcha_token', data.captcha_token || '')
     formData.append('email', data.email || '')
@@ -365,6 +371,12 @@ const api = {
   },
   adminTestCaptcha(data) {
     return http.post('/api/admin/settings/captcha/test', data)
+  },
+  adminGetAiSettings() {
+    return http.get('/api/admin/settings/ai')
+  },
+  adminUpdateAiSettings(data) {
+    return http.put('/api/admin/settings/ai', data)
   },
   adminGetCommunitySettings() {
     return http.get('/api/admin/settings/community')

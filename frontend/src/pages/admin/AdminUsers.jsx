@@ -6,10 +6,10 @@ import { useUser } from '../../contexts/UserContext.jsx'
 import api from '../../services/api'
 
 const roleOptions = [
-  { value: 'user', label: '普通用户', description: '使用前台账号功能，不进入管理后台。' },
-  { value: 'reviewer', label: '审核员', description: '可审核帖子、表白便签、用户名密码注册，并管理主页公告；不能添加审核员或修改任何人的权限。' },
-  { value: 'admin', label: '管理员', description: '可管理内容与平台日常事务，不能修改用户角色。' },
-  { value: 'super_admin', label: '超级管理员', description: '拥有全部权限，包括任命管理员、超级管理员与审核员。' }
+  { value: 'user', label: '普通用户', description: '默认只能使用前台。超级管理员可按开关授予后台单项能力。' },
+  { value: 'reviewer', label: '审核员', description: '默认可审核帖子、表白便签和学号注册，并管理公告。超级管理员可再按开关增删其权限。' },
+  { value: 'admin', label: '管理员', description: '默认可管理内容与平台日常事务。超级管理员可再按开关增删其权限，包括角色与个人权限分配。' },
+  { value: 'super_admin', label: '超级管理员', description: '拥有全部权限，始终锁定为全开。可以把任意开关授予其他非超管账号。AI 审核密钥仅超管可改。' }
 ]
 
 const staffRoleOptions = roleOptions.filter((option) => option.value !== 'user')
@@ -256,7 +256,7 @@ export default function AdminUsers() {
 
   const approveRegistration = async (user) => {
     if (!hasCapability('users.status.enable')) return
-    if (!window.confirm(`确定通过“${user.username}”的注册吗？通过后即可使用用户名密码登录。`)) return
+    if (!window.confirm(`确定通过“${user.username}”的注册吗？通过后即可使用学号登录。`)) return
     await run(() => api.adminApproveRegistration(user.id), `${user.username} 已通过审核`)
   }
 
@@ -698,7 +698,7 @@ export default function AdminUsers() {
             <div>
               <b>{roleMeta(permissionState.role).label}默认 + 个人允许/拒绝</b>
               <p className="mt-1 text-muted">解析顺序：个人拒绝 → 个人允许 → 角色默认。拒绝始终优先，权限依赖会自动联动。</p>
-              {permissionState.overrides_locked ? <p className="mt-1 status-warning">该角色的个人覆盖已系统锁定：{permissionState.role === 'reviewer' ? '所有审核员必须完全同权' : '超级管理员始终拥有全部权限'}。</p> : null}
+              {permissionState.overrides_locked ? <p className="mt-1 status-warning">超级管理员始终拥有全部权限，不能设置个人覆盖。</p> : <p className="mt-1 text-muted">可以为普通用户、审核员和管理员逐项允许或拒绝。系统级 AI 审核密钥不能通过这里下放。</p>}
               {Number(permissionTarget?.id) === currentUserId ? <p className="mt-1 status-warning">为避免自我授权或锁定，不能修改当前账号的个人权限。</p> : null}
             </div>
           </div>

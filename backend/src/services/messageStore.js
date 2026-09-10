@@ -734,14 +734,21 @@ export class MessageStore {
     })
   }
 
-  async postMessage({ text = '', files = [], tags = [], user = null, admin = null, anonymous = true, poll = null, lostFound = null }) {
+  async postMessage({ text = '', files = [], tags = [], user = null, admin = null, anonymous = true, poll = null, lostFound = null, requirePostApproval = false }) {
     const cleanTags = [...new Set(normalizeTags(tags))]
     for (let attempt = 0; attempt < 20; attempt += 1) {
       const id = this.createId()
       const partitions = cleanTags.map((tag) => this.findPartition(tag)).filter(Boolean)
       const isAnonymous = admin ? false : (user ? anonymous !== false : true)
       const createdAt = nowText()
-      const publication = publicationStateFor({ tags: cleanTags, user, admin, lostFound })
+      const publication = await publicationStateFor({
+        tags: cleanTags,
+        user,
+        admin,
+        lostFound,
+        text,
+        requirePostApproval
+      })
       const message = {
         id,
         timestamp: createdAt,
@@ -755,6 +762,8 @@ export class MessageStore {
         moderation_status: publication.moderation_status,
         review_status: publication.review_status,
         review_revision: 1,
+        review_source: publication.review_source || '',
+        review_hits: Array.isArray(publication.review_hits) ? publication.review_hits : [],
         author_type: admin ? 'admin' : (user ? 'student' : 'guest'),
         anonymous: isAnonymous
       }
@@ -893,7 +902,13 @@ export class MessageStore {
       next.review_revision = Math.max(Number(next.review_revision) || 1, 1) + 1
       delete next.reviewed_at
       delete next.reviewed_by
-      const publication = editedPublicationStateFor({ message, tags: cleanTags, user, lostFound: message.lost_found })
+      const publication = await editedPublicationStateFor({
+        message,
+        tags: cleanTags,
+        user,
+        lostFound: message.lost_found,
+        text: next.text
+      })
       next.review_status = publication.review_status
       if (publication.moderation_status === 'pending') {
         next.pending_since = new Date().toISOString()

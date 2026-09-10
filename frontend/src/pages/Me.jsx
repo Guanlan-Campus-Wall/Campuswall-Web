@@ -4,7 +4,6 @@ import api from '../services/api'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
 import { firstAdminDestination } from '../services/permissions.js'
-import { toApiUrl } from '../services/urls'
 import { genderText, getAvatarUrl, getGenderIcon, handleAvatarError } from '../utils/user'
 
 const avatarTypes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
@@ -31,7 +30,6 @@ export default function Me() {
   const [searchParams] = useSearchParams()
   const alert = useAlert()
   const avatarInputRef = useRef(null)
-  const bindFeishuHref = toApiUrl('/api/user/feishu/start?intent=bind&next=/me')
   const adminDestination = firstAdminDestination(user)
   const adminLabel = user?.role === 'reviewer' ? '运营后台' : '管理后台'
 
@@ -45,19 +43,11 @@ export default function Me() {
   }, [user])
 
   useEffect(() => {
-    const feishu = searchParams.get('feishu') || ''
-    const feishuError = searchParams.get('feishu_error') || ''
     const email = searchParams.get('email') || ''
     const emailError = searchParams.get('email_error') || ''
-    if (!feishu && !feishuError && !email && !emailError) return
-    if (feishu === 'bound') alert.showTopRightAlert('飞书账号已连接，并已尝试加入校园墙群', 'success', '绑定成功')
-    else if (feishu === 'join_failed') alert.showTopRightAlert('飞书账号已绑定，但自动进群失败，请联系管理员', 'warning', '进群失败')
-    else if (feishuError === 'not_configured') alert.showTopRightAlert('飞书登录暂未配置，请稍后再试', 'warning', '无法绑定')
-    else if (feishuError === 'conflict') alert.showTopRightAlert('该飞书账号已绑定其他校园墙账号', 'warning', '无法绑定')
-    else if (feishuError === 'already_bound') alert.showTopRightAlert('当前账号已绑定其他飞书账号', 'warning', '无法绑定')
-    else if (feishuError) alert.showTopRightAlert('飞书授权失败，请重试', 'warning', '绑定失败')
+    if (!email && !emailError) return
     if (email === 'verified') alert.showTopRightAlert('邮箱已验证，可以接收消息通知', 'success', '邮箱已绑定')
-    if (emailError) alert.showTopRightAlert('验证链接无效或已过期', 'warning', '邮箱验证失败')
+    if (email === 'invalid' || emailError) alert.showTopRightAlert('验证链接无效或已过期', 'warning', '邮箱验证失败')
     navigate('/me', { replace: true })
   }, [alert, navigate, searchParams])
 
@@ -236,7 +226,7 @@ export default function Me() {
               <div className="profile-meta-grid">
                 <span>
                   <i className="bi bi-person-badge text-[var(--primary-color)]" />
-                  @{user.username}
+                  {user.student_id ? `学号 ${user.student_id}` : `@${user.username}`}
                 </span>
                 <span>
                   <i className={`${getGenderIcon(user.gender)} text-amber-500`} />
@@ -419,8 +409,15 @@ export default function Me() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <form className="card p-6 md:p-8 space-y-5" onSubmit={saveEmail}>
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">邮箱通知</h2>
+        <form className="card p-6 md:p-8 space-y-5 email-settings-card" onSubmit={saveEmail}>
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">邮箱通知</h2>
+            <p className="text-xs text-[var(--text-muted)]">验证通过后才会发送评论等通知。链接 24 小时内有效。</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {user.email_verified ? <span className="badge status-success"><i className="bi bi-check-circle" />已验证</span> : <span className="badge status-warning"><i className="bi bi-hourglass-split" />尚未验证</span>}
+            {user.email_pending ? <span className="badge">待验证：{user.email_pending}</span> : null}
+          </div>
           <label className="block space-y-1.5">
             <span className="text-xs font-bold text-[var(--text-secondary)]">
               {user.email_verified ? '已验证邮箱' : '添加邮箱'}
@@ -436,16 +433,17 @@ export default function Me() {
             />
           </label>
           {user.email_pending ? (
-            <p className="text-xs text-[var(--text-muted)]">待验证：{user.email_pending}。请查收邮件完成绑定。</p>
+            <p className="text-xs leading-5 text-[var(--text-muted)]">已向 {user.email_pending} 发送验证信。请打开邮件中的按钮完成绑定；没收到就检查垃圾箱，或在这里重新发送。</p>
           ) : null}
-          <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <label className="flex items-start gap-2 text-xs leading-5 text-[var(--text-secondary)]">
             <input
+              className="mt-0.5"
               type="checkbox"
               checked={user.email_notify !== false}
               disabled={emailNotifySaving || !user.email_verified}
               onChange={(event) => toggleEmailNotify(event.target.checked)}
             />
-            <span>验证后接收邮件通知</span>
+            <span>{user.email_verified ? '接收邮件通知' : '验证完成前不能打开邮件通知'}</span>
           </label>
           <button className="btn btn-primary px-6" type="submit" disabled={emailSaving || !emailDraft.trim()}>
             <i className="bi bi-envelope" />
@@ -454,20 +452,12 @@ export default function Me() {
         </form>
 
         <section className="card p-6 md:p-8 space-y-4">
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">飞书账户</h2>
-          {user.feishu_login ? (
-            <p className="text-sm text-[var(--text-secondary)]">已连接飞书。之后可用飞书登录此账号。</p>
-          ) : (
-            <p className="text-sm text-[var(--text-secondary)]">连接后自动加入校园墙飞书群，也可用飞书登录。</p>
-          )}
-          {user.feishu_login ? (
-            <span className="badge status-success"><i className="bi bi-check-circle" />已连接</span>
-          ) : (
-            <a className="btn btn-primary" href={bindFeishuHref}>
-              <i className="bi bi-box-arrow-in-right" />
-              <span>连接飞书账户</span>
-            </a>
-          )}
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">学号账号</h2>
+          <p className="text-sm leading-6 text-[var(--text-secondary)]">
+            {user.student_id
+              ? `当前学号 ${user.student_id}。前台登录请使用这 10 位学号和密码。`
+              : '这是后台创建的账号，没有绑定学号。请使用用户名从管理员入口登录。'}
+          </p>
         </section>
       </section>
 
@@ -544,8 +534,8 @@ export default function Me() {
             <i className="bi bi-shield-lock" />
             <span>Security</span>
           </span>
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">飞书登录账号</h2>
-          <p className="text-xs text-[var(--text-muted)]">此账号通过飞书进入，不使用密码。退出后请再次使用飞书登录。</p>
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">未设置密码</h2>
+          <p className="text-xs text-[var(--text-muted)]">此账号没有登录密码。请联系管理员重置后再从学号或管理员入口登录。</p>
         </section>
       )}
     </div>

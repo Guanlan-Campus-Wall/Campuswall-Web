@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Campus Wall dual offsite backup daily
+
+[Timer]
+OnCalendar=*-*-* 03:20:00
+Persistent=true
+RandomizedDelaySec=8m
+
+[Install]
+WantedBy=timers.target

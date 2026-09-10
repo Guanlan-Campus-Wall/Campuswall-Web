@@ -311,7 +311,8 @@ wallRouter.post('/submit', contentWriteRateLimit, form.none(), asyncRoute(async 
       capabilities: adminSession.capabilities
     } : null,
     anonymous,
-    poll: pollResult.poll
+    poll: pollResult.poll,
+    requirePostApproval: policy.policy?.require_post_approval === true
   })
   const createdMessage = messageStore.getMessage(id)
   for (const filename of validFiles) {

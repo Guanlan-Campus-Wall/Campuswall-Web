@@ -189,6 +189,7 @@ test('createStaffUser inserts a privileged account for a super admin actor', asy
         if (normalized === 'BEGIN' || normalized === 'COMMIT' || normalized === 'ROLLBACK') return { rows: [] }
         if (normalized === 'LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE') return { rows: [] }
         if (normalized.startsWith('SELECT * FROM users WHERE id = $1 FOR UPDATE')) return { rows: [staffRow] }
+        if (normalized.startsWith('SELECT permission_key, effect FROM user_permission_overrides')) return { rows: [] }
         if (normalized.startsWith('INSERT INTO users')) {
           return {
             rows: [{
@@ -221,28 +222,33 @@ test('createStaffUser inserts a privileged account for a super admin actor', asy
   assert.equal(sqlLog.some((item) => item.sql.startsWith('INSERT INTO users')), true)
 })
 
-test('register creates a pending password account without a session cookie side effect', async () => {
+test('register creates a pending student-id account without a session cookie side effect', async () => {
   const store = new UserStore()
   await endAndStub(store, {
     query: async (sql, values = []) => {
       const normalized = String(sql).replace(/\s+/g, ' ').trim()
+      if (normalized.includes('u.email = $1 AND u.email_verified_at IS NOT NULL')) return { rows: [] }
+      if (normalized.includes('WHERE u.student_id = $1')) return { rows: [] }
       if (normalized.startsWith('INSERT INTO users')) {
         assert.match(normalized, /'pending'/)
-        assert.match(normalized, /\$5::text/)
         assert.match(normalized, /\$7::text/)
-        assert.equal(values[4], null)
+        assert.match(normalized, /\$8::boolean/)
+        assert.match(normalized, /\$9::text/)
+        assert.equal(values[2], '2025532136')
         assert.equal(values[6], null)
+        assert.equal(values[8], null)
         return {
           rows: [{
             ...staffRow,
             id: 31,
             username: values[0],
             username_key: values[1],
-            nickname: values[0],
+            student_id: values[2],
+            nickname: values[5],
             role: 'user',
             status: 'pending',
-            password_hash: values[2],
-            password_salt: values[3]
+            password_hash: values[3],
+            password_salt: values[4]
           }]
         }
       }
@@ -252,16 +258,19 @@ test('register creates a pending password account without a session cookie side 
       throw new Error('register should not need a client')
     }
   })
-  const result = await store.register('xiaoming', 'password12')
+  const result = await store.register('2025532136', 'password12', { studentId: '2025532136' })
   assert.equal(result.success, true)
   assert.equal(result.pending, true)
   assert.equal(result.user.status, 'pending')
   assert.equal(result.user.has_password, true)
   assert.equal(result.user.role, 'user')
 
+  const shortId = await store.register('202553213', 'password12')
+  assert.equal(shortId.success, false)
+  assert.match(shortId.error, /10 位/)
   const reserved = await store.register(feishuUsernameForOpenId('ou_reserved'), 'password12')
   assert.equal(reserved.success, false)
-  assert.match(reserved.error, /飞书/)
+  assert.match(reserved.error, /10 位/)
 })
 
 test('register with optional email types pending_email so PostgreSQL can infer nulls', async () => {
@@ -272,28 +281,31 @@ test('register with optional email types pending_email so PostgreSQL can infer n
       if (normalized.includes('u.email = $1 AND u.email_verified_at IS NOT NULL')) {
         return { rows: [] }
       }
+      if (normalized.includes('WHERE u.student_id = $1')) return { rows: [] }
       if (normalized.startsWith('INSERT INTO users')) {
-        assert.match(normalized, /\$5::text/)
-        assert.match(normalized, /\$6::boolean/)
         assert.match(normalized, /\$7::text/)
+        assert.match(normalized, /\$8::boolean/)
+        assert.match(normalized, /\$9::text/)
         assert.match(normalized, /NULL::timestamptz/)
-        assert.equal(values[4], 'rzong773@gmail.com')
-        assert.equal(values[5], true)
-        assert.equal(typeof values[6], 'string')
-        assert.ok(values[6].length > 0)
+        assert.equal(values[2], '2025532136')
+        assert.equal(values[6], 'rzong773@gmail.com')
+        assert.equal(values[7], true)
+        assert.equal(typeof values[8], 'string')
+        assert.ok(values[8].length > 0)
         return {
           rows: [{
             ...staffRow,
             id: 32,
             username: values[0],
             username_key: values[1],
-            nickname: values[0],
+            student_id: values[2],
+            nickname: values[5],
             role: 'user',
             status: 'pending',
-            password_hash: values[2],
-            password_salt: values[3],
-            pending_email: values[4],
-            email_notify: values[5]
+            password_hash: values[3],
+            password_salt: values[4],
+            pending_email: values[6],
+            email_notify: values[7]
           }]
         }
       }
@@ -303,7 +315,8 @@ test('register with optional email types pending_email so PostgreSQL can infer n
       throw new Error('register should not need a client')
     }
   })
-  const result = await store.register('student111', 'password12', {
+  const result = await store.register('2025532136', 'password12', {
+    studentId: '2025532136',
     email: 'rzong773@gmail.com',
     emailNotify: true
   })
@@ -388,7 +401,7 @@ test('upsertFeishuUser creates a passwordless ordinary account', async () => {
   assert.equal(result.success, true)
   assert.equal(result.user.role, 'user')
   assert.equal(result.user.has_password, false)
-  assert.equal(result.user.feishu_login, true)
+  assert.equal(result.user.feishu_login, false)
   assert.equal(result.user.nickname, '同学甲')
   assert.match(result.user.username, /^fs_[a-f0-9]+$/)
 })

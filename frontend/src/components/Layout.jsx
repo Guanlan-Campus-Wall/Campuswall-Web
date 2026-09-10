@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { Fragment, useEffect } from 'react'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
+import api from '../services/api'
 import { firstAdminDestination } from '../services/permissions.js'
 import { navigationModules } from '../modules/registry.jsx'
 import ThemePicker from './ThemePicker.jsx'
@@ -27,6 +28,24 @@ export default function Layout() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [location.pathname])
+
+  useEffect(() => {
+    const host = window.location.hostname
+    if (host !== 'wall.zongtech.xyz') return undefined
+    let alive = true
+    api.getNetworkPrefer()
+      .then((response) => {
+        if (!alive || !response.data?.redirect || !response.data?.prefer_origin) return
+        const preferred = new URL(response.data.prefer_origin)
+        if (preferred.hostname === host) return
+        const next = new URL(window.location.href)
+        next.protocol = preferred.protocol
+        next.host = preferred.host
+        window.location.replace(next.toString())
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
 
   const openPublish = () => {
     if (location.pathname !== '/wall') {

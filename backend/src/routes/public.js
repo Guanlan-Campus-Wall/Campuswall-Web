@@ -12,6 +12,7 @@ import { filterLostFoundForViewer, isLostFoundMessage, isLostFoundTag, isRestric
 import { publicNotices, readNotices } from '../services/noticeStore.js'
 import { publicModuleManifest } from '../services/moduleRegistry.js'
 import { redactPublicMessage } from '../services/publicMessageView.js'
+import { networkPreferenceFor } from '../services/ispPrefer.js'
 
 export const publicRouter = express.Router()
 const form = multer({ limits: { fields: 8, fieldSize: config.maxTextLength } }).none()
@@ -70,6 +71,11 @@ const reportFields = (req, res) => {
     category: reportCategories[req.body?.category] || reportCategories.other
   }
 }
+
+publicRouter.get('/network/prefer', asyncRoute(async (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  res.json(await networkPreferenceFor(req))
+}))
 
 publicRouter.get('/community/config', asyncRoute(async (req, res) => {
   res.set('Cache-Control', 'no-store')

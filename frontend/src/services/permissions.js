@@ -11,6 +11,7 @@ export const adminCapabilityDestinations = Object.freeze([
   ['audit.read', '/admin/audit'],
   ['logs.legacy_admin.read', '/admin/log'],
   ['logs.error.read', '/admin/error_log'],
+  ['settings.ai.read', '/admin/settings'],
   ['settings.read', '/admin/settings']
 ])
 

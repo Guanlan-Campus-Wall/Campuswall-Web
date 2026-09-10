@@ -2,7 +2,7 @@
 
 面向龙华区观澜中学的校园交流平台，采用 React、Node.js/Express 与 PostgreSQL 构建。
 
-> 当前文档版本：**3.0**（2026-08-26）。本轮代码验收与部署状态不在 README 中预先宣告，最终记录见 [HANDOFF.md 的“本轮验收记录”](./HANDOFF.md#151-30-本轮验收记录)。
+> 当前文档版本：**3.12**（2026-09-10）。本轮代码验收与部署状态不在 README 中预先宣告，最终记录见 [HANDOFF.md 的“本轮验收记录”](./HANDOFF.md#1519-312-学号登录ai-审核源站前端权限开关电信优选与双重备份)。
 
 代码仓库：[Guanlan-Campus-Wall/Campuswall-Web](https://github.com/Guanlan-Campus-Wall/Campuswall-Web)
 
@@ -11,32 +11,30 @@
 扩展与第三方接入文档：
 
 - [提醒系统接入文档](./docs/NOTIFICATION_INTEGRATION.md)：飞书、企业微信现有配置，以及 QQ、微信的官方接入路线和可靠性要求；
-- [飞书登录文档](./docs/FEISHU_LOGIN.md)：OAuth、群 `chat_id` 校验与开放平台步骤；用户名密码注册另需后台审核；
+- [飞书登录文档](./docs/FEISHU_LOGIN.md)：前台飞书 OAuth 已停用，改为 10 位学号注册登录；审核提醒 Webhook 仍见提醒文档；
 - [模块开发文档](./docs/MODULE_DEVELOPMENT.md)：用前端注册表、后端模块清单与版本化 API 新增功能板块。
 
 ## 生产架构
 
-- 正式前端：`https://wall.zongtech.xyz`，由 Cloudflare Pages 项目 `guanlan-campus-wall` 托管；稳定默认域名为 `https://guanlan-campus-wall.pages.dev`。
+- 正式前端：`https://wall.zongtech.xyz`，由源站宝塔 Nginx 直出 `frontend/dist`；Cloudflare 橙云代理后 Origin Rule 回源 8443。
+- 电信优选：`https://home.zongtech.xyz` 提供同一套前端，并把 `/api` `/static` 转到正式 API。
 - 正式 API：`https://api-wall.zongtech.xyz`，Cloudflare 橙云代理后通过 Origin Rule 回源到服务器 Nginx 的 HTTPS 8443，再反向代理到 `127.0.0.1:5412`。
-- Origin Rule 精确条件：`(http.host eq "api-wall.zongtech.xyz" and cf.edge.server_port eq 443)`，动作是把目标端口覆盖为 `8443`。
+- Origin Rule：`api-wall.zongtech.xyz` 与 `wall.zongtech.xyz` 的边缘 443 都回源 `8443`。
 - 源站 443 被同机既有服务占用，不能为本项目抢占。8443 只允许 Cloudflare 官方 IPv4/IPv6 网段；PostgreSQL 5432 与 Node 5412 不向公网开放。
-- API 使用 Cloudflare Origin CA 证书，路径为 `/etc/campuswall/tls/api-wall.zongtech.xyz.pem`，私钥为同目录 `.key`。API DNS 必须保持 Proxied；区域全局模式保持现有 `Full`，专用 Configuration Rule `Campus Wall API strict TLS` 以 `(http.host eq "api-wall.zongtech.xyz")` 精确匹配 API 并将 SSL 设置为 `Strict`，不会影响同区域其他主机。
-- 不要恢复旧名 `api.wall.zongtech.xyz`：当前 Free 区域的 Universal SSL 只覆盖根域和一级通配符 `*.zongtech.xyz`，不会覆盖再嵌套一层的该主机；`api-wall.zongtech.xyz` 是可覆盖的一级子域。
+- 不要恢复旧名 `api.wall.zongtech.xyz`。
 
-权威部署资产为 `wrangler.jsonc`、`frontend/.env.production`、`frontend/public/_headers`、`deploy/nginx-campuswall-api.conf`、`deploy/nginx-campuswall-legacy-redirect.conf`、`deploy/cloudflare-realip.conf` 与 `deploy/campuswall.service`。旧 `deploy/nginx-campuswall.conf` 仅供历史同源部署参考；服务器 IP 的 80 端口只负责把页面请求重定向到 Pages、把旧 API/静态路径重定向到正式 API 域名。
+权威部署资产为 `deploy/nginx-campuswall-web.conf`、`deploy/nginx-campuswall-api.conf`、`deploy/nginx-campuswall-legacy-redirect.conf`、`deploy/nginx-campuswall-homelab.conf`、`deploy/cloudflare-realip.conf` 与 `deploy/campuswall.service`。
 
 ## 产品规则
 
-- 普通校园墙允许游客直接匿名发帖，不要求先创建账号。
-- 普通校园动态按服务端生效 capability 分流：游客与没有 `content.publish.bypass_review` 的账号初次发布进入 `/admin/wall`；具备该能力的账号立即公开，不进入审核队列。
-- 用户可自助用用户名密码注册，但须审核员在后台通过后才能登录。飞书群成员可立即扫码登录。后台人员由超级管理员在「用户与权限」中创建。
+- 游客默认不能发帖或评论。
+- 学生使用 10 位学号注册和登录；长度不符直接拒绝。注册后须审核员通过才能登录。后台人员由超级管理员创建，走 `/admin/login`。
+- 普通校园动态先走辱骂词库/可选 AI：命中则待人工复审，未命中则公开。具备 `content.publish.bypass_review` 的账号立即公开。
 - 登录用户可以维护昵称、头像和个人简介，并查看自己的发布、评论、收藏和通知。
-- 失物招领仅向登录用户开放。未登录访问会跳转到登录页；登录用户初次发布后立即可见，不进入审核队列。
-- 表白墙使用 Three.js 渲染粉色便签爱心；游客和没有免审 capability 的账号初次提交进入 `/admin/confessions`，具备 `content.publish.bypass_review` 的账号立即公开。
-- 表白墙爱心由便签实例组成，支持射线拾取、悬停/按压反馈、精选便签轮播与波纹突出；离屏、页面隐藏或系统要求减少动态时暂停，WebGL 不可用时保留普通便签列表。
-- `/p` 是从公开消息真实标签聚合的话题目录，支持搜索、按热度/更新时间/名称排序和分页；`/p/:tag` 只展示精确包含该标签的公开内容，不再把“全部话题”当成一个虚拟标签。
-- 首页公告使用稳定 ID、标题、摘要、正文、优先级、状态和发布时间；后台支持草稿、立即/定时公开、归档恢复、搜索筛选、实时预览和细粒度读写权限。
-- 主题系统支持跟随系统/浅色/深色三态，以及海蓝、樱粉、紫藤、青绿、暖橙五种强调色；选择只保存在当前设备，并跨同源标签页同步。
+- 失物招领仅向登录用户开放。登录用户初次发布后立即可见，不进入审核队列。
+- 表白墙使用 Three.js 渲染粉色便签爱心；与普通动态使用同一套词库/AI 规则。
+- `/p` 是从公开消息真实标签聚合的话题目录。
+- 超级管理员可给管理员/审核员/普通用户配置单项权限开关；OpenAI Base URL 与 API Key 仅超管可改。
 - 反馈与举报提交后由管理后台统一处理；公开页面只显示提交成功提示。
 - 后台把待审内容拆成“帖子审核”和“表白墙审核”两个互斥展示队列；reviewer 角色模板锁定且所有审核员完全同权，新授权检查使用 `content.queue.read/content.review`，旧 `review_posts` 只作兼容别名，操作保留审计记录。
 - 前端功能板块集中在 `frontend/src/modules/registry.jsx` 注册，后端通过 `GET /api/modules` 发布安全、不可执行的启用清单；新增板块应遵循 [模块开发文档](./docs/MODULE_DEVELOPMENT.md)，不能在路由、导航与页脚分别散落硬编码。

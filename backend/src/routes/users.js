@@ -2,7 +2,6 @@ import express from 'express'
 import multer from 'multer'
 import { config } from '../config.js'
 import { authenticatedAccount, sessionCookieName, requireTrustedOrigin } from '../services/auth.js'
-import { feishuAuth, feishuOauthCookieName, feishuOauthCookieOptions } from '../services/feishuAuth.js'
 import { messageStore } from '../services/messageStore.js'
 import { verifyCaptcha } from '../services/captcha.js'
 import { consumeUploadBytes, contentWriteRateLimit, emailChangeRateLimit, loginRateLimit, passwordChangeRateLimit, registerRateLimit, uploadConcurrencyLimit, uploadRateLimit } from '../services/rateLimit.js'
@@ -18,7 +17,7 @@ import { redactPublicMessage } from '../services/publicMessageView.js'
 
 export const usersRouter = express.Router()
 
-const form = multer({ limits: { fields: 8, fieldSize: 4096 } }).none()
+const form = multer({ limits: { fields: 12, fieldSize: 4096 } }).none()
 const messageEditForm = multer({ limits: { fields: 4, fieldSize: config.maxTextLength } }).none()
 const avatarForm = multer({
   storage: multer.memoryStorage(),
@@ -56,13 +55,8 @@ export const avatarUpload = (req, res, next) => {
 }
 const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next)
 
-const redirectFeishuResult = (res, path, error = '') => {
-  const target = feishuAuth.frontendUrl(path, error)
-  if (!target) {
-    res.status(503).json({ success: false, error: '飞书登录暂未配置' })
-    return
-  }
-  res.redirect(302, target)
+const goneFeishu = (req, res) => {
+  res.status(410).json({ success: false, error: '已改为学号注册登录，不再提供飞书登录' })
 }
 
 const requireUser = asyncRoute(async (req, res, next) => {
@@ -108,12 +102,14 @@ usersRouter.post('/register', requireTrustedOrigin, registerRateLimit, form, asy
     res.status(400).json({ success: false, error: captcha.error || '人机验证失败' })
     return
   }
-  const result = await userStore.register(req.body?.username || '', req.body?.password || '', {
+  const result = await userStore.register(req.body?.student_id || req.body?.username || '', req.body?.password || '', {
     email: req.body?.email || '',
-    emailNotify: !['0', 'false', 'off'].includes(String(req.body?.email_notify ?? 'true').toLowerCase())
+    emailNotify: !['0', 'false', 'off'].includes(String(req.body?.email_notify ?? 'true').toLowerCase()),
+    studentId: req.body?.student_id || req.body?.username || '',
+    nickname: req.body?.nickname || ''
   })
   if (!result.success) {
-    res.status(400).json({ success: false, error: result.error || '注册失败，请检查用户名与密码' })
+    res.status(400).json({ success: false, error: result.error || '注册失败，请检查学号与密码' })
     return
   }
   res.status(201).json({
@@ -121,105 +117,13 @@ usersRouter.post('/register', requireTrustedOrigin, registerRateLimit, form, asy
     pending: true,
     email_queued: Boolean(result.email_queued),
     message: result.email_queued
-      ? '注册已提交。请查收验证邮件；审核通过后才能登录。'
-      : '注册已提交，审核通过后才能登录'
+      ? '注册已提交。请查收验证邮件；审核通过后才能用学号登录。'
+      : '注册已提交，审核通过后才能用学号登录'
   })
 }))
 
-usersRouter.get('/feishu/start', loginRateLimit, asyncRoute(async (req, res) => {
-  const intent = String(req.query.intent || '') === 'bind' ? 'bind' : 'login'
-  const failPath = intent === 'bind' ? '/me' : '/login'
-  if (!feishuAuth.isConfigured()) {
-    redirectFeishuResult(res, failPath, 'not_configured')
-    return
-  }
-  if (intent === 'bind') {
-    const user = await authenticatedAccount(req)
-    if (!user) {
-      redirectFeishuResult(res, '/login', 'oauth_failed')
-      return
-    }
-    const { nonce, state } = feishuAuth.createState({ next: '/me', intent: 'bind', userId: user.id })
-    res.cookie(feishuOauthCookieName, nonce, feishuOauthCookieOptions())
-    res.redirect(302, feishuAuth.buildAuthorizeUrl(state))
-    return
-  }
-  const { nonce, state } = feishuAuth.createState(req.query.next)
-  res.cookie(feishuOauthCookieName, nonce, feishuOauthCookieOptions())
-  res.redirect(302, feishuAuth.buildAuthorizeUrl(state))
-}))
-
-usersRouter.get('/feishu/callback', loginRateLimit, asyncRoute(async (req, res) => {
-  let failPath = '/login'
-  const fail = (reason) => {
-    res.clearCookie(feishuOauthCookieName, { path: '/' })
-    redirectFeishuResult(res, failPath, reason)
-  }
-  const parsed = feishuAuth.parseState(req.query.state, req.cookies?.[feishuOauthCookieName])
-  if (parsed.ok && parsed.intent === 'bind') failPath = '/me'
-  const denied = String(req.query.error || '')
-  if (denied) {
-    fail(denied === 'access_denied' ? 'cancelled' : 'oauth_failed')
-    return
-  }
-  if (!parsed.ok) {
-    fail('invalid_state')
-    return
-  }
-  if (!String(req.query.code || '').trim()) {
-    fail('oauth_failed')
-    return
-  }
-  if (parsed.intent === 'bind') {
-    const account = await authenticatedAccount(req)
-    if (!account || Number(account.id) !== Number(parsed.userId)) {
-      fail('invalid_state')
-      return
-    }
-    let oauth
-    try {
-      oauth = await feishuAuth.completeOAuthUser(req.query.code)
-    } catch {
-      redirectFeishuResult(res, '/me', 'oauth_failed')
-      return
-    }
-    const bound = await userStore.bindFeishuOpenId(account.id, oauth.user)
-    if (!bound.success) {
-      redirectFeishuResult(res, '/me', bound.code || 'oauth_failed')
-      return
-    }
-    const invited = await feishuAuth.inviteToLoginChat(oauth.user.openId)
-    res.clearCookie(feishuOauthCookieName, { path: '/' })
-    const target = new URL(feishuAuth.frontendUrl('/me'))
-    target.searchParams.set('feishu', invited.ok ? 'bound' : 'join_failed')
-    res.redirect(302, target.toString())
-    return
-  }
-  let completed
-  try {
-    completed = await feishuAuth.completeLogin(req.query.code)
-  } catch {
-    fail('oauth_failed')
-    return
-  }
-  if (!completed?.ok) {
-    fail(completed?.reason || 'oauth_failed')
-    return
-  }
-  const result = await userStore.upsertFeishuUser(completed.user)
-  if (!result.success) {
-    fail(result.code === 'disabled' ? 'disabled' : 'oauth_failed')
-    return
-  }
-  res.clearCookie(feishuOauthCookieName, { path: '/' })
-  res.cookie(
-    userSessionCookieName,
-    userStore.createSession(result.user, result.sessionVersion),
-    userCookieOptions()
-  )
-  res.clearCookie(sessionCookieName, { path: '/' })
-  redirectFeishuResult(res, parsed.next)
-}))
+usersRouter.get('/feishu/start', goneFeishu)
+usersRouter.get('/feishu/callback', goneFeishu)
 
 usersRouter.post('/login', requireTrustedOrigin, loginRateLimit, form, asyncRoute(async (req, res) => {
   const captcha = await verifyCaptcha(req.body?.captcha_token || '', req, { action: 'login' })
@@ -228,13 +132,13 @@ usersRouter.post('/login', requireTrustedOrigin, loginRateLimit, form, asyncRout
     return
   }
 
-  const loginResult = await userStore.login(req.body?.username || '', req.body?.password || '')
+  const loginResult = await userStore.login(req.body?.student_id || req.body?.username || '', req.body?.password || '')
   if (loginResult?.pending) {
     res.status(403).json({ success: false, code: 'pending', error: loginResult.error })
     return
   }
   if (!loginResult) {
-    res.status(401).json({ success: false, error: '用户名或密码错误，或账号已停用' })
+    res.status(401).json({ success: false, error: '学号或密码错误，或账号已停用' })
     return
   }
 
@@ -271,9 +175,9 @@ usersRouter.get('/email/verify', asyncRoute(async (req, res) => {
   const result = await userStore.confirmEmailToken(req.query.token)
   const account = await authenticatedAccount(req)
   const base = String(config.publicSiteUrl || '').trim().replace(/\/+$/, '') || 'https://wall.zongtech.xyz'
-  const target = new URL(account ? '/me' : '/login', `${base}/`)
+  const target = new URL(account ? '/me' : '/email/status', `${base}/`)
   if (result.success) target.searchParams.set('email', 'verified')
-  else target.searchParams.set('email_error', 'invalid')
+  else target.searchParams.set('email', 'invalid')
   res.redirect(302, target.toString())
 }))
 

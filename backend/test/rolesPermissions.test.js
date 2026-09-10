@@ -13,8 +13,8 @@ import {
   validatePermissionOverrideLists
 } from '../src/services/roles.js'
 
-test('notification settings use catalog v3 with least-privilege role defaults', () => {
-  assert.equal(permissionCatalogVersion, 3)
+test('notification settings use catalog v4 with least-privilege role defaults', () => {
+  assert.equal(permissionCatalogVersion, 4)
   const admin = resolvePermissionState({ role: 'admin' })
   assert.equal(admin.effective.includes('settings.notifications.read'), true)
   assert.equal(admin.effective.includes('settings.notifications.update'), false)
@@ -24,14 +24,14 @@ test('notification settings use catalog v3 with least-privilege role defaults', 
   assert.equal(superAdmin.effective.includes('settings.notifications.test'), true)
 })
 
-test('role defaults and locked roles preserve the compatibility contract', () => {
+test('role defaults lock only super admins while reviewers can receive switches', () => {
   const reviewerA = resolvePermissionState({ role: 'reviewer' })
   const reviewerB = resolvePermissionState({
     role: 'reviewer',
     overrides: { 'content.review': 'deny', 'users.read': 'allow' }
   })
-  assert.deepEqual(reviewerB, reviewerA)
-  assert.equal(reviewerA.overrides_locked, true)
+  assert.equal(reviewerB.overrides_locked, false)
+  assert.equal(reviewerB.effective.includes('content.review'), false)
   assert.ok(reviewerA.effective.includes('content.review'))
   assert.ok(reviewerA.effective.includes('notice.delete'))
   assert.ok(reviewerA.effective.includes('users.read'))
@@ -43,6 +43,7 @@ test('role defaults and locked roles preserve the compatibility contract', () =>
   const superAdmin = resolvePermissionState({ role: 'super_admin', overrides: { 'users.read': 'deny' } })
   assert.equal(superAdmin.overrides_locked, true)
   assert.deepEqual(new Set(superAdmin.effective), new Set(capabilityKeys))
+  assert.ok(superAdmin.effective.includes('settings.ai.update'))
 })
 
 test('personal deny wins over role defaults and personal allow', () => {
@@ -60,10 +61,11 @@ test('personal deny wins over role defaults and personal allow', () => {
   assert.equal(state.customized, true)
 })
 
-test('override input rejects unknown, protected and overlapping permissions', () => {
+test('override input rejects unknown, protected AI keys and overlapping permissions', () => {
   assert.equal(validatePermissionOverrideLists({ allow: ['missing.permission'] }).code, 'UNKNOWN_PERMISSION')
-  assert.equal(validatePermissionOverrideLists({ allow: ['users.role.assign'] }).code, 'PROTECTED_PERMISSION')
+  assert.equal(validatePermissionOverrideLists({ allow: ['settings.ai.update'] }).code, 'PROTECTED_PERMISSION')
   assert.equal(validatePermissionOverrideLists({ allow: ['notice.read'], deny: ['notice.read'] }).code, 'PERMISSION_OVERRIDE_CONFLICT')
+  assert.equal(validatePermissionOverrideLists({ allow: ['users.role.assign'] }).success, true)
   assert.deepEqual(
     validatePermissionOverrideLists({ allow: ['notice.read', 'notice.read'], deny: [] }),
     { success: true, allow: ['notice.read'], deny: [] }

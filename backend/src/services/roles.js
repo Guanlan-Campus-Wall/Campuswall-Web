@@ -17,7 +17,7 @@ export const adminPermissionDefinitions = Object.freeze([
   Object.freeze({ name: 'manage_admins', description: '兼容旧版管理员入口', url: '/admin/managers' })
 ])
 
-export const permissionCatalogVersion = 3
+export const permissionCatalogVersion = 4
 
 const defineCapability = (key, group, label, description, options = {}) => Object.freeze({
   key,
@@ -66,14 +66,16 @@ export const capabilityDefinitions = Object.freeze([
   defineCapability('users.status.disable', 'users', '停用账号', '停用普通用户账号并使会话失效', { risk: 'critical', requires: ['users.read'] }),
   defineCapability('users.status.enable', 'users', '启用账号', '重新启用普通用户账号', { risk: 'high', requires: ['users.read'] }),
   defineCapability('users.password.reset', 'users', '重置用户密码', '重置普通用户密码并使旧会话失效', { risk: 'critical', requires: ['users.read'] }),
-  defineCapability('users.role.assign', 'security', '分配角色', '任命或调整用户角色，仅超级管理员可用', { risk: 'critical', assignable: false, requires: ['users.read'] }),
-  defineCapability('users.permissions.assign', 'security', '分配个人权限', '设置用户个人允许或拒绝权限，仅超级管理员可用', { risk: 'critical', assignable: false, requires: ['users.read'] }),
+  defineCapability('users.role.assign', 'security', '分配角色', '任命或调整用户角色；超级管理员可把该开关授予其他账号', { risk: 'critical', requires: ['users.read'] }),
+  defineCapability('users.permissions.assign', 'security', '分配个人权限', '按开关配置其他非超管账号的权限；超级管理员可把该开关授予其他账号', { risk: 'critical', requires: ['users.read'] }),
   defineCapability('settings.read', 'settings', '查看平台设置', '查看平台和人机验证设置'),
   defineCapability('settings.captcha.update', 'settings', '修改人机验证', '修改人机验证开关与服务配置', { risk: 'high', requires: ['settings.read'] }),
   defineCapability('settings.community.update', 'settings', '修改社区设置', '修改发帖、评论和敏感词等设置', { risk: 'high', requires: ['settings.read'] }),
   defineCapability('settings.notifications.read', 'settings', '查看消息提醒', '查看审核消息提醒渠道的脱敏配置状态', { requires: ['settings.read'] }),
   defineCapability('settings.notifications.update', 'settings', '修改消息提醒', '启停消息提醒并替换机器人 Webhook 或签名密钥', { risk: 'critical', requires: ['settings.notifications.read'] }),
   defineCapability('settings.notifications.test', 'settings', '测试消息提醒', '向已保存的群机器人发送固定的安全测试消息', { risk: 'high', requires: ['settings.notifications.read'] }),
+  defineCapability('settings.ai.read', 'settings', '查看 AI 审核', '查看 OpenAI 兼容审核接口的脱敏配置，仅超级管理员可用', { risk: 'high', assignable: false, requires: ['settings.read'] }),
+  defineCapability('settings.ai.update', 'settings', '修改 AI 审核', '修改 OpenAI Base URL 与 API Key，仅超级管理员可用', { risk: 'critical', assignable: false, requires: ['settings.ai.read'] }),
   defineCapability('logs.error.read', 'logs', '查看错误日志', '查看服务器错误日志', { risk: 'high' }),
   defineCapability('logs.legacy_admin.read', 'logs', '查看管理员日志', '查看兼容的管理员文本日志', { risk: 'high' }),
   defineCapability('audit.read', 'logs', '查看操作审计', '查看结构化后台操作审计', { risk: 'high' })
@@ -176,7 +178,7 @@ export const canPasswordLogin = (user) => Boolean(
   && user.password_salt
 )
 
-export const overridesLockedForRole = (role) => ['reviewer', 'super_admin'].includes(normalizeRole(role))
+export const overridesLockedForRole = (role) => normalizeRole(role) === 'super_admin'
 
 export const capabilitiesForRole = (role) => [...(roleCapabilityKeys[normalizeRole(role)] || [])]
 

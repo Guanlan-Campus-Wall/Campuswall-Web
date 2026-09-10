@@ -178,7 +178,7 @@ body:has(.public-shell) > .modal-backdrop-custom {
 .guide-note > i { display: none; }
 .guide-note > a { display: flex; align-items: center; gap: 8px; min-height: 36px; margin-top: 8px; font-size: 12px; }
 /* Supporting pages */
-.public-shell .campus-auth { display: grid; grid-template-columns: .85fr 1fr; width: min(100%, 820px); margin: 20px auto; padding: 0; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: var(--card-solid-bg); }
+.public-shell .campus-auth { display: grid; grid-template-columns: .85fr 1fr; align-items: stretch; width: min(100%, 820px); margin: 20px auto; padding: 0; border: 1px solid var(--border-color); border-radius: 8px; overflow: visible; background: var(--card-solid-bg); }
 .auth-welcome { display: flex; flex-direction: column; align-items: flex-start; padding: 28px; background: var(--campus-tint); }
 .auth-home-link { display: flex; gap: 8px; align-items: center; min-height: 36px; margin-bottom: 36px; font-size: 12px; color: var(--text-secondary); }
 .auth-welcome > img { width: 48px; height: 48px; margin-bottom: 22px; }
@@ -258,3 +258,16 @@ body:has(.public-shell) > .modal-backdrop-custom {
   .guide-note { display: none; }
   .public-shell .auth-form-card { padding: 24px; }
 }
+
+.public-shell .auth-form-card { min-width: 0; overflow: visible; }
+.public-shell .auth-captcha-slot,
+.public-shell .auth-email-block { min-width: 0; overflow: visible; }
+.public-shell .auth-captcha-slot iframe,
+.public-shell .auth-captcha-slot .cf-turnstile { max-width: 100%; }
+.email-status-page { display: grid; justify-items: center; width: min(100%, 480px); margin: 24px auto; }
+.email-status-page .auth-form-card { width: 100%; }
+.email-status-badge { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 999px; font-size: 24px; }
+.email-status-badge.is-ok { background: color-mix(in srgb, #16a34a 16%, var(--card-secondary-bg)); color: #15803d; }
+.email-status-badge.is-bad { background: color-mix(in srgb, #dc2626 16%, var(--card-secondary-bg)); color: #b91c1c; }
+.email-settings-card .badge { max-width: 100%; overflow-wrap: anywhere; }
+

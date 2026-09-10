@@ -4,7 +4,9 @@ import CaptchaWidget from '../components/CaptchaWidget.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
 import api from '../services/api'
-import { toApiUrl } from '../services/urls'
+
+const STUDENT_ID_LENGTH = 10
+const studentIdPattern = /^\d{10}$/
 
 const destinationFrom = (location) => {
   const from = location.state?.from
@@ -15,24 +17,13 @@ const destinationFrom = (location) => {
   return '/wall'
 }
 
-const feishuErrorText = {
-  not_in_group: '你不在指定的校园墙飞书群中，无法登录。请先加入该内部群后再试。',
-  disabled: '账号已停用，请联系管理员。',
-  oauth_failed: '飞书授权失败，请重试。',
-  invalid_state: '登录已过期，请重新点击飞书登录。',
-  cancelled: '已取消飞书登录。',
-  not_configured: '飞书登录暂未配置，请稍后再试。',
-  conflict: '该飞书账号已绑定其他校园墙账号。',
-  already_bound: '当前账号已绑定其他飞书账号。',
-  join_failed: '飞书账号已绑定，但自动进群失败，请联系管理员。'
-}
-
 export default function Login() {
   const { user, loading, login, register } = useUser()
   const [mode, setMode] = useState('login')
-  const [username, setUsername] = useState('')
+  const [studentId, setStudentId] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
+  const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
   const [emailNotify, setEmailNotify] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
@@ -47,27 +38,19 @@ export default function Login() {
   const [searchParams] = useSearchParams()
   const alert = useAlert()
   const destination = useMemo(() => destinationFrom(location), [location])
-  const startHref = useMemo(() => {
-    const params = new URLSearchParams()
-    params.set('next', destination)
-    return toApiUrl(`/api/user/feishu/start?${params.toString()}`)
-  }, [destination])
-  const feishuError = searchParams.get('feishu_error') || ''
   const emailStatus = searchParams.get('email') || ''
   const emailError = searchParams.get('email_error') || ''
 
   useEffect(() => {
-    if (!feishuError && !emailStatus && !emailError) return undefined
-    if (feishuError) {
-      alert.showTopRightAlert(feishuErrorText[feishuError] || feishuErrorText.oauth_failed, 'warning', '飞书登录失败')
-    } else if (emailStatus === 'verified') {
+    if (!emailStatus && !emailError) return undefined
+    if (emailStatus === 'verified') {
       alert.showTopRightAlert('邮箱已验证，审核通过后即可登录接收消息', 'success', '邮箱已绑定')
-    } else if (emailError) {
+    } else {
       alert.showTopRightAlert('验证链接无效或已过期', 'warning', '邮箱验证失败')
     }
     navigate({ pathname: '/login', search: '', hash: '' }, { replace: true, state: location.state })
     return undefined
-  }, [alert, emailError, emailStatus, feishuError, location.state, navigate])
+  }, [alert, emailError, emailStatus, location.state, navigate])
 
   useEffect(() => {
     let active = true
@@ -93,6 +76,7 @@ export default function Login() {
     setMode(nextMode)
     setPassword('')
     setPasswordConfirm('')
+    setNickname('')
     setEmail('')
     setEmailNotify(true)
     setCaptchaToken('')
@@ -101,18 +85,18 @@ export default function Login() {
 
   const submit = async (event) => {
     event.preventDefault()
-    const cleanUsername = username.trim()
+    const cleanId = studentId.trim()
     const isRegister = mode === 'register'
-    if (!cleanUsername || !password) {
-      alert.showTopRightAlert('请输入用户名和密码', 'warning', '信息还不完整')
+    if (isRegister && !studentIdPattern.test(cleanId)) {
+      alert.showTopRightAlert(`学号必须是 ${STUDENT_ID_LENGTH} 位数字`, 'warning', '学号长度不正确')
       return
     }
-    if (isRegister && cleanUsername.length < 2) {
-      alert.showTopRightAlert('用户名至少需要 2 个字符', 'warning', '用户名太短')
+    if (!isRegister && !cleanId) {
+      alert.showTopRightAlert('请输入学号或用户名，以及密码', 'warning', '信息还不完整')
       return
     }
-    if (isRegister && !/^[\p{L}\p{N}._-]+$/u.test(cleanUsername)) {
-      alert.showTopRightAlert('用户名只能包含中文、字母、数字、点、下划线与短横线', 'warning', '用户名格式不正确')
+    if (!password) {
+      alert.showTopRightAlert('请输入密码', 'warning', '信息还不完整')
       return
     }
     if (isRegister && password.length < 8) {
@@ -130,16 +114,22 @@ export default function Login() {
 
     setSubmitting(true)
     try {
-      const payload = { username: cleanUsername, password, captcha_token: captchaToken }
+      const payload = {
+        student_id: cleanId,
+        username: cleanId,
+        password,
+        captcha_token: captchaToken
+      }
       if (isRegister) {
         const cleanEmail = email.trim()
         if (cleanEmail) payload.email = cleanEmail
         payload.email_notify = emailNotify
+        payload.nickname = nickname.trim()
         const result = await register(payload)
         alert.showTopRightAlert(
           result?.email_queued
-            ? '注册已提交。请查收验证邮件；审核员通过后再登录。'
-            : '注册已提交。审核员通过后，再用同一用户名密码登录。',
+            ? '注册已提交。请查收验证邮件；审核员通过后再使用学号登录。'
+            : '注册已提交。审核员通过后，再用同一学号和密码登录。',
           'success',
           '等待审核'
         )
@@ -168,26 +158,17 @@ export default function Login() {
         <Link className="auth-home-link" to="/"><i className="bi bi-arrow-left" aria-hidden="true" />返回首页</Link>
         <img src="/school-badge.webp" alt="观澜中学校徽" width="68" height="68" />
         <h2>观澜中学校园墙</h2>
-        <p>聊聊校园日常，分享消息，也可以在这里寻物、提问。</p>
+        <p>使用 {STUDENT_ID_LENGTH} 位学号注册和登录，再参与校园讨论。</p>
         <div className="auth-welcome-bottom"><i className="bi bi-chat-square-heart" aria-hidden="true" />观澜中学 · 校园墙</div>
       </aside>
       <section className="card auth-form-card space-y-5 p-5 sm:p-6">
         <div className="space-y-2">
-          <h1 className="text-[1.75rem] font-bold leading-9 text-[var(--text-primary)]">登录校园墙</h1>
-          <p className="text-[0.9375rem] leading-6 text-[var(--text-secondary)]">登录后发帖、评论，查看失物招领。</p>
-        </div>
-
-        <a className="btn btn-primary w-full justify-center py-3" href={startHref}>
-          <i className="bi bi-box-arrow-in-right" />
-          <span>使用飞书登录</span>
-        </a>
-
-        <p className="text-sm leading-[1.375rem] text-[var(--text-secondary)]">飞书登录需要先加入指定校园墙内部群。密码注册通过审核后才能登录。</p>
-
-        <div className="flex items-center gap-3 text-xs font-medium text-[var(--text-muted)]">
-          <span className="h-px flex-1 bg-[var(--border-color)]" />
-          或使用用户名密码
-          <span className="h-px flex-1 bg-[var(--border-color)]" />
+          <h1 className="text-[1.75rem] font-bold leading-9 text-[var(--text-primary)]">{isRegister ? '学号注册' : '学号登录'}</h1>
+          <p className="text-[0.9375rem] leading-6 text-[var(--text-secondary)]">
+            {isRegister
+              ? `注册必须填写 ${STUDENT_ID_LENGTH} 位学号，长度不符会直接拒绝。提交后需审核员通过才能登录。`
+              : '学生使用学号登录。后台人员请走管理员入口。'}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 rounded-[12px] bg-[var(--card-secondary-bg)] p-1 auth-tabs" role="tablist" aria-label="账号操作">
@@ -196,10 +177,31 @@ export default function Login() {
         </div>
 
         <form className="space-y-4" onSubmit={submit}>
-          <label className="block space-y-1.5" htmlFor="account-username">
-            <span className="text-sm font-medium text-[var(--text-secondary)]">用户名</span>
-            <input id="account-username" className="field auth-field w-full" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" maxLength={24} placeholder="输入你的用户名" />
+          <label className="block space-y-1.5" htmlFor="account-student-id">
+            <span className="text-sm font-medium text-[var(--text-secondary)]">{isRegister ? '学号' : '学号或用户名'}</span>
+            <input
+              id="account-student-id"
+              className="field auth-field w-full"
+              value={studentId}
+              onChange={(event) => setStudentId(isRegister ? event.target.value.replace(/\D/g, '').slice(0, STUDENT_ID_LENGTH) : event.target.value)}
+              inputMode={isRegister ? 'numeric' : 'text'}
+              autoComplete="username"
+              maxLength={isRegister ? STUDENT_ID_LENGTH : 24}
+              placeholder={isRegister ? `请输入 ${STUDENT_ID_LENGTH} 位学号` : '请输入学号'}
+            />
+            {isRegister ? (
+              <span className={`block text-xs ${cleanLengthHint(studentId) === STUDENT_ID_LENGTH ? 'text-emerald-600' : 'text-[var(--text-muted)]'}`}>
+                已输入 {studentId.trim().length} / {STUDENT_ID_LENGTH} 位
+              </span>
+            ) : null}
           </label>
+
+          {isRegister ? (
+            <label className="block space-y-1.5" htmlFor="account-nickname">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">昵称（选填）</span>
+              <input id="account-nickname" className="field auth-field w-full" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={40} placeholder="不填则显示同学+学号后四位" />
+            </label>
+          ) : null}
 
           <label className="block space-y-1.5" htmlFor="account-password">
             <span className="text-sm font-medium text-[var(--text-secondary)]">{isRegister ? '设置密码' : '登录密码'}</span>
@@ -217,27 +219,30 @@ export default function Login() {
           ) : null}
 
           {isRegister ? (
-            <>
+            <div className="auth-email-block space-y-3">
               <label className="block space-y-1.5" htmlFor="account-email">
                 <span className="text-sm font-medium text-[var(--text-secondary)]">邮箱（选填）</span>
-                <input id="account-email" className="field auth-field w-full" value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" maxLength={320} placeholder="用于接收消息，可稍后在主页添加" />
+                <input id="account-email" className="field auth-field w-full" value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" maxLength={320} placeholder="用于接收消息，可稍后在个人中心添加" />
               </label>
-              <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-                <input type="checkbox" checked={emailNotify} onChange={(event) => setEmailNotify(event.target.checked)} />
-                <span>验证邮箱后接收消息通知</span>
+              <label className="flex items-start gap-2 text-xs leading-5 text-[var(--text-secondary)]">
+                <input className="mt-0.5" type="checkbox" checked={emailNotify} onChange={(event) => setEmailNotify(event.target.checked)} />
+                <span>验证邮箱后接收消息通知。未验证前不会发信。</span>
               </label>
-            </>
+            </div>
           ) : null}
 
           {captchaLoading ? <div className="captcha-loading"><div className="spinner" /><span>正在加载安全验证...</span></div> : null}
           {captchaError ? <div className="info-callout status-danger p-3 text-sm">{captchaError}</div> : null}
           {!captchaLoading && !captchaError && captchaRequired ? (
-            <div className="space-y-2"><span className="text-xs font-bold text-[var(--text-secondary)]">Cloudflare 人机验证</span><CaptchaWidget action={captchaAction} provider={captcha.provider} siteKey={captcha.site_key} onToken={setCaptchaToken} resetKey={captchaResetKey} /></div>
+            <div className="auth-captcha-slot space-y-2">
+              <span className="text-xs font-bold text-[var(--text-secondary)]">人机验证</span>
+              <CaptchaWidget action={captchaAction} provider={captcha.provider} siteKey={captcha.site_key} onToken={setCaptchaToken} resetKey={captchaResetKey} />
+            </div>
           ) : null}
 
-          <button className="btn btn-outline mt-2 w-full justify-center min-h-12" type="submit" disabled={submitting || captchaLoading || Boolean(captchaError) || (captchaRequired && !captchaToken)}>
+          <button className="btn btn-primary mt-2 w-full justify-center min-h-12" type="submit" disabled={submitting || captchaLoading || Boolean(captchaError) || (captchaRequired && !captchaToken)}>
             <i className={`bi ${isRegister ? 'bi-person-plus' : 'bi-box-arrow-in-right'}`} />
-            <span>{submitting ? (isRegister ? '正在提交...' : '正在登录...') : (isRegister ? '提交注册审核' : '用户名密码登录')}</span>
+            <span>{submitting ? (isRegister ? '正在提交...' : '正在登录...') : (isRegister ? '提交学号注册' : '学号登录')}</span>
           </button>
         </form>
 
@@ -248,4 +253,8 @@ export default function Login() {
       </section>
     </div>
   )
+}
+
+function cleanLengthHint(value) {
+  return String(value || '').trim().length
 }

@@ -1,12 +1,12 @@
 # 龙华区观澜中学校园墙——项目交接文档
 
 > - 最后更新：2026-09-10
-> - 文档版本：3.11
+> - 文档版本：3.12
 > - 适用分支：`main`
 > - 代码仓库：<https://github.com/Guanlan-Campus-Wall/Campuswall-Web>（**public**）
 > - 学校名称：龙华区观澜中学
-> - 最近一次架构基线：Cloudflare Pages 前端 + 独立 HTTPS API 源站
-> - 最近一次生产发布：2026-09-10 22:32 CST（应用提交 `e54c738d17d4946994e007f16243e111d2457ee6`，Pages `https://96eaf55c.guanlan-campus-wall.pages.dev`；Web 仓库迁入公开组织 `Guanlan-Campus-Wall`）
+> - 最近一次架构基线：宝塔 Nginx 直出前端 + 独立 HTTPS API 源站；电信用户可跳到 `home.zongtech.xyz`
+> - 最近一次生产发布：见 §15.19
 
 本文档用于开发、审核、运维和应急接管。它说明当前产品规则、代码结构、账号权限、审核流程、数据位置、本地运行、生产部署、备份恢复和常见故障。功能细节以 `main` 分支代码为最终事实来源；每次完成新功能、修复、主要交互或运维变更，都必须在同一提交同步更新本文件，不能把交接文档留到后续补写。
 
@@ -19,6 +19,8 @@
 - 飞书/企业微信群机器人 Webhook 与签名 Secret；
 - 飞书登录应用的 App Secret 与 `FEISHU_LOGIN_CHAT_ID`；
 - SMTP 密码与完整发信账号；
+- OpenAI 兼容接口的 API Key；
+- 双重备份机与 homelab 的 SSH 密码；
 - Cloudflare Turnstile Secret Key 与用户验证 Token；
 - 学生个人信息、未公开内容、举报/反馈正文和生产日志原文；
 - 生产数据库、头像和上传文件的未加密备份。
@@ -35,13 +37,16 @@
 | GitHub 组织 | `Guanlan-Campus-Wall` | 校园墙代码托管组织 |
 | GitHub Web | 公开仓库 `Guanlan-Campus-Wall/Campuswall-Web` 的 `main` | 唯一 Web 交付分支 |
 | GitHub App | 公开仓库 `Guanlan-Campus-Wall/Campuswall-App` | App 仓库；当前仅占位，不参与 Web 发布 |
-| 正式前端 | `https://wall.zongtech.xyz` | Cloudflare Pages 自定义域名，所有浏览器页面请求从这里进入 |
-| Pages 项目 | `guanlan-campus-wall` | 前端静态构建托管；默认地址为 `https://guanlan-campus-wall.pages.dev` |
+| 正式前端 | `https://wall.zongtech.xyz` | 源站宝塔 Nginx 直出 `frontend/dist`；Cloudflare 橙云代理，Origin Rule 把边缘 443 回源 8443 |
+| 电信优选入口 | `https://home.zongtech.xyz` | 家庭实验室反向代理同一套前端，并把 `/api` `/static` 转到正式 API |
 | 正式 API | `https://api-wall.zongtech.xyz` | Cloudflare 代理后的后端、健康检查与受保护静态资源入口 |
 | 生产项目目录 | `/www/wwwroot/campuswall-react` | 服务器当前检出的代码 |
-| 前端构建目录 | `frontend/dist` | 本机/CI 的临时 Pages 上传产物；不再由生产 Nginx 对外托管 |
+| 前端构建目录 | `frontend/dist` | 源站 Nginx 的网站根目录；不再上传 Cloudflare Pages |
 | 后端工作目录 | `/www/wwwroot/campuswall-react/backend` | Node/Express 服务工作目录 |
 | 后端环境文件 | `/etc/campuswall/backend.env` | 生产变量与密钥，权限必须为 `root:root 600` |
+| 备份环境文件 | `/etc/campuswall/backup.env` | 双重异机备份 SSH 目标，权限必须为 `root:root 600` |
+| 异机备份 A | OCI US SanJose | 数字资产（库、静态文件、运行 JSON）并行备份目标之一 |
+| 异机备份 B | Grok Bot | 同上，必须与 A 同时写入 |
 | systemd 服务 | `campuswall.service` | 后端常驻与自动重启 |
 | 后端监听 | `127.0.0.1:5412` | 只允许 Nginx/本机访问 |
 | API Nginx vhost | `/www/server/panel/vhost/nginx/api-wall.zongtech.xyz.conf` | 在源站 `8443/tcp` 接收 Cloudflare HTTPS 回源 |
@@ -54,15 +59,15 @@
 当前仓库中的生产基线：
 
 - 正式页面入口只能使用 `https://wall.zongtech.xyz`；旧 IP 的 80 端口只保留 308 重定向，不作为发布或健康判定依据；
-- 前端由 Cloudflare Pages 项目 `guanlan-campus-wall` 托管，`wall.zongtech.xyz` 使用 CNAME 关联该项目；
-- API 由 `api-wall.zongtech.xyz` 的橙云代理进入 Cloudflare，再由 Origin Rule 把边缘 HTTPS 443 回源到 Nginx 8443；源站 443 被同机既有服务占用，不能为了本项目抢占或停止该服务；
+- 前端由源站宝塔 Nginx 托管 `frontend/dist`，`wall.zongtech.xyz` 使用橙云 A 记录指向源站；不再把该自定义域名绑到 Cloudflare Pages；
+- API 由 `api-wall.zongtech.xyz` 的橙云代理进入 Cloudflare，再由 Origin Rule 把边缘 HTTPS 443 回源到 Nginx 8443；`wall.zongtech.xyz` 使用另一条 Origin Rule 同样回源 8443，由 SNI 选择网站证书；源站 443 被同机既有服务占用，不能为了本项目抢占或停止该服务；
 - 不得恢复旧名 `api.wall.zongtech.xyz`：当前 Free 区域的 Universal SSL 通常覆盖根域与一级通配符 `*.zongtech.xyz`，不会覆盖再嵌套一层的 `api.wall.zongtech.xyz`；`api-wall.zongtech.xyz` 是一级子域，可由现有边缘证书覆盖；
 - 真实上线起点：`2026-08-25T01:48:50+08:00`，由 `SITE_LAUNCHED_AT` 提供；这是首次验证公网 HTTP 200 的时间，不得在普通重启或发布时重置；
 - 服务器时区应保持 `Asia/Shanghai`（用 `timedatectl` 核对）；公告、反馈等 JSON 的无时区时间字符串直接使用服务器本地时间，时区错误会造成展示和排序歧义；
 - 生产 Git 远端应指向 `https://github.com/Guanlan-Campus-Wall/Campuswall-Web.git`，部署来源只允许 `origin/main` 的快进提交；旧个人仓库路径会重定向，但源站仍应改成新 URL；
 - 最新实际状态必须以生产机上的 `git rev-parse HEAD`、`systemctl status campuswall.service` 和 `/health` 为准，不能只凭本文档日期判断。
 
-当前前端发布入口由 Cloudflare Pages 决定，源站 Nginx 只处理 API、健康检查、受控静态资源和旧 IP 的确定性重定向。仓库内 `deploy/nginx-campuswall-api.conf`、`deploy/nginx-campuswall-legacy-redirect.conf`、`deploy/cloudflare-realip.conf`、`wrangler.jsonc`、`frontend/.env.production` 与 `frontend/public/_headers` 是该架构的权威基线。源站 `5412/5432` 永不公开，`8443` 只允许 Cloudflare 官方 IPv4/IPv6 网段访问；不要把它开放给全网。
+当前前端由源站 Nginx 在 8443 上按 `server_name` 直出。仓库内 `deploy/nginx-campuswall-web.conf`、`deploy/nginx-campuswall-api.conf`、`deploy/nginx-campuswall-legacy-redirect.conf`、`deploy/nginx-campuswall-homelab.conf`、`deploy/cloudflare-realip.conf`、`frontend/.env.production` 与 `frontend/public/_headers` 是该架构的权威基线。`wrangler.jsonc` 仅保留历史 Pages 项目名，日常发布不要再 Direct Upload。源站 `5412/5432` 永不公开，`8443` 只允许 Cloudflare 官方 IPv4/IPv6 网段访问；不要把它开放给全网。
 
 ## 3. 系统架构
 
@@ -70,25 +75,31 @@
 
 ```text
 浏览器
-  ├─ wall.zongtech.xyz ─────────────> Cloudflare Pages ──> frontend/dist
-  │                                  └─ Turnstile Widget（登录/注册挑战）
+  ├─ wall.zongtech.xyz ─────────────> Cloudflare 代理（边缘 HTTPS 443）
+  │                                  └─ Origin Rule：目的端口改写为 8443
+  │                                     └─ 源站 Nginx TLS :8443（server_name wall）
+  │                                        └─ frontend/dist SPA
+  ├─ home.zongtech.xyz（电信优选）──> homelab Nginx
+  │                                  ├─ /        → 同步后的 frontend/dist
+  │                                  └─ /api /static /health → api-wall.zongtech.xyz
   └─ api-wall.zongtech.xyz ─────────> Cloudflare 代理（边缘 HTTPS 443）
                                       └─ Origin Rule：目的端口改写为 8443
-                                         └─ 源站 Nginx TLS :8443
+                                         └─ 源站 Nginx TLS :8443（server_name api-wall）
                                             └─ Node/Express :5412
                                                ├─ PostgreSQL
                                                ├─ backend/static
                                                ├─ backend/help、backend/logs
-                                               ├─ 飞书/企业微信机器人（可选、已实现）
-                                               └─ SMTP 邮箱（可选：验证信、用户通知、审核提醒）
+                                               ├─ 飞书/企业微信机器人（审核提醒，可选）
+                                               └─ SMTP 邮箱（验证信、用户通知、审核提醒）
 ```
 
-Cloudflare Pages 只托管公开前端构建；登录、发帖、审核、上传和数据均由同一源站后端处理。浏览器构建中的 API 与静态资源基址分别固定为 `https://api-wall.zongtech.xyz` 和 `https://api-wall.zongtech.xyz/static/`。生产 Nginx 不再返回前端 `index.html`，只反向代理后端允许的路径，并对其他路径返回 404。
+登录、发帖、审核、上传和数据均由同一源站后端处理。默认浏览器构建中的 API 基址是 `https://api-wall.zongtech.xyz`；在 `home.zongtech.xyz` 上运行时改走同源 `/api` 与 `/static`，由 homelab Nginx 再转到正式 API。生产 Nginx 对 `wall.zongtech.xyz` 返回 SPA，对 `api-wall.zongtech.xyz` 只反向代理后端允许的路径，其他路径 404。
 
-Cloudflare Origin Rule 的精确表达式必须为：
+Cloudflare Origin Rule 需要两条，精确表达式必须为：
 
 ```text
 (http.host eq "api-wall.zongtech.xyz" and cf.edge.server_port eq 443)
+(http.host eq "wall.zongtech.xyz" and cf.edge.server_port eq 443)
 ```
 
 动作只覆盖目标端口为 `8443`。同时匹配主机名与边缘 443 可以避免把客户端显式访问其他边缘端口的请求也重写到源站 8443。`api-wall.zongtech.xyz` 的 DNS 记录必须保持橙云代理；一旦改成 DNS only，Cloudflare Origin CA 证书不会被普通浏览器信任，且源站 UFW 会拒绝非 Cloudflare 来源。
@@ -161,17 +172,18 @@ campuswall-react/
 
 ## 6. 产品功能与重要边界
 
-- 游客默认不能发帖或评论；管理员可在「平台与验证」打开游客发帖/评论。飞书群成员可立即登录，也可用用户名密码注册；密码注册需审核员在后台通过后才能登录。后台人员仍由超级管理员创建，使用 `/admin/login`；
-- 游客与没有 `content.publish.bypass_review` 的账号初次发布普通校园动态时进入 `/admin/wall`；具备该 capability 的账号立即公开，不进入队列；
-- 表白墙使用 Three.js 实例化便签组成爱心；支持射线拾取、悬停/按压、精选轮播和波纹突出，游客/无免审能力账号初次提交后进入 `/admin/confessions`，具备免审 capability 的账号立即公开；
+- 游客默认不能发帖或评论；管理员可在「平台与验证」打开游客发帖/评论。学生使用 10 位学号注册和登录，长度不符直接拒绝；密码注册需审核员在后台通过后才能登录。后台人员仍由超级管理员创建，使用 `/admin/login`。前台飞书 OAuth 已停用（410）；
+- 游客与没有 `content.publish.bypass_review` 的账号初次发布普通校园动态时，先走辱骂词库；命中则进入 `/admin/wall` 并标记「AI 未通过 · 待人工复审」，未命中则公开。社区开关 `require_post_approval` 为 true 时即使词库干净也待审。具备免审 capability 的账号立即公开；
+- 表白墙使用 Three.js 实例化便签组成爱心；支持射线拾取、悬停/按压、精选轮播和波纹突出。游客/无免审能力账号同样先走词库/AI，命中后进入 `/admin/confessions`，未命中则公开；具备免审 capability 的账号立即公开；
 - `/p` 从真实公开消息标签聚合目录，支持搜索、排序与分页；`/p/:tag` 只返回标签数组精确包含该值的公开消息；
 - 首页公告使用标题、摘要、正文、优先级、状态与发布时间模型；后台支持草稿、立即/定时发布、归档恢复、搜索、筛选和实时预览；
 - 主题支持跟随系统/浅色/深色三态和海蓝、樱粉、紫藤、青绿、暖橙五种强调色；
 - 失物招领的浏览、填写、评论和点赞都必须登录；公开列表、详情、话题和附件都不能让未登录访客读到启事或联系方式。初次发布立即对登录用户可见，不进入审核队列，且以登录身份发布以便追溯；
 - 登录用户可维护昵称、头像、简介，查看自己的帖子、评论、收藏和通知；
-- 后台发布/审核能力按 capability 判断；默认三种管理角色免审，普通 `user` 也可被超级管理员逐项授予后台能力；帖子与表白墙是两个互斥展示队列，所有 `reviewer` 仍使用锁定的同一角色模板、完全同权；
+- 后台发布/审核能力按 capability 判断；默认三种管理角色免审。超级管理员可以把任意可分配开关授予管理员、审核员或普通用户；只有 `settings.ai.read/update` 不能下放。超级管理员自身权限始终全开、不能设个人覆盖；
 - 任意内容被管理端明确退回待审后会设置 `review_hold`，并显示在当前内容分类对应的队列；作者编辑不能自行重新公开；
 - 反馈与举报只在后台处理，前台不提供公开进度查询。
+- AI 审核：内置中文辱骂词库命中即不通过并转人工；未命中且超管启用了 OpenAI 兼容接口时再送模型，模型判辱骂或接口失败仍转人工。Base URL 与 API Key 仅超级管理员可改，Key 只写不回显。
 
 主要前端路由：
 
@@ -186,7 +198,7 @@ campuswall-react/
 | `/p/:tag` | 精确标签下的公开动态 | 公开；失物招领标签未登录返回空列表 |
 | `/help`、`/help/form` | 帮助与反馈 | 公开，提交受来源与限流保护 |
 | `/rules` | 社区公约 | 公开 |
-| `/login` | 飞书登录与用户名密码登录/注册 | 公开；飞书立即进入；密码注册待审后才能登录 |
+| `/login` | 10 位学号登录/注册；独立页 `/email/status` 显示邮箱验证结果 | 公开；注册待审后才能登录；后台人员走 `/admin/login` |
 | `/me` 及 `/me/*` | 个人资料、帖子、评论、收藏、通知 | 必须登录 |
 | `/user/:id` | 公开用户主页 | 公开字段与公开帖子 |
 | `/admin/login` | 后台登录 | 任一拥有后台 capability 的账号可建立后台会话；已有有效 `user_session` 也可直接验证 |
@@ -194,10 +206,10 @@ campuswall-react/
 | `/admin/wall` | 普通帖子审核；包含非表白内容及结构化失物招领 | `content.queue.read`；具体动作再查对应 capability |
 | `/admin/confessions` | 表白墙审核；仅当前标签精确包含 `表白` 且不是结构化失物招领的内容 | `content.queue.read`；审核需要 `content.review` |
 | `/admin/notice` | 公告管理 | `notice.read`；创建/编辑/归档分别需要 `notice.create/update/delete` |
-| `/admin/users` | 用户、角色与个人权限 | `users.read`；角色/个人权限分配仅超级管理员根能力 |
+| `/admin/users` | 用户、角色与个人权限 | `users.read`；角色/个人权限分配看 `users.role.assign` / `users.permissions.assign`；任命超管仍仅超管 |
 | `/admin/comments` | 评论管理 | `content.comment.read`；具体动作单独授权 |
 | `/admin/trash` | 内容回收站 | `content.trash.read`；恢复/永久删除单独授权 |
-| `/admin/settings` | 平台设置 | `settings.read`；验证码/社区写入单独授权 |
+| `/admin/settings` | 平台设置与 AI 审核 | `settings.read`；验证码/社区写入单独授权；AI 配置仅超级管理员 |
 | `/admin/feedback`、`/admin/report` | 反馈与举报 | `feedback.read` / `report.read`；处理单独授权 |
 | `/admin/log`、`/admin/audit`、`/admin/error_log` | 日志与审计 | `logs.legacy_admin.read` / `audit.read` / `logs.error.read` |
 
@@ -1194,7 +1206,19 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 | GitHub 发布门禁 | Actions run `34489561135`（提交 `e54c738d17d4946994e007f16243e111d2457ee6`） | **通过**；verify 含 `npm ci`、audit、后端测试、前端构建、语法检查与健康冒烟 | 2026-09-10 22:31 CST / GitHub Actions |
 | 生产备份 | `/www/backups/campuswall/20260910-223210-before-deploy` | **通过**；PostgreSQL custom dump/restore-list、运行文件、环境、systemd、Nginx、UFW、Origin 证书 | 2026-09-10 22:32 CST / Cursor Agent |
 | 服务器发布 | 源站 `origin` 改为 `https://github.com/Guanlan-Campus-Wall/Campuswall-Web.git`，`322e6c2` 快进至 `e54c738`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh` 后重启 `campuswall.service` | **通过**；服务于 22:32:26 CST `active`，本机与公网 `/health` 正常。本轮无后端行为变更 | 2026-09-10 22:32 CST / Cursor Agent |
-| Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload；deployment `https://96eaf55c.guanlan-campus-wall.pages.dev` | **通过**；资源 `index-B7a9Tsma.js`；后台提醒文档链到组织仓库 | 2026-09-10 22:32 CST / Cursor Agent |
+| Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload；deployment `https://96eaf55c.guanlan-campus-wall.pages.dev` | **通过**；资源 `index-B7a9Tsma.js`；后台提醒文档链到组织仓库。3.12 起不再使用 Pages | 2026-09-10 22:32 CST / Cursor Agent |
+
+### 15.19 3.12 学号登录、AI 审核、源站前端、权限开关、电信优选与双重备份
+
+本轮把前台飞书登录改为 10 位学号注册登录；新增辱骂词库 + 可选 OpenAI 兼容审核；前端改由宝塔 Nginx 直出；超级管理员可给非超管配置单项权限（AI 密钥除外）；电信访问可跳到 `home.zongtech.xyz`；数字资产并行备份到 OCI US SanJose 与 Grok Bot。**本轮没有执行压力、容量、长稳或渗透测试。** 密钥与 SSH 密码不写入本表。
+
+| 项目 | 命令/证据 | 状态 | 时间/执行人 |
+| --- | --- | --- | --- |
+| 学号与审核定向测试 | `node --test` studentId / contentReview / publicationPolicy / ispPrefer / roles / userStore | **待源站完整测试补录** | 2026-09-10 / Cursor Agent |
+| GitHub 发布门禁 | 本轮提交的 Actions | **待补录** | 2026-09-10 / Cursor Agent |
+| 生产备份 | `/www/backups/campuswall/*-before-deploy` | **待补录** | 2026-09-10 / Cursor Agent |
+| 服务器发布 | 快进 `origin/main`、`npm ci`、后端测试、源站构建 `frontend/dist`、安装 web vhost、重启服务 | **待补录** | 2026-09-10 / Cursor Agent |
+| 双重异机备份 | OCI US SanJose 与 Grok Bot 同时写入 `campuswall-backups/<stamp>/` | **待补录** | 2026-09-10 / Cursor Agent |
 
 ## 16. Git 工作流
 
@@ -1203,8 +1227,8 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 3. 提交前确认 `git status --short`，不要加入数据库、上传文件、`.env`、日志、备份或 `artifacts/`；
 4. 测试通过后将目标提交推送到 GitHub `main`；
 5. 等待该 `main` 提交对应的 GitHub Actions CI 全部通过；CI 未完成或失败时不得部署；
-6. 生产服务器和 Cloudflare Pages 只部署该已通过 CI 的同一个 GitHub `main` 提交；
-7. 记录上线前提交、上线后提交、备份目录、CI 结果、Pages deployment URL 和验证结果。
+6. 生产服务器只部署该已通过 CI 的同一个 GitHub `main` 提交；前端在源站构建 `frontend/dist` 并由宝塔 Nginx 直出，不再上传 Cloudflare Pages；
+7. 记录上线前提交、上线后提交、备份目录、CI 结果、双重异机备份结果和验证结果。
 
 生产交付仓库只使用 `schoolrepo/main`。本机即使保留其他只读远端用于追溯，也不得把学校定制代码、生产文档或部署配置推送到该远端；发布前必须同时核对远端名称、目标 URL 和目标分支。
 
@@ -1229,9 +1253,9 @@ git push schoolrepo HEAD:main
 
 ## 17. 生产部署标准流程
 
-生产拆成两条独立发布链：前端由维护者工作站构建并直接上传 Cloudflare Pages；后端代码由生产服务器快进到同一 Git 提交，再由 systemd 重启。不要在服务器运行 Vite、nodemon、PM2 cluster 或把 `frontend/dist` 接回 Nginx。发布记录必须同时写下 Git 提交、Pages deployment URL、服务器备份目录和验证结果。
+生产拆成两条仍在同一源站完成的发布链：后端代码由生产服务器快进到已通过 CI 的 Git 提交并重启 systemd；前端在同一台机器构建 `frontend/dist`，由宝塔 Nginx 的 `wall.zongtech.xyz` vhost 直出。不要再使用 Wrangler Direct Upload。不要在服务器运行 nodemon、PM2 cluster。发布记录必须同时写下 Git 提交、服务器备份目录、双重异机备份结果和验证结果。
 
-数据库在本机、CI 和生产均以操作系统原生 PostgreSQL 服务运行；仓库不包含容器定义，npm 不负责数据库服务生命周期。生产继续使用系统 PostgreSQL、`campuswall.service` 和 Nginx，不得在普通 UI 发布中改变这条链路。删除本地辅助启动方式不会迁移、重建或停止生产数据库，也不需要变更 Cloudflare Pages、DNS、Origin Rule 或 Origin CA。
+数据库在本机、CI 和生产均以操作系统原生 PostgreSQL 服务运行；仓库不包含容器定义，npm 不负责数据库服务生命周期。生产继续使用系统 PostgreSQL、`campuswall.service` 和 Nginx。删除本地辅助启动方式不会迁移、重建或停止生产数据库。切换前端托管方式后，必须同时核对这些外部状态：`wall` 的橙云 A 记录、两条 Origin Rule、以及 Turnstile allowed hostnames 含 `home.zongtech.xyz`。
 
 以下 Linux 命令按 Bash 编写。包含生产修改的代码块必须由具备 root 权限的运维人员执行并启用 `set -euo pipefail`；任何一步失败都停止，不要跳过备份、TLS 或健康检查。
 
@@ -1241,18 +1265,15 @@ Cloudflare 配置必须同时满足下表。DNS、Pages 自定义域名和 Origi
 
 | 配置 | 生产值 |
 | --- | --- |
-| Pages 项目 | `guanlan-campus-wall`，构建目录 `frontend/dist` |
-| Pages 自定义域名 | `wall.zongtech.xyz` |
-| 前端 DNS | CNAME `wall` → `guanlan-campus-wall.pages.dev`，由 Pages 自定义域名管理并走 Cloudflare 代理 |
-| API DNS | A `api-wall` → `<源站 IPv4>`，必须保持 Proxied/橙云 |
-| Origin Rule 名称 | 建议 `Campus Wall API to 8443` |
-| Origin Rule 条件 | `(http.host eq "api-wall.zongtech.xyz" and cf.edge.server_port eq 443)` |
-| Origin Rule 动作 | Destination port override = `8443` |
-| Configuration Rule | `Campus Wall API strict TLS`；条件 `(http.host eq "api-wall.zongtech.xyz")`；SSL = `Strict` |
-| 源站 Nginx | `api-wall.zongtech.xyz`，TLS 监听 `8443`，其余未知路径 404 |
-| 源站 TLS | Cloudflare Origin CA，仅包含 `api-wall.zongtech.xyz`，私钥留在源站 |
+| 前端 DNS | A `wall` → 源站 IPv4，必须保持 Proxied/橙云；不要再指向 Pages |
+| API DNS | A `api-wall` → 源站 IPv4，必须保持 Proxied/橙云 |
+| Origin Rule | `api-wall.zongtech.xyz:443 → 8443`；`wall.zongtech.xyz:443 → 8443` |
+| Configuration Rule | `Campus Wall API strict TLS` 只对 API 设 Strict；网站主机保持区域 `Full`（可用自签证书） |
+| 源站 Nginx | `api-wall` 反代 5412；`wall` 的 `root` 为 `frontend/dist`；均监听 `8443` |
+| 源站 TLS | API 继续用 Cloudflare Origin CA；网站可用自签或 ACME，私钥留在源站 |
+| 电信优选 | `home.zongtech.xyz`；Turnstile 与 `ALLOWED_ORIGINS` 必须包含该主机 |
 
-`wall.zongtech.xyz` 还必须在 Pages 项目的 Custom domains 中显示 Active；只有 DNS 记录而没有绑定 Pages 项目，不算完成。当前区域全局 SSL/TLS 模式为 `Full`，不得为本项目直接改动这个区域级设置。生产使用 Configuration Rule `Campus Wall API strict TLS` 只对 `api-wall.zongtech.xyz` 设为 `Strict`，从而校验 Origin CA 证书且不影响同一区域其他主机。
+`wall.zongtech.xyz` 不再绑定 Pages 自定义域名。若控制台里仍看得到旧 Pages 域名，应删除以免和橙云 A 记录抢解析。当前区域全局 SSL/TLS 模式为 `Full`，不得为本项目直接改动这个区域级设置。生产使用 Configuration Rule `Campus Wall API strict TLS` 只对 `api-wall.zongtech.xyz` 设为 `Strict`。
 
 API 主机名必须是连字符形式 `api-wall.zongtech.xyz`。不要创建、回填或在前端变量中使用 `api.wall.zongtech.xyz`；该嵌套主机名不在当前 Free 区域 Universal SSL 的一级通配符覆盖范围内，会在请求到达 Origin Rule 之前就造成边缘证书不匹配。
 
@@ -1284,6 +1305,8 @@ install -o root -g root -m 0644 deploy/cloudflare-realip.conf \
   /etc/campuswall/cloudflare-realip.conf
 install -o root -g root -m 0644 deploy/nginx-campuswall-api.conf \
   /www/server/panel/vhost/nginx/api-wall.zongtech.xyz.conf
+install -o root -g root -m 0644 deploy/nginx-campuswall-web.conf \
+  /www/server/panel/vhost/nginx/wall.zongtech.xyz.conf
 install -o root -g root -m 0644 deploy/nginx-campuswall-legacy-redirect.conf \
   /www/server/panel/vhost/nginx/160.236.110.133.conf
 /www/server/nginx/sbin/nginx -t
@@ -1363,7 +1386,7 @@ printf 'backup_dir=%s\n' "$backup_dir"
 
 ### 17.2 后端代码与配置发布
 
-服务器只快进 GitHub `main`，不在服务器构建或发布前端：
+服务器只快进 GitHub `main`，然后在源站构建前端：
 
 ```bash
 set -euo pipefail
@@ -1386,6 +1409,8 @@ runuser -u campuswall -- test -r backend/src/config.js
 runuser -u campuswall -- test -r node_modules/pg/package.json
 npm --workspace backend test
 npm --workspace backend run check
+npm --workspace frontend run build
+test -f frontend/dist/index.html
 ```
 
 用受控编辑器修改 `/etc/campuswall/backend.env`，不要 `source` 该文件（Webhook 或展示文案可能含 shell 特殊字符）。保留真实 `SITE_LAUNCHED_AT`，并确认至少包含：
@@ -1394,15 +1419,13 @@ npm --workspace backend run check
 NODE_ENV=production
 HOST=127.0.0.1
 PORT=5412
-ALLOWED_ORIGINS=https://wall.zongtech.xyz
+ALLOWED_ORIGINS=https://wall.zongtech.xyz,https://home.zongtech.xyz
 PUBLIC_SITE_URL=https://wall.zongtech.xyz
 PUBLIC_API_URL=https://api-wall.zongtech.xyz
+TELECOM_PREFER_ENABLED=true
+TELECOM_PREFER_HOST=https://home.zongtech.xyz
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_SAMESITE=Lax
-FEISHU_APP_ID=
-FEISHU_APP_SECRET=
-FEISHU_LOGIN_CHAT_ID=
-FEISHU_REDIRECT_URI=https://api-wall.zongtech.xyz/api/user/feishu/callback
 ```
 
 环境文件仍须 `root:root 600`。若部署资产变化，按 17.0 节重新安装 Nginx/real-IP 文件，再执行：
@@ -1428,30 +1451,33 @@ test "$(git rev-parse HEAD)" = "$target_commit"
 git rev-parse HEAD
 ```
 
-### 17.3 Cloudflare Pages 前端发布
+### 17.3 源站前端发布
 
-Pages 发布应从已测试、干净且与目标 `main` 相同的维护者工作区执行。Wrangler 登录凭据由本机安全存储管理，不写入仓库：
+在 17.2 的 `npm --workspace frontend run build` 之后，确认 `frontend/dist/index.html` 存在，安装网站证书与 vhost，并把同一份 `dist` 同步到 homelab：
 
-```powershell
-git status --short
-git fetch schoolrepo main
-$localSha = git rev-parse HEAD
-$remoteSha = git rev-parse schoolrepo/main
-if ($localSha -ne $remoteSha) { throw "当前 HEAD 与 schoolrepo/main 不一致，停止 Pages 发布" }
-# 在 GitHub Actions 页面或 gh CLI 确认该 $remoteSha 的 CI 已全部通过
-npm ci
-npm --workspace backend test
-npm --workspace backend run check
-npm run build
-npx wrangler whoami
-npm run pages:deploy
+```bash
+set -euo pipefail
+test -f /www/wwwroot/campuswall-react/frontend/dist/index.html
+install -d -o root -g root -m 0700 /etc/campuswall/tls
+# 若尚无 wall 证书，生成仅用于 Cloudflare Full 的自签证书；已有有效证书则跳过
+if [[ ! -f /etc/campuswall/tls/wall.zongtech.xyz.pem ]]; then
+  openssl req -x509 -nodes -newkey rsa:2048 -days 825 \
+    -keyout /etc/campuswall/tls/wall.zongtech.xyz.key \
+    -out /etc/campuswall/tls/wall.zongtech.xyz.pem \
+    -subj "/CN=wall.zongtech.xyz" \
+    -addext "subjectAltName=DNS:wall.zongtech.xyz"
+  chmod 0600 /etc/campuswall/tls/wall.zongtech.xyz.key
+  chmod 0644 /etc/campuswall/tls/wall.zongtech.xyz.pem
+fi
+/www/server/nginx/sbin/nginx -t
+/www/server/nginx/sbin/nginx -s reload
 ```
 
-`npm run pages:deploy` 会再次构建并把 `frontend/dist` 直接上传到 Pages 项目 `guanlan-campus-wall` 的 production branch `main`。保存命令返回的不可变 deployment URL，同时检查稳定地址 `https://guanlan-campus-wall.pages.dev` 和自定义域名。不要把 `.wrangler/`、OAuth 数据或构建临时文件提交到 Git。
+不要再执行 `npx wrangler pages deploy`。`wrangler.jsonc` 只是历史残留。
 
 ### 17.4 DNS、Origin Rule 与端到端验证
 
-上线顺序是：Origin 证书与 Nginx/UFW → API 橙云 DNS → Origin Rule → 后端安全环境变量 → Pages 部署和自定义域名。切换完成后至少验证：
+上线顺序是：Origin/网站证书与 Nginx/UFW → `wall` 与 `api-wall` 橙云 DNS → 两条 Origin Rule → 后端安全环境变量 → 源站构建前端。切换完成后至少验证：
 
 ```powershell
 Resolve-DnsName wall.zongtech.xyz
@@ -1464,13 +1490,15 @@ curl.exe -i -X OPTIONS https://api-wall.zongtech.xyz/api/user/session `
   -H "Access-Control-Request-Method: GET"
 ```
 
-SPA 深链接 `/wall` 必须返回页面而不是 Pages 404；API 健康检查必须经过正式域名成功。预检响应必须只允许正式 Origin，实际登录/注册还要在浏览器验证 Cookie、刷新保持登录、后台入口、发帖/上传和失物招领。再用不受信任 Origin 做一遍预检，确认不会返回可凭据访问的允许头。
+SPA 深链接 `/wall` 必须返回页面而不是 404；API 健康检查必须经过正式域名成功。预检响应必须允许 `https://wall.zongtech.xyz` 与 `https://home.zongtech.xyz`。
 
-最后核对 Cloudflare Pages 自定义域名为 Active、API DNS 为 Proxied、Origin Rule 命中条件和目标端口没有被误改；服务器侧确认 Nginx access log 中客户端 IP 已从 `CF-Connecting-IP` 正确恢复。只有 Pages、API、CORS/Cookie、服务日志和主要业务回归全部通过，才算发布完成。
+最后核对：`wall` 与 `api-wall` DNS 均为 Proxied、两条 Origin Rule 命中 8443、源站 Nginx 同时有 web/api vhost、homelab `home.zongtech.xyz` 可打开同一套前端。只有网站、API、CORS/Cookie、服务日志和主要业务回归全部通过，才算发布完成。
+
+数字资产双重备份：把 `/etc/campuswall/backup.env` 配成 OCI US SanJose 与 Grok Bot 两个 SSH 目标（密码不入库），安装 `deploy/campuswall-backup.service` 与 timer，首次执行 `deploy/backup-digital-assets.sh`。两次推送都必须成功才算完成。
 
 ### 17.5 3.0 数据与兼容检查
 
-3.0 启动时会执行加法式数据库初始化：为 `users` 补 `permission_version`，创建 `user_permission_overrides` 与索引，并清理 reviewer/super_admin 的非法覆盖。上线前的 `pg_dump -Fc` 是硬门槛；服务首次启动后只读核对：
+3.0 启动时会执行加法式数据库初始化：为 `users` 补 `permission_version` 与 `student_id`，创建 `user_permission_overrides` 与索引，并清理 **super_admin** 的非法覆盖（审核员可以保留个人开关）。上线前的 `pg_dump -Fc` 是硬门槛；服务首次启动后只读核对：
 
 ```bash
 runuser -u postgres -- psql -d campus_wall -c "\d+ users"
@@ -1485,25 +1513,11 @@ runuser -u postgres -- psql -d campus_wall -c "SELECT effect, count(*) FROM user
 
 ### 18.1 仅前端异常
 
-服务器上的 `frontend/dist` 已不参与正式流量，移动它不会回滚 Pages。先从发布记录确定最后一个已验证 Git 提交，在独立临时 worktree 中构建并重新上传该提交：
-
-```powershell
-git fetch schoolrepo main
-git worktree add "<独立临时目录>" "<已验证提交哈希>"
-Set-Location "<独立临时目录>"
-npm ci
-npm --workspace backend test
-npm --workspace backend run check
-npm run build
-npx wrangler whoami
-npm run pages:deploy
-```
-
-保存新的 deployment URL 并重复 17.4 节验证。该操作只恢复线上前端，不改变 GitHub `main`；故障稳定后仍应在正常功能分支对错误提交执行 `git revert`，测试并推送，再用新提交重新部署，避免长期让线上内容与 `main` 不一致。不要为了前端故障修改 API DNS、Origin Rule 或服务器 Nginx。
+源站 `frontend/dist` 现在是正式流量。回滚时快进或检出上一个已验证提交，重新 `npm --workspace frontend run build`，再 `nginx -s reload`，并把 `dist` 同步到 homelab。不要为了前端故障修改 API DNS。不要再上传 Cloudflare Pages。
 
 ### 18.2 后端代码异常
 
-先读取 `$backup_dir/previous-commit.txt`，确认目标提交后再创建回滚分支或部署该提交。不要用 `git reset --hard` 覆盖不明运行文件。推荐在本地对错误提交做 `git revert`，测试后推送 `main`，再按标准流程部署。后端回滚不会自动回滚 Pages；如果前后端 API 契约不兼容，必须把两边恢复到同一兼容版本。
+先读取 `$backup_dir/previous-commit.txt`，确认目标提交后再创建回滚分支或部署该提交。不要用 `git reset --hard` 覆盖不明运行文件。推荐在本地对错误提交做 `git revert`，测试后推送 `main`，再按标准流程部署。后端回滚不会自动回滚已构建的 `frontend/dist`；如果前后端 API 契约不兼容，必须把两边恢复到同一兼容版本。
 
 紧急情况下可在生产目录检出已确认提交并重启：
 
@@ -1678,7 +1692,7 @@ sudo -u postgres psql -d campus_wall -c "SELECT 1;"
 
 ### 页面刷新后 404
 
-正式页面由 Cloudflare Pages 托管，不再检查源站 Nginx 的 `try_files`。先确认 `https://guanlan-campus-wall.pages.dev/<同一路径>` 是否正常、Pages production deployment 是否来自预期提交、项目中没有把自定义 `404.html` 误当 SPA fallback，再重新部署并检查自定义域名状态。
+正式页面由源站 Nginx `try_files` 提供 SPA。先确认 `https://wall.zongtech.xyz/<同一路径>` 是否正常、`frontend/dist/index.html` 是否来自预期提交，再重载 Nginx。
 
 ### API 502
 
@@ -1712,9 +1726,9 @@ sudo -u postgres psql -d campus_wall -c "SELECT 1;"
 
 确认账号状态启用并重新登录，再检查 `/api/user/session` 是否返回非空 `capabilities`。入口不再看角色名；普通 user 获权后也应显示，admin 被 deny 到没有任何 capability 后应隐藏。前端异常时检查 `UserContext`/`Layout`，但后端仍必须独立拒绝无权接口。
 
-### 飞书登录失败或一直回到登录页
+### 学号登录失败或注册被拒绝
 
-先看 `/login?feishu_error=`：`not_in_group` 表示用户不在 `FEISHU_LOGIN_CHAT_ID` 群内或应用机器人已退群；`not_configured` 表示服务器未配齐 `FEISHU_APP_ID` / `FEISHU_APP_SECRET` / `FEISHU_LOGIN_CHAT_ID` / `FEISHU_REDIRECT_URI`；`invalid_state` 常见于 Cookie 的 SameSite 被改成 Strict、回调域名与开放平台不一致。不要把审核提醒 Webhook 填进登录变量。完整步骤见 `docs/FEISHU_LOGIN.md`。
+注册必须是 10 位数字学号。长度不是 10 或含非数字字符时接口直接拒绝。审核通过前不能登录。后台人员使用 `/admin/login`。飞书 OAuth 路由已返回 410，见 `docs/FEISHU_LOGIN.md`。不要把审核提醒 Webhook 填进已停用的登录变量。
 
 ### 点击顶部后台入口又要求登录
 

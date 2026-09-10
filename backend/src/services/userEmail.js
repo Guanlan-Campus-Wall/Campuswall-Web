@@ -53,6 +53,7 @@ export const classifyVerificationEmailError = (error) => {
 export const sendVerificationEmail = async ({ to, token }) => {
   const link = emailVerifyUrl(token)
   if (!link) throw Object.assign(new Error('email_not_configured'), { permanent: true })
+  const site = String(config.publicSiteUrl || 'https://wall.zongtech.xyz').trim()
   await sendMail({
     to,
     subject: '验证校园墙邮箱',
@@ -62,7 +63,16 @@ export const sendVerificationEmail = async ({ to, token }) => {
       link,
       '',
       '如果不是你本人操作，请忽略这封邮件。'
-    ].join('\n')
+    ].join('\n'),
+    html: [
+      '<div style="font-family:sans-serif;line-height:1.7;color:#111;max-width:560px;margin:0 auto;padding:24px">',
+      '<h1 style="font-size:20px;margin:0 0 12px">验证校园墙邮箱</h1>',
+      '<p style="margin:0 0 16px">点击下面的按钮完成绑定。链接 24 小时内有效。</p>',
+      `<p style="margin:0 0 24px"><a href="${link}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px">验证邮箱</a></p>`,
+      `<p style="margin:0 0 8px;font-size:13px;color:#555">如果按钮无法打开，请复制此链接：<br>${link}</p>`,
+      `<p style="margin:0;font-size:12px;color:#888">如果不是你本人操作，请忽略这封邮件。<br>${site}</p>`,
+      '</div>'
+    ].join('')
   })
 }
 

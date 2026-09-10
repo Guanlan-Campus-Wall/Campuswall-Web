@@ -1,0 +1,12 @@
+[Unit]
+Description=Campus Wall dual offsite digital-asset backup
+After=network-online.target postgresql.service campuswall.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/www/wwwroot/campuswall-react/deploy/backup-digital-assets.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

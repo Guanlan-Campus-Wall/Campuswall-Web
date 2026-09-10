@@ -10,6 +10,7 @@ import { messageStore } from '../services/messageStore.js'
 import { userSessionCookieName, userStore } from '../services/userStore.js'
 import { captchaTestRateLimit, loginRateLimit, notificationTestRateLimit, passwordChangeRateLimit } from '../services/rateLimit.js'
 import { settingsStore } from '../services/settingsStore.js'
+import { listInsultWords } from '../services/contentReview.js'
 import { verifyCaptcha } from '../services/captcha.js'
 import { feedbackCategories, feedbackStatuses, feedbackStore } from '../services/feedbackStore.js'
 import { reportStore } from '../services/reportStore.js'
@@ -117,7 +118,10 @@ const isReviewOnly = (req) => canReviewPosts(req)
   && !fullContentOverviewCapabilities.every((capability) => can(req, capability))
 const canManageSettings = (req) => can(req, 'settings.read')
 const canManageFeedback = (req) => can(req, 'feedback.read')
-const canManageAdmins = (req) => req.adminRole === 'super_admin' && can(req, 'users.role.assign') && can(req, 'users.permissions.assign')
+const canManageAdmins = (req) => can(req, 'users.role.assign') && can(req, 'users.permissions.assign')
+const canAssignRoles = (req) => can(req, 'users.role.assign')
+const canAssignPermissions = (req) => can(req, 'users.permissions.assign')
+const isSuperAdmin = (req) => req.adminRole === 'super_admin'
 const canManageUsers = (req) => can(req, 'users.read')
 const userMutationOptions = (req) => ({ requireUserRole: req.adminRole !== 'super_admin' })
 const protectedUserTarget = async (req, res) => {
@@ -795,6 +799,41 @@ adminRouter.post('/settings/captcha/test', requireAdmin, captchaTestRateLimit, a
   })
 }))
 
+adminRouter.get('/settings/ai', requireAdmin, asyncRoute(async (req, res) => {
+  if (!isSuperAdmin(req) && !can(req, 'settings.ai.read')) {
+    res.status(403).json({ success: false, error: '只有超级管理员可以查看 AI 审核配置' })
+    return
+  }
+  res.set('Cache-Control', 'no-store')
+  res.json({
+    success: true,
+    settings: {
+      ...(await settingsStore.aiAdmin()),
+      lexicon_size: listInsultWords().length
+    }
+  })
+}))
+
+adminRouter.put('/settings/ai', requireAdmin, asyncRoute(async (req, res) => {
+  if (!isSuperAdmin(req)) {
+    res.status(403).json({ success: false, error: '只有超级管理员可以修改 AI 审核配置' })
+    return
+  }
+  try {
+    const settings = await settingsStore.updateAi(req.body || {}, { actor: req.adminUser })
+    appendAdminLog(`${nowText()}    ${req.adminUser} 更新 AI 审核配置：${settings.enabled ? '启用模型复检' : '仅词库'}`)
+    res.json({
+      success: true,
+      settings: {
+        ...settings,
+        lexicon_size: listInsultWords().length
+      }
+    })
+  } catch (error) {
+    if (!sendAdminError(res, error)) throw error
+  }
+}))
+
 adminRouter.get('/settings/community', requireAdmin, asyncRoute(async (req, res) => {
   if (!canManageSettings(req)) {
     res.status(403).json({ success: false, error: '无权管理平台设置' })
@@ -960,8 +999,8 @@ adminRouter.get('/users', requireAdmin, asyncRoute(async (req, res) => {
 }))
 
 adminRouter.post('/users', requireAdmin, asyncRoute(async (req, res) => {
-  if (!canManageAdmins(req)) {
-    res.status(403).json({ success: false, error: '只有超级管理员可以创建管理员账号' })
+  if (!canAssignRoles(req)) {
+    res.status(403).json({ success: false, error: '没有创建管理员账号的权限' })
     return
   }
   const result = await userStore.createStaffUser({
@@ -987,8 +1026,8 @@ adminRouter.get('/roles', requireAdmin, (req, res) => {
   res.json({
     success: true,
     roles: roleDefinitions,
-    can_manage_roles: canManageAdmins(req),
-    can_manage_permissions: canManageAdmins(req),
+    can_manage_roles: canAssignRoles(req),
+    can_manage_permissions: canAssignPermissions(req),
     catalog_version: permissionCatalogVersion
   })
 })
@@ -1003,18 +1042,19 @@ adminRouter.get('/permissions', requireAdmin, (req, res) => {
     capabilities: req.adminCapabilities,
     current_user_id: Number(req.adminAccount.id),
     current_role: req.adminRole,
-    can_manage_permissions: canManageAdmins(req),
+    can_manage_permissions: canAssignPermissions(req),
     policies: {
-      reviewer_overrides_locked: true,
+      reviewer_overrides_locked: false,
       super_admin_overrides_locked: true,
-      root_permissions_super_admin_only: true
+      root_permissions_super_admin_only: false,
+      ai_settings_super_admin_only: true
     }
   })
 })
 
 adminRouter.get('/users/:userId/permissions', requireAdmin, asyncRoute(async (req, res) => {
-  if (!canManageAdmins(req)) {
-    res.status(403).json({ success: false, error: '只有超级管理员可以查看个人权限覆盖' })
+  if (!canAssignPermissions(req)) {
+    res.status(403).json({ success: false, error: '没有查看个人权限覆盖的权限' })
     return
   }
   const state = await userStore.getPermissionState(req.params.userId)
@@ -1027,8 +1067,8 @@ adminRouter.get('/users/:userId/permissions', requireAdmin, asyncRoute(async (re
 }))
 
 const replaceUserPermissions = async (req, res) => {
-  if (!canManageAdmins(req)) {
-    res.status(403).json({ success: false, error: '只有超级管理员可以分配个人权限' })
+  if (!canAssignPermissions(req)) {
+    res.status(403).json({ success: false, error: '没有分配个人权限的权限' })
     return
   }
   const expectedConfirmation = req.method === 'DELETE'
@@ -1087,8 +1127,8 @@ adminRouter.delete('/users/:userId/permissions', requireAdmin, asyncRoute(async 
 }))
 
 const updateUserRole = asyncRoute(async (req, res) => {
-  if (!canManageAdmins(req)) {
-    res.status(403).json({ success: false, error: '只有超级管理员可以分配角色' })
+  if (!canAssignRoles(req)) {
+    res.status(403).json({ success: false, error: '没有分配角色的权限' })
     return
   }
   const result = await userStore.setRole({

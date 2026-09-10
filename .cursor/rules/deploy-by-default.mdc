@@ -13,7 +13,7 @@ alwaysApply: true
 2. 交付远端只允许 `schoolrepo` = `Guanlan-Campus-Wall/Campuswall-Web` 的 `main`。禁止推送到 `origin`（`Gavin-LHX/campuswall-react`），禁止强推 `main`。
 3. 等该提交的 GitHub Actions 全部通过后再部署。
 4. 源站先做 `/www/backups/campuswall/*-before-deploy` 隔离备份，再快进 `origin/main`、`npm ci`、后端测试、`deploy/prepare-runtime.sh`、重启 `campuswall.service`。
-5. 本机 Vite 若被 Application Control 拦住，在源站 Linux 构建 `frontend/dist`，再用 Wrangler Direct Upload 发布 Pages 项目 `guanlan-campus-wall`。
-6. 补录 15.x 验收表、Pages URL、备份目录和健康检查；纯文档提交同步 `main`，不必无故重启服务。
+5. 本机 Vite 若被 Application Control 拦住，在源站 Linux 构建 `frontend/dist`，由宝塔 Nginx 直出 `wall.zongtech.xyz`，不要再上传 Cloudflare Pages。
+6. 补录 15.x 验收表、备份目录、健康检查和双重异机备份结果；纯文档提交同步 `main`，不必无故重启服务。
 
 密钥、SMTP 密码、Webhook、SSH 密码不得写入 Git、HANDOFF 正文或回复。

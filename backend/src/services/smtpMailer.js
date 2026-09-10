@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import net from 'node:net'
 import tls from 'node:tls'
 import { config } from '../config.js'
@@ -33,17 +34,41 @@ export const isSmtpConfigured = (settings = config) => Boolean(
 
 const headerValue = (value) => String(value || '').replace(/[\r\n]+/g, ' ').trim()
 
-export const buildMimeMessage = ({ from, to, subject, text }) => {
+export const buildMimeMessage = ({ from, to, subject, text, html }) => {
   const recipients = Array.isArray(to) ? to : [to]
+  const plain = String(text || '').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')
+  if (!html) {
+    return [
+      `From: ${headerValue(from)}`,
+      `To: ${recipients.map(headerValue).join(', ')}`,
+      `Subject: ${headerValue(subject)}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset=utf-8',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      plain
+    ].join('\r\n')
+  }
+  const boundary = `campuswall-${randomBytes(12).toString('hex')}`
+  const rich = String(html || '').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')
   return [
     `From: ${headerValue(from)}`,
     `To: ${recipients.map(headerValue).join(', ')}`,
     `Subject: ${headerValue(subject)}`,
     'MIME-Version: 1.0',
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
     'Content-Type: text/plain; charset=utf-8',
     'Content-Transfer-Encoding: 8bit',
     '',
-    String(text || '').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')
+    plain,
+    `--${boundary}`,
+    'Content-Type: text/html; charset=utf-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    rich,
+    `--${boundary}--`
   ].join('\r\n')
 }
 
@@ -134,6 +159,7 @@ export async function sendMail({
   to,
   subject,
   text,
+  html,
   settings = config
 } = {}) {
   if (!isSmtpConfigured(settings)) {
@@ -185,7 +211,8 @@ export async function sendMail({
       from,
       to: parsed.emails,
       subject,
-      text
+      text,
+      html
     })
     socket.write(`${payload.replace(/^\./gm, '..')}\r\n.\r\n`)
     await expect(socket, null, 250)

@@ -13,6 +13,7 @@ import {
 } from './userEmail.js'
 import { config, resolveBackend } from '../config.js'
 import { safeBasename } from './safeBasename.js'
+import { validateStudentId, looksLikeStudentId } from './studentId.js'
 import {
   accountRoles,
   canPasswordLogin,
@@ -76,6 +77,18 @@ const legacyManagerRole = (manager = {}) => {
 const parseId = (value) => {
   const id = Number(value)
   return Number.isSafeInteger(id) && id > 0 ? id : null
+}
+
+const actorHasCapability = async (client, actor, key) => {
+  if (!actor) return false
+  const overrides = await client.query(
+    'SELECT permission_key, effect FROM user_permission_overrides WHERE user_id = $1',
+    [actor.id]
+  )
+  return resolvePermissionState({
+    role: actor.role,
+    overrides: overrides.rows
+  }).effective.includes(key)
 }
 
 const isFuture = (value) => {
@@ -183,7 +196,11 @@ export class UserStore {
         WHERE feishu_open_id IS NOT NULL;
 
       ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS email TEXT;
+        ADD COLUMN IF NOT EXISTS student_id TEXT;
+
+      CREATE UNIQUE INDEX IF NOT EXISTS users_student_id_uidx
+        ON users(student_id)
+        WHERE student_id IS NOT NULL;
 
       ALTER TABLE users
         ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
@@ -239,7 +256,7 @@ export class UserStore {
       DELETE FROM user_permission_overrides overrides
       USING users
       WHERE overrides.user_id = users.id
-        AND users.role IN ('reviewer', 'super_admin');
+        AND users.role = 'super_admin';
 
       CREATE TABLE IF NOT EXISTS legacy_manager_migrations (
         username_key TEXT PRIMARY KEY,
@@ -323,7 +340,8 @@ export class UserStore {
       updated_at: row.updated_at,
       last_login_at: row.last_login_at,
       has_password: Boolean(row.password_hash && row.password_salt),
-      feishu_login: Boolean(row.feishu_open_id),
+      student_id: row.student_id ? String(row.student_id) : '',
+      feishu_login: false,
       email: row.email && row.email_verified_at ? String(row.email) : '',
       email_verified: Boolean(row.email && row.email_verified_at),
       email_pending: cleanText(row.pending_email || '', 320),
@@ -420,6 +438,13 @@ export class UserStore {
     return result.rows[0] || null
   }
 
+  async getRawByStudentId(studentId) {
+    const parsed = validateStudentId(studentId)
+    if (!parsed.success) return null
+    const result = await this.pool.query(`${userWithOverridesSelect} WHERE u.student_id = $1`, [parsed.studentId])
+    return result.rows[0] || null
+  }
+
   async getRawByVerifiedEmail(email) {
     const value = normalizeEmail(email)
     if (!value) return null
@@ -436,22 +461,28 @@ export class UserStore {
     return this.publicProfile(row)
   }
 
-  async register(usernameInput, passwordInput, { email = '', emailNotify = true } = {}) {
-    const usernameResult = validateUsername(usernameInput)
+  async register(usernameInput, passwordInput, { email = '', emailNotify = true, studentId = '', nickname = '' } = {}) {
+    const studentResult = validateStudentId(studentId || usernameInput)
+    if (!studentResult.success) return studentResult
+    const usernameResult = validateUsername(studentResult.studentId)
     if (!usernameResult.success) return usernameResult
     if (reservedFeishuUsername(usernameResult.username)) {
-      return { success: false, error: '该用户名由飞书登录保留' }
+      return { success: false, error: '该用户名不可用于注册' }
     }
     const password = String(passwordInput || '')
     if (password.length < 8 || password.length > 128) {
       return { success: false, error: '密码长度需要在 8 到 128 个字符之间' }
     }
+    const displayName = cleanText(nickname, 40) || `同学${studentResult.studentId.slice(-4)}`
     const normalizedEmail = String(email || '').trim() ? normalizeEmail(email) : ''
     if (String(email || '').trim() && !normalizedEmail) {
       return { success: false, error: '请输入有效的邮箱地址' }
     }
     if (normalizedEmail && await this.getRawByVerifiedEmail(normalizedEmail)) {
-      return { success: false, error: '注册失败，请检查用户名、密码或邮箱' }
+      return { success: false, error: '注册失败，请检查学号、密码或邮箱' }
+    }
+    if (await this.getRawByStudentId(studentResult.studentId)) {
+      return { success: false, error: '该学号已注册' }
     }
     const { salt, hash } = await this.hashPassword(password)
     const notify = emailNotify !== false
@@ -459,19 +490,21 @@ export class UserStore {
     try {
       const result = await this.pool.query(
         `INSERT INTO users (
-           username, username_key, password_hash, password_salt, nickname, role, status,
+           username, username_key, student_id, password_hash, password_salt, nickname, role, status,
            pending_email, email_notify, email_verify_token_hash, email_verify_expires_at
          ) VALUES (
-           $1, $2, $3, $4, $1, 'user', 'pending',
-           $5::text, $6::boolean, $7::text,
-           CASE WHEN $5::text IS NULL THEN NULL::timestamptz ELSE now() + interval '24 hours' END
+           $1, $2, $3, $4, $5, $6, 'user', 'pending',
+           $7::text, $8::boolean, $9::text,
+           CASE WHEN $7::text IS NULL THEN NULL::timestamptz ELSE now() + interval '24 hours' END
          )
          RETURNING *`,
         [
           usernameResult.username,
           usernameResult.usernameKey,
+          studentResult.studentId,
           hash,
           salt,
+          displayName,
           normalizedEmail || null,
           notify,
           token ? hashEmailToken(token) : null
@@ -494,13 +527,16 @@ export class UserStore {
         user: this.publicUser(row)
       }
     } catch (error) {
-      if (error?.code === '23505') return { success: false, error: '注册失败，请检查用户名、密码或邮箱' }
+      if (error?.code === '23505') return { success: false, error: '注册失败，请检查学号、密码或邮箱' }
       throw error
     }
   }
 
   async login(username, password) {
-    const user = await this.getRawByUsername(username)
+    const identifier = String(username || '').trim()
+    const user = looksLikeStudentId(identifier)
+      ? await this.getRawByStudentId(identifier)
+      : await this.getRawByUsername(identifier)
     if (!user?.password_hash || !user?.password_salt) return null
     const ok = await this.verifyPassword(password, user.password_salt, user.password_hash)
     if (!ok) return null
@@ -736,9 +772,13 @@ export class UserStore {
       await client.query('LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE')
       const actorResult = await client.query('SELECT * FROM users WHERE id = $1 FOR UPDATE', [actorUserId])
       const actor = actorResult.rows[0]
-      if (!actor || actor.status !== 'active' || normalizeRole(actor.role) !== 'super_admin') {
+      if (!actor || actor.status !== 'active' || !(await actorHasCapability(client, actor, 'users.role.assign'))) {
         await client.query('ROLLBACK')
-        return { success: false, statusCode: 403, error: '只有超级管理员可以创建管理员账号' }
+        return { success: false, statusCode: 403, error: '没有分配角色的权限' }
+      }
+      if (nextRole === 'super_admin' && normalizeRole(actor.role) !== 'super_admin') {
+        await client.query('ROLLBACK')
+        return { success: false, statusCode: 403, error: '只有超级管理员可以创建超级管理员' }
       }
       if (Number(actor.id) === Number(actorUserId) && usernameKey(actor.username) === usernameResult.usernameKey) {
         await client.query('ROLLBACK')
@@ -881,9 +921,13 @@ export class UserStore {
       const targetResult = await client.query('SELECT * FROM users WHERE id = $1 FOR UPDATE', [targetUserId])
       const actor = actorResult.rows[0]
       const target = targetResult.rows[0]
-      if (!actor || actor.status !== 'active' || normalizeRole(actor.role) !== 'super_admin') {
+      if (!actor || actor.status !== 'active' || !(await actorHasCapability(client, actor, 'users.role.assign'))) {
         await client.query('ROLLBACK')
-        return { success: false, statusCode: 403, error: '只有超级管理员可以分配角色' }
+        return { success: false, statusCode: 403, error: '没有分配角色的权限' }
+      }
+      if (nextRole === 'super_admin' && normalizeRole(actor.role) !== 'super_admin') {
+        await client.query('ROLLBACK')
+        return { success: false, statusCode: 403, error: '只有超级管理员可以任命超级管理员' }
       }
       if (!target) {
         await client.query('ROLLBACK')
@@ -982,9 +1026,9 @@ export class UserStore {
       const targetResult = await client.query('SELECT * FROM users WHERE id = $1 FOR UPDATE', [targetUserId])
       const actor = actorResult.rows[0]
       const target = targetResult.rows[0]
-      if (!actor || actor.status !== 'active' || normalizeRole(actor.role) !== 'super_admin') {
+      if (!actor || actor.status !== 'active' || !(await actorHasCapability(client, actor, 'users.permissions.assign'))) {
         await client.query('ROLLBACK')
-        return { success: false, statusCode: 403, error: '只有超级管理员可以分配个人权限', code: 'PERMISSION_ASSIGN_FORBIDDEN' }
+        return { success: false, statusCode: 403, error: '没有分配个人权限的权限', code: 'PERMISSION_ASSIGN_FORBIDDEN' }
       }
       if (!target) {
         await client.query('ROLLBACK')
@@ -995,7 +1039,7 @@ export class UserStore {
         return {
           success: false,
           statusCode: 409,
-          error: normalizeRole(target.role) === 'reviewer' ? '所有审核员必须使用统一权限，不能设置个人覆盖' : '超级管理员始终拥有全部权限，不能设置个人覆盖',
+          error: '超级管理员始终拥有全部权限，不能设置个人覆盖',
           code: 'PERMISSION_OVERRIDES_LOCKED'
         }
       }

@@ -83,7 +83,7 @@ function ReviewBadge({ message }) {
     return <span className="badge status-success"><i className="bi bi-check-circle-fill" />已审核</span>
   }
   if (message.moderation_status === 'pending') {
-    return <span className="badge status-warning"><i className="bi bi-hourglass-split" />待审核 · 未公开</span>
+    return <span className="badge status-warning"><i className="bi bi-hourglass-split" />{message.review_source === 'lexicon' || message.review_source === 'openai' || message.review_source === 'ai_unavailable' ? 'AI 未通过 · 待人工复审' : '待审核 · 未公开'}</span>
   }
   if (message.moderation_status === 'hidden') {
     return <span className="badge status-warning"><i className="bi bi-clock-history" />待复核</span>

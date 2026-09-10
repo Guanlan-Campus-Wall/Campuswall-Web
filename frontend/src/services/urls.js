@@ -1,7 +1,15 @@
 const trimTrailingSlash = (value = '') => String(value || '').trim().replace(/\/+$/, '')
 
-export const apiBaseUrl = trimTrailingSlash(import.meta.env.VITE_API_BASE_URL)
-export const staticBaseUrl = `${trimTrailingSlash(import.meta.env.VITE_STATIC_URL || `${apiBaseUrl}/static`)}/`
+const configuredApiBaseUrl = trimTrailingSlash(import.meta.env.VITE_API_BASE_URL)
+const configuredStaticUrl = trimTrailingSlash(import.meta.env.VITE_STATIC_URL || '')
+const preferHost = 'home.zongtech.xyz'
+
+const isPreferOrigin = () => typeof window !== 'undefined' && window.location.hostname === preferHost
+
+export const apiBaseUrl = isPreferOrigin() ? '' : configuredApiBaseUrl
+export const staticBaseUrl = isPreferOrigin()
+  ? '/static/'
+  : `${configuredStaticUrl || `${apiBaseUrl}/static`}/`
 
 const isAbsoluteUrl = (value = '') => /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(value)
 

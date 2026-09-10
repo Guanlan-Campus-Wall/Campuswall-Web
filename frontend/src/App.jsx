@@ -9,6 +9,7 @@ import Layout from './components/Layout.jsx'
 import { featureModules, supportingRoutes } from './modules/registry.jsx'
 
 const Login = lazy(() => import('./pages/Login.jsx'))
+const EmailStatus = lazy(() => import('./pages/EmailStatus.jsx'))
 const Me = lazy(() => import('./pages/Me.jsx'))
 const MyPosts = lazy(() => import('./pages/MyPosts.jsx'))
 const MyComments = lazy(() => import('./pages/MyComments.jsx'))
@@ -128,6 +129,7 @@ function ApplicationRoutes() {
             return <Route key={`${route.id}:${route.path}`} path={route.path} element={<Component />} />
           })}
               <Route path="/login" element={<Login />} />
+              <Route path="/email/status" element={<EmailStatus />} />
               <Route path="/me" element={<UserProtectedRoute><Me /></UserProtectedRoute>} />
               <Route path="/me/posts" element={<UserProtectedRoute><MyPosts /></UserProtectedRoute>} />
               <Route path="/me/comments" element={<UserProtectedRoute><MyComments /></UserProtectedRoute>} />

@@ -107,20 +107,29 @@ test('replacePermissionOverrides rejects stale versions before changing rows', a
   assert.equal(calls.some((call) => call.sql.startsWith('DELETE FROM user_permission_overrides')), false)
 })
 
-test('reviewer and super-admin overrides are locked in the store boundary', async () => {
-  for (const role of ['reviewer', 'super_admin']) {
-    const { store } = await permissionHarness({ target: baseUser({ role }) })
-    const result = await store.replacePermissionOverrides({
-      actorId: 1,
-      targetId: 2,
-      permissionVersion: 4,
-      reason: '不应保存',
-      allow: ['notice.read'],
-      deny: []
-    })
-    assert.equal(result.code, 'PERMISSION_OVERRIDES_LOCKED', role)
-    assert.equal(result.statusCode, 409, role)
-  }
+test('only super-admin overrides stay locked in the store boundary', async () => {
+  const locked = await permissionHarness({ target: baseUser({ role: 'super_admin' }) })
+  const lockedResult = await locked.store.replacePermissionOverrides({
+    actorId: 1,
+    targetId: 2,
+    permissionVersion: 4,
+    reason: '不应保存',
+    allow: ['notice.read'],
+    deny: []
+  })
+  assert.equal(lockedResult.code, 'PERMISSION_OVERRIDES_LOCKED')
+  assert.equal(lockedResult.statusCode, 409)
+
+  const reviewer = await permissionHarness({ target: baseUser({ role: 'reviewer' }) })
+  const reviewerResult = await reviewer.store.replacePermissionOverrides({
+    actorId: 1,
+    targetId: 2,
+    permissionVersion: 4,
+    reason: '给审核员加开关',
+    allow: ['users.role.assign'],
+    deny: []
+  })
+  assert.equal(reviewerResult.success, true)
 })
 
 test('a session_version change immediately invalidates an existing signed session', async () => {
@@ -148,6 +157,7 @@ test('changing a role clears personal overrides and increments both versions ato
           ? { rows: [baseUser({ id: 1, username: 'root', username_key: 'root', role: 'super_admin' })] }
           : { rows: [target] }
       }
+      if (normalized.startsWith('SELECT permission_key, effect FROM user_permission_overrides')) return { rows: [] }
       if (normalized === 'DELETE FROM user_permission_overrides WHERE user_id = $1') return { rows: [], rowCount: 2 }
       if (normalized.startsWith('UPDATE users SET role = $2')) {
         return {

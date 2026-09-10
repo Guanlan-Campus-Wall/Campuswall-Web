@@ -45,6 +45,8 @@ export default function AdminSettings() {
   const [communityForm, setCommunityForm] = useState(communityFormValue())
   const [captchaForm, setCaptchaForm] = useState(captchaFormValue())
   const [savedCaptcha, setSavedCaptcha] = useState(captchaFormValue())
+  const [aiForm, setAiForm] = useState({ enabled: false, base_url: '', api_key: '', clear_api_key: false, has_api_key: false, configured: false, model: 'gpt-4o-mini', lexicon_size: 0 })
+  const [savingAi, setSavingAi] = useState(false)
   const [captchaTestToken, setCaptchaTestToken] = useState('')
   const [captchaTestResetKey, setCaptchaTestResetKey] = useState(0)
   const [testingCaptcha, setTestingCaptcha] = useState(false)
@@ -56,18 +58,33 @@ export default function AdminSettings() {
   const { hasCapability } = useUser()
   const canUpdateCommunity = hasCapability('settings.community.update')
   const canUpdateCaptcha = hasCapability('settings.captcha.update')
+  const canReadAi = hasCapability('settings.ai.read')
+  const canUpdateAi = hasCapability('settings.ai.update')
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [communityResponse, captchaResponse] = await Promise.all([
+      const [communityResponse, captchaResponse, aiResponse] = await Promise.all([
         api.adminGetCommunitySettings(),
-        api.adminGetCaptchaSettings()
+        api.adminGetCaptchaSettings(),
+        api.adminGetAiSettings().catch(() => ({ data: { settings: null } }))
       ])
       setCommunityForm(communityFormValue(communityResponse.data?.settings || {}))
       const nextCaptcha = captchaFormValue(captchaResponse.data?.settings || {})
       setCaptchaForm(nextCaptcha)
       setSavedCaptcha(nextCaptcha)
+      if (aiResponse.data?.settings) {
+        setAiForm({
+          enabled: aiResponse.data.settings.enabled === true,
+          base_url: String(aiResponse.data.settings.base_url || ''),
+          api_key: '',
+          clear_api_key: false,
+          has_api_key: aiResponse.data.settings.has_api_key === true,
+          configured: aiResponse.data.settings.configured === true,
+          model: String(aiResponse.data.settings.model || 'gpt-4o-mini'),
+          lexicon_size: Number(aiResponse.data.settings.lexicon_size) || 0
+        })
+      }
       setCaptchaTestToken('')
       setCaptchaTestResetKey((value) => value + 1)
     } catch (error) {
@@ -170,6 +187,38 @@ export default function AdminSettings() {
     }
   }
 
+  const saveAi = async (event) => {
+    event.preventDefault()
+    if (!canUpdateAi) return
+    setSavingAi(true)
+    try {
+      const response = await api.adminUpdateAiSettings({
+        enabled: aiForm.enabled,
+        base_url: aiForm.base_url.trim(),
+        api_key: aiForm.api_key.trim(),
+        clear_api_key: aiForm.clear_api_key,
+        model: aiForm.model.trim() || 'gpt-4o-mini'
+      })
+      const settings = response.data?.settings || {}
+      setAiForm((current) => ({
+        ...current,
+        enabled: settings.enabled === true,
+        base_url: String(settings.base_url || ''),
+        api_key: '',
+        clear_api_key: false,
+        has_api_key: settings.has_api_key === true,
+        configured: settings.configured === true,
+        model: String(settings.model || 'gpt-4o-mini'),
+        lexicon_size: Number(settings.lexicon_size) || current.lexicon_size
+      }))
+      alert.showTopRightAlert('AI 审核配置已保存，API Key 不会回显', 'success', '保存成功')
+    } catch (error) {
+      alert.showTopRightAlert(error.message, 'warning', 'AI 配置保存失败')
+    } finally {
+      setSavingAi(false)
+    }
+  }
+
   return (
     <AdminShell title="平台设置">
       {loading ? <div className="page-center"><div className="spinner" /></div> : null}
@@ -187,7 +236,7 @@ export default function AdminSettings() {
               <ToggleRow label="允许发表评论" description="关闭后所有留言暂停新增评论和回复" checked={communityForm.commenting_enabled} disabled={!canUpdateCommunity || savingCommunity} onChange={(value) => updateCommunity('commenting_enabled', value)} />
               <ToggleRow label="允许游客发帖" description="关闭后未登录访客不能发布动态或表白；默认关闭，需登录后发帖" checked={communityForm.guest_posting_enabled} disabled={!canUpdateCommunity || savingCommunity || !communityForm.posting_enabled} onChange={(value) => updateCommunity('guest_posting_enabled', value)} />
               <ToggleRow label="允许游客评论" description="关闭后未登录访客不能评论或回复；默认关闭" checked={communityForm.guest_commenting_enabled} disabled={!canUpdateCommunity || savingCommunity || !communityForm.commenting_enabled} onChange={(value) => updateCommunity('guest_commenting_enabled', value)} />
-              <ToggleRow label="普通动态与表白需要审核" description="适用于游客和普通用户；管理角色发布的内容与登录后的失物招领仍会立即公开" checked={communityForm.require_post_approval} disabled={!canUpdateCommunity || savingCommunity} onChange={(value) => updateCommunity('require_post_approval', value)} />
+              <ToggleRow label="强制全部人工审核" description="打开后，即使 AI/词库未命中辱骂也会送人工。关闭时：命中辱骂必进人工复审，未命中直接公开。免审角色和失物招领仍立即公开。" checked={communityForm.require_post_approval} disabled={!canUpdateCommunity || savingCommunity} onChange={(value) => updateCommunity('require_post_approval', value)} />
             </div>
 
             <label className="block space-y-2">
@@ -301,6 +350,47 @@ export default function AdminSettings() {
               </section>
             ) : null}
           </div>
+
+          {canReadAi ? (
+            <div className="mt-8 border-t border-[var(--border-color)] pt-7">
+              <div className="admin-settings-heading">
+                <div>
+                  <h2>AI 帖子审核</h2>
+                  <p className="mt-1 text-sm text-muted">内置中文辱骂词库命中后必须人工复审；未命中则通过。OpenAI 兼容接口仅超级管理员可改，Key 只写不回显。</p>
+                </div>
+                <span className={`badge ${aiForm.configured && aiForm.enabled ? 'status-success' : 'status-warning'}`}>{aiForm.enabled && aiForm.configured ? '词库 + 模型' : `词库 ${aiForm.lexicon_size || 0} 条`}</span>
+              </div>
+              <form className="admin-settings-form mt-5 max-w-4xl" onSubmit={saveAi}>
+                <ToggleRow
+                  label="启用模型复检"
+                  description="词库未命中时，再把正文发给 OpenAI 兼容接口。模型判定辱骂或接口失败时仍送人工。关闭则只走词库。"
+                  checked={aiForm.enabled}
+                  disabled={!canUpdateAi || savingAi}
+                  onChange={(value) => setAiForm((current) => ({ ...current, enabled: value }))}
+                />
+                <label className="block space-y-2">
+                  <span className="font-bold">OpenAI Base URL</span>
+                  <input className="field w-full" value={aiForm.base_url} disabled={!canUpdateAi || savingAi} onChange={(event) => setAiForm((current) => ({ ...current, base_url: event.target.value }))} placeholder="https://api.openai.com/v1" autoComplete="off" />
+                </label>
+                <label className="block space-y-2">
+                  <span className="font-bold">模型名</span>
+                  <input className="field w-full" value={aiForm.model} disabled={!canUpdateAi || savingAi} onChange={(event) => setAiForm((current) => ({ ...current, model: event.target.value }))} placeholder="gpt-4o-mini" autoComplete="off" />
+                </label>
+                <label className="block space-y-2">
+                  <span className="flex flex-wrap items-center justify-between gap-2 font-bold"><span>API Key</span><span className="text-xs text-muted">{aiForm.has_api_key ? '已保存；留空表示不替换' : '尚未保存'}</span></span>
+                  <input className="field w-full" type="password" value={aiForm.api_key} disabled={!canUpdateAi || savingAi || aiForm.clear_api_key} onChange={(event) => setAiForm((current) => ({ ...current, api_key: event.target.value }))} placeholder={aiForm.has_api_key ? '留空保留现有密钥' : 'sk-...'} autoComplete="new-password" />
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={aiForm.clear_api_key} disabled={!canUpdateAi || savingAi} onChange={(event) => setAiForm((current) => ({ ...current, clear_api_key: event.target.checked, api_key: '' }))} />
+                  清除已保存的 API Key
+                </label>
+                {!canUpdateAi ? <div className="info-callout"><i className="bi bi-lock" /><span>只有超级管理员可以修改 OpenAI Base URL 和 API Key。</span></div> : null}
+                <div className="flex justify-end gap-2 border-t border-[var(--border-color)] pt-4">
+                  {canUpdateAi ? <button className="btn btn-primary" type="submit" disabled={savingAi}><i className="bi bi-robot" />{savingAi ? '保存中...' : '保存 AI 审核'}</button> : null}
+                </div>
+              </form>
+            </div>
+          ) : null}
         </>
       ) : null}
 

@@ -6,6 +6,7 @@ import { getNotificationProvider, listNotificationProviders, notificationProvide
 
 const captchaProviders = new Set(['none', 'turnstile', 'recaptcha'])
 const captchaSettingKey = 'captcha'
+const aiSettingKey = 'ai_moderation'
 const turnstileTestSiteKeys = new Set([
   '1x00000000000000000000AA',
   '2x00000000000000000000AB',
@@ -30,10 +31,10 @@ export const communityDefaults = Object.freeze({
   commenting_enabled: true,
   guest_posting_enabled: false,
   guest_commenting_enabled: false,
-  require_post_approval: true,
+  require_post_approval: false,
   pause_reason: '',
   community_rules: [
-    `本站是${config.schoolName}校园交流空间；游客和普通用户发布的普通动态与表白便签须经审核后公开，失物招领发布后立即公开。`,
+    `本站是${config.schoolName}校园交流空间；普通动态与表白便签先经辱骂词库/AI 审核，命中后需人工复审，未命中则直接公开。失物招领发布后立即公开。`,
     '尊重他人，不发布人身攻击、歧视、骚扰或恶意曝光隐私的内容。',
     '不发布违法违规、低俗色情、诈骗、恶意广告或虚假信息。',
     '涉及失物招领、求助和校园通知时，请尽量提供可核实的信息。',
@@ -105,6 +106,22 @@ const hostnameFromUrl = (value) => {
   }
 }
 
+const normalizeAiBaseUrl = (value = '') => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  let url
+  try {
+    url = new URL(raw)
+  } catch {
+    return ''
+  }
+  const local = ['localhost', '127.0.0.1'].includes(url.hostname)
+  if (url.protocol === 'http:' && !local) return ''
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return ''
+  if (url.username || url.password || url.hash) return ''
+  return `${url.origin}${url.pathname}`.replace(/\/+$/, '')
+}
+
 const normalizeCaptchaHostname = (value) => {
   const hostname = String(value || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\.$/, '')
   if (!hostname || hostname.includes('/') || hostname.includes(':') || hostname.includes('*')) return ''
@@ -118,6 +135,9 @@ const normalizeCaptchaHostname = (value) => {
 const defaultCaptchaHostnames = () => [...new Set([
   ...(config.captchaAllowedHostnames || []),
   hostnameFromUrl(config.publicSiteUrl),
+  hostnameFromUrl(config.telecomPreferHost),
+  'wall.zongtech.xyz',
+  'home.zongtech.xyz',
   ...(config.allowedOrigins || []).map(hostnameFromUrl)
 ].map(normalizeCaptchaHostname).filter(Boolean))].slice(0, 20)
 
@@ -161,7 +181,7 @@ const normalizeCommunity = (data = {}) => ({
   commenting_enabled: boolValue(data.commenting_enabled, communityDefaults.commenting_enabled),
   guest_posting_enabled: boolValue(data.guest_posting_enabled, communityDefaults.guest_posting_enabled),
   guest_commenting_enabled: boolValue(data.guest_commenting_enabled, communityDefaults.guest_commenting_enabled),
-  require_post_approval: true,
+  require_post_approval: boolValue(data.require_post_approval, communityDefaults.require_post_approval),
   pause_reason: String(data.pause_reason || '').trim().slice(0, 300),
   community_rules: String(data.community_rules ?? communityDefaults.community_rules).trim().slice(0, 10000),
   sensitive_words: normalizeSensitiveWords(data.sensitive_words)
@@ -323,6 +343,87 @@ export class SettingsStore {
     )
     return this.captchaAdmin()
   }
+
+  environmentAi() {
+    return {
+      enabled: false,
+      base_url: '',
+      api_key: '',
+      has_api_key: false,
+      configured: false,
+      model: 'gpt-4o-mini',
+      timeout_ms: 8000,
+      source: 'default',
+      updated_at: null,
+      updated_by: ''
+    }
+  }
+
+  async aiRuntime() {
+    const result = await this.pool.query('SELECT data, updated_at FROM platform_settings WHERE key = $1', [aiSettingKey])
+    if (!result.rowCount) return this.environmentAi()
+    const data = result.rows[0].data || {}
+    const baseUrl = normalizeAiBaseUrl(data.base_url)
+    const apiKey = decryptSecret(data.encrypted_api_key)
+    const model = String(data.model || 'gpt-4o-mini').trim().slice(0, 80) || 'gpt-4o-mini'
+    const enabled = boolValue(data.enabled)
+    return {
+      enabled,
+      base_url: baseUrl,
+      api_key: apiKey,
+      has_api_key: Boolean(apiKey),
+      configured: Boolean(baseUrl && apiKey),
+      model,
+      timeout_ms: 8000,
+      source: 'database',
+      updated_at: result.rows[0].updated_at,
+      updated_by: String(data.updated_by || '').slice(0, 100)
+    }
+  }
+
+  async aiAdmin() {
+    const runtime = await this.aiRuntime()
+    return {
+      enabled: runtime.enabled,
+      base_url: runtime.base_url,
+      has_api_key: runtime.has_api_key,
+      configured: runtime.configured,
+      model: runtime.model,
+      source: runtime.source,
+      updated_at: runtime.updated_at,
+      updated_by: runtime.updated_by,
+      lexicon_size: undefined
+    }
+  }
+
+  async updateAi(input = {}, { actor = '' } = {}) {
+    const current = await this.aiRuntime()
+    const baseUrl = input.base_url === undefined ? current.base_url : normalizeAiBaseUrl(input.base_url)
+    if (String(input.base_url || '').trim() && !baseUrl) fail('OpenAI Base URL 必须是 https 地址，且不能包含账号密码')
+    const requestedKey = String(input.api_key || '').trim().slice(0, 500)
+    const clearKey = boolValue(input.clear_api_key)
+    if (clearKey && requestedKey) fail('不能同时填写并清除 API Key')
+    const apiKey = clearKey ? '' : (requestedKey || current.api_key)
+    const model = String(input.model ?? current.model ?? 'gpt-4o-mini').trim().slice(0, 80) || 'gpt-4o-mini'
+    const enabled = boolValue(input.enabled, current.enabled)
+    if (enabled && (!baseUrl || !apiKey)) fail('启用模型复检前必须填写 Base URL 和 API Key')
+    const data = {
+      enabled,
+      base_url: baseUrl,
+      encrypted_api_key: encryptSecret(apiKey),
+      model,
+      updated_by: String(actor || '').slice(0, 100)
+    }
+    await this.pool.query(
+      `INSERT INTO platform_settings (key, data, updated_at)
+       VALUES ($1, $2::jsonb, now())
+       ON CONFLICT (key)
+       DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+      [aiSettingKey, JSON.stringify(data)]
+    )
+    return this.aiAdmin()
+  }
+
 
   async communityRuntime() {
     const result = await this.pool.query('SELECT data, updated_at FROM platform_settings WHERE key = $1', [communitySettingKey])
