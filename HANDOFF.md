@@ -6,7 +6,7 @@
 > - 代码仓库：<https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan>
 > - 学校名称：龙华区观澜中学
 > - 最近一次架构基线：Cloudflare Pages 前端 + 独立 HTTPS API 源站
-> - 最近一次生产发布：2026-08-29 21:36 CST（Turnstile 应用提交 `c940d990fd2e1fce7a04cbd183a0e122f142e910`，Pages `https://f6ecab05.guanlan-campus-wall.pages.dev`）
+> - 最近一次生产发布：2026-09-10 12:38 CST（应用提交 `b35393225bf1f22fa297412abaa5fdde605ba3f8`，Pages `https://4a3b24bb.guanlan-campus-wall.pages.dev`）
 
 本文档用于开发、审核、运维和应急接管。它说明当前产品规则、代码结构、账号权限、审核流程、数据位置、本地运行、生产部署、备份恢复和常见故障。功能细节以 `main` 分支代码为最终事实来源；每次完成新功能、修复、主要交互或运维变更，都必须在同一提交同步更新本文件，不能把交接文档留到后续补写。
 
@@ -1118,8 +1118,11 @@ GitHub Actions 使用 Node.js 22，并在 Ubuntu runner 上启动系统自带的
 | 项目 | 命令/证据 | 状态 | 时间/执行人 |
 | --- | --- | --- | --- |
 | 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | **通过，15/15** | 2026-09-10 / Cursor Agent |
-| GitHub 发布门禁 | 待推送后补录 | 待补 |  |
-| 生产备份与发布 | 待 CI 通过后按第 17 节执行 | 待补 |  |
+| GitHub 发布门禁 | `56c08de` 的 Actions `34437531555` 因 `npm audit --audit-level=high` 失败；依赖补丁 `b353932` 的 Actions `34437704372` 全部通过 | **通过**；verify 30s，含 audit、后端测试、build 与冒烟 | 2026-09-10 / Cursor Agent |
+| 生产备份 | `/www/backups/campuswall/20260910-123829-before-deploy` | **通过**；PostgreSQL custom dump/restore-list、运行文件、环境、systemd、Nginx、UFW、Origin 证书 | 2026-09-10 12:38 CST / Cursor Agent |
+| 服务器发布 | 源站 `665959c` 快进至 `b353932`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh`，安装更新后的 `deploy/nginx-campuswall-api.conf` 并重载 Nginx，再重启 `campuswall.service` | **通过**；服务于 12:38:46 CST `active`，本机 `127.0.0.1:5412/health` 与公网 `https://api-wall.zongtech.xyz/health` 正常 | 2026-09-10 12:38 CST / Cursor Agent |
+| Pages 发布 | 源站 Linux 构建 `frontend/dist` 后 Wrangler Direct Upload；deployment `https://4a3b24bb.guanlan-campus-wall.pages.dev` | **通过**；`https://wall.zongtech.xyz/` 与 `/wall`、`/login`、`/lost-found`、`/confessions` 返回页面；`theme-color` 为 `#f6f6f3`/`#111413` | 2026-09-10 12:40 CST / Cursor Agent |
+| 公网安全冒烟 | 未登录 `GET /api/user/lost-found` 401；未登录 `GET /api/get_messages` 无失物招领；未登录 `POST /api/get_partition_messages` 对「失物招领」返回空数组；正式 Origin CORS 允许，恶意 Origin 无 `Access-Control-Allow-Origin` | **通过** | 2026-09-10 12:41 CST / Cursor Agent |
 
 ## 16. Git 工作流
 
