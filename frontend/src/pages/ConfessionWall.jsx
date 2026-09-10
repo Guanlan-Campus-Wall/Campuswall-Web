@@ -90,13 +90,11 @@ export default function ConfessionWall() {
   const [pageHidden, setPageHidden] = useState(() => typeof document !== 'undefined' && document.hidden)
   const [reducedMotion, setReducedMotion] = useState(initialReducedMotion)
   const [featuredIndex, setFeaturedIndex] = useState(0)
-  const [showHeart, setShowHeart] = useState(false)
-  const composeRef = useRef(null)
 
   const canPublish = community.posting_enabled && Boolean(user || community.guest_posting_enabled)
   const publishDisabledReason = !community.posting_enabled
     ? (community.pause_reason || '管理员暂时关闭了发帖功能')
-    : '登录后才能发布表白便签'
+    : '登录后才能发布'
 
   const loadConfessions = useCallback(async () => {
     setLoading(true)
@@ -174,16 +172,6 @@ export default function ConfessionWall() {
     ? featuredNotes[featuredIndex % featuredNotes.length]
     : null
 
-  useEffect(() => {
-    const openCompose = () => {
-      composeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      const field = document.getElementById('confession-draft')
-      field?.focus()
-    }
-    window.addEventListener('open-confession-compose', openCompose)
-    return () => window.removeEventListener('open-confession-compose', openCompose)
-  }, [])
-
   const submitConfession = async (event) => {
     event.preventDefault()
     const text = draft.trim()
@@ -231,44 +219,35 @@ export default function ConfessionWall() {
         ? selectedConfession.display_name_snapshot || '一位同学'
         : '匿名同学')
 
-  const noteAuthor = (note) => (
-    note?.official
-      ? '观澜中学校园墙'
-      : (note?.anonymous === false ? note.display_name_snapshot || '一位同学' : '匿名同学')
-  )
-
   return (
     <div className="confession-page confession-notes-page">
       <header className="confession-copy confession-page-intro">
-        <h1 className="campus-page-title">表白墙</h1>
+        <h1>表白墙</h1>
       </header>
 
-      <section aria-labelledby="confession-notes-title">
-        <div className="campus-section-head">
-          <h2 id="confession-notes-title">便签</h2>
+      <section className="confession-stage confession-note-stage" aria-label="便签爱心">
+        <div className="confession-stage-toolbar">
+          <div className="confession-stage-status" aria-live="polite">
+            {loading ? <><span className="spinner" />正在装好便签...</> : null}
+            {!loading && loadError ? <span className="text-danger">{loadError}</span> : null}
+            {!loading && !loadError ? <span>{confessions.length} 张便签已经公开</span> : null}
+          </div>
           <button className="btn btn-sm btn-outline" type="button" onClick={loadConfessions} disabled={loading}>
+            <i className="bi bi-arrow-clockwise" aria-hidden="true" />
             刷新
           </button>
         </div>
-        {loading ? <p className="campus-empty">正在载入便签…</p> : null}
-        {!loading && loadError ? <p className="campus-empty text-danger">{loadError}</p> : null}
-        {!loading && !loadError && !confessions.length ? <p className="campus-empty">还没有公开便签。</p> : null}
-        <div className="confession-note-list">
-          {confessions.map((note) => (
-            <article className="confession-note-card" key={note.id}>
-              <button type="button" className="text-left w-full" onClick={() => setSelectedConfession(note)}>
-                <p>{note.text}</p>
-              </button>
-              <footer>
-                <span>{noteAuthor(note)}</span>
-                <time dateTime={String(note.timestamp || '')}>{formatConfessionTime(note.timestamp)}</time>
-              </footer>
-            </article>
-          ))}
-        </div>
+
+        <HeartParticles
+          notes={confessions}
+          activeId={featuredNote?.id || null}
+          reducedMotion={reducedMotion}
+          onHoverChange={setHeartHovered}
+          onSelect={setSelectedConfession}
+        />
       </section>
 
-      <section className="confession-compose" ref={composeRef} aria-labelledby="confession-compose-title">
+      <section className="confession-compose card" aria-labelledby="confession-compose-title">
         <h2 id="confession-compose-title">写一张便签</h2>
 
         {!canPublish ? (
@@ -326,21 +305,6 @@ export default function ConfessionWall() {
           </div>
         ) : null}
       </section>
-
-      <button className="btn btn-outline confession-heart-toggle" type="button" onClick={() => setShowHeart((open) => !open)}>
-        {showHeart ? '收起便签爱心' : '看看便签爱心'}
-      </button>
-      {showHeart ? (
-        <section className="confession-stage confession-note-stage" aria-label="便签爱心">
-          <HeartParticles
-            notes={confessions}
-            activeId={featuredNote?.id || null}
-            reducedMotion={reducedMotion}
-            onHoverChange={setHeartHovered}
-            onSelect={setSelectedConfession}
-          />
-        </section>
-      ) : null}
 
       <Modal
         visible={Boolean(selectedConfession)}

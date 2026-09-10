@@ -93,7 +93,7 @@ export default function Wall() {
   const canPublish = community.posting_enabled && Boolean(user || community.guest_posting_enabled)
   const publishDisabledReason = !community.posting_enabled
     ? (community.pause_reason || '管理员暂时关闭了发帖功能')
-    : '登录后才能发布留言'
+    : '登录后才能发布'
 
   const openPublish = useCallback(() => {
     if (!canPublish) {
@@ -370,9 +370,14 @@ export default function Wall() {
   }
 
   return (
-    <div className="wall-page space-y-5">
-      <section className="wall-overview">
-        <h1 className="campus-page-title">校园动态</h1>
+    <div className="wall-page space-y-6">
+      {/* Wall Header Overview */}
+      <section className="wall-overview p-6 md:p-8">
+        <div className="wall-overview-copy space-y-2">
+          <h1 className="text-3xl font-black tracking-tight text-[var(--text-primary)] md:text-4xl">
+            观澜中学校园动态
+          </h1>
+        </div>
       </section>
 
       {!canPublish ? (
@@ -427,6 +432,11 @@ export default function Wall() {
             <i className="bi bi-arrow-clockwise" />
             <span className="hidden sm:inline">刷新</span>
           </button>
+
+          <button className="btn btn-primary" type="button" onClick={openPublish}>
+            <i className="bi bi-pencil-square" />
+            <span>我要发帖</span>
+          </button>
         </div>
       </div>
 
@@ -476,7 +486,7 @@ export default function Wall() {
       ) : null}
 
       {/* Messages Stream */}
-      <div className="campus-feed">
+      <div className="space-y-5">
         {messages.map((message) => (
           <MessageCard key={message.id} message={message} variant="moments" onRefresh={refreshSpecificMessage} />
         ))}
@@ -505,7 +515,18 @@ export default function Wall() {
         </div>
       ) : null}
 
+      {/* Floating Action Buttons */}
       <div className="floating-actions">
+        <button
+          className="floating-action-primary"
+          type="button"
+          aria-label="发布留言"
+          title="发帖"
+          onClick={openPublish}
+          disabled={!canPublish}
+        >
+          <i className="bi bi-pencil-fill text-xl" />
+        </button>
         <button
           className="floating-action-secondary"
           type="button"

@@ -175,7 +175,7 @@ campuswall-react/
 
 | 路由 | 页面 | 访问条件 |
 | --- | --- | --- |
-| `/` | 首页、最新公告、快捷入口、最近动态 | 公开 |
+| `/` | 游客首页：公告、欢迎区、常用入口与关于本站。已登录访问根路径会转到校园动态 | 游客公开；已登录默认进入 `/wall` |
 | `/wall` | 校园动态与发布入口 | 浏览公开；发帖受总开关和游客发帖开关约束 |
 | `/wall/message/:id` | 帖子详情 | 仅公开状态可由游客读取；失物招领详情必须登录 |
 | `/confessions` | 表白墙便签列表；爱心场景为次级入口 | 公开浏览；发布受总开关和游客发帖开关约束；游客/无免审能力账号待审，具备免审 capability 的账号立即公开 |
@@ -208,7 +208,7 @@ campuswall-react/
 - `ThemePicker` 已提供完整主题入口：`theme-preference` 保存 `system/light/dark`，`theme-palette` 保存 `blue/rose/violet/green/orange`；用户可在界面中随时恢复“跟随系统”，不需要清 localStorage。解析后的明暗写入 `<html data-theme>`，强调色写入 `<html data-palette>`，同时更新 `meta[name=theme-color]`；同源标签页通过 `storage` 事件同步，存储不可用时安全回退；
 - 所有页面组件已经通过 `React.lazy` 按路由拆分。页面路径变化时由 `.route-transition` 提供轻量进入动效，路由切换同时回到页面顶部；
 - CSS 和 Three.js 场景都尊重 `prefers-reduced-motion`，毛玻璃降级尊重 `prefers-reduced-transparency`，高对比偏好使用 `prefers-contrast: more`。新增动效必须是非阻塞、可中断的辅助反馈，不能影响点击、键盘焦点或阅读；
-- 响应式基线：不宽于 1080px 时启用底部五栏导航（首页、动态、表白、失物、我的）；不宽于 768px 时后台侧栏折叠、共享 Modal 呈底部 sheet；不宽于 520px 时失物字段单列；不宽于 360px 时品牌和发帖文案进一步收缩。布局已处理 iOS safe-area；新增固定按钮、sheet 或底部表单时必须继续加上 `env(safe-area-inset-*)`，并在窄屏、横屏及软键盘弹出场景验收；
+- 响应式基线：游客不宽于 1080px 时底部五栏为首页、动态、表白、失物、我的；已登录隐藏首页入口，默认打开校园动态。不宽于 768px 时后台侧栏折叠、共享 Modal 呈底部 sheet；不宽于 520px 时失物字段单列；不宽于 360px 时品牌和发帖文案进一步收缩。布局已处理 iOS safe-area；新增固定按钮、sheet 或底部表单时必须继续加上 `env(safe-area-inset-*)`，并在窄屏、横屏及软键盘弹出场景验收；
 - 共享 `Modal.jsx` 通过 Portal 挂到 `document.body`，负责背景锁滚动、焦点圈闭、Escape/遮罩关闭、关闭后恢复原焦点。新增弹层优先复用它；当前没有禁用 Escape/遮罩关闭的配置，如果业务不允许这种关闭方式，必须先扩展 Modal API，并继续保留可见关闭按钮与焦点管理；
 - `styles.css` 是长期演进的层叠文件：前部有基础主题/Modal/media，约 3087 行后是当前 SwiftUI 覆盖，底部导航与路由动效在后半部，表白墙新版样式位于更后。后定义的同名 selector 会覆盖前文，仅修改早期规则可能看似无效；`mobile-menu-toggle/mobile-nav-drawer` 等规则目前没有 JSX 引用，清理前先用 `rg` 和浏览器回归确认；
 - 图标来自本地 Bootstrap Icons 子集，不依赖外网字体。新增图标后必须同步子集文件并在生产构建中确认显示，避免再次出现空方框。网站 favicon 与顶栏品牌使用 `frontend/public/school-badge.webp` 校徽，不要再换回聊天气泡；
@@ -1113,7 +1113,7 @@ GitHub Actions 使用 Node.js 22，并在 Ubuntu runner 上启动系统自带的
 
 ### 15.12 安全加固与前台阅读面
 
-本轮收口另一代理的安全审查：上传必须登录、无 Origin 变更请求拒绝、游客发帖/评论默认关闭、失物招领浏览与公开 API 一致要求登录；并按 Codex `gpt-6-astra` xhigh 规范重做前台阅读面。**本轮没有执行压力、容量、长稳或渗透测试。** Windows Application Control 会拦住本机 Git HTTPS、Sharp 与 Vite/rolldown。
+本轮收口另一代理的安全审查：上传必须登录、无 Origin 变更请求拒绝、游客发帖/评论默认关闭、失物招领浏览与公开 API 一致要求登录；并按 Codex `gpt-6-astra` xhigh 规范重做前台阅读面。该视觉改版已在 §15.13 撤回，安全策略仍保留。**本轮没有执行压力、容量、长稳或渗透测试。** Windows Application Control 会拦住本机 Git HTTPS、Sharp 与 Vite/rolldown。
 
 | 项目 | 命令/证据 | 状态 | 时间/执行人 |
 | --- | --- | --- | --- |
@@ -1123,6 +1123,16 @@ GitHub Actions 使用 Node.js 22，并在 Ubuntu runner 上启动系统自带的
 | 服务器发布 | 源站 `665959c` 快进至 `b353932`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh`，安装更新后的 `deploy/nginx-campuswall-api.conf` 并重载 Nginx，再重启 `campuswall.service` | **通过**；服务于 12:38:46 CST `active`，本机 `127.0.0.1:5412/health` 与公网 `https://api-wall.zongtech.xyz/health` 正常 | 2026-09-10 12:38 CST / Cursor Agent |
 | Pages 发布 | 源站 Linux 构建 `frontend/dist` 后 Wrangler Direct Upload；deployment `https://4a3b24bb.guanlan-campus-wall.pages.dev` | **通过**；`https://wall.zongtech.xyz/` 与 `/wall`、`/login`、`/lost-found`、`/confessions` 返回页面；`theme-color` 为 `#f6f6f3`/`#111413` | 2026-09-10 12:40 CST / Cursor Agent |
 | 公网安全冒烟 | 未登录 `GET /api/user/lost-found` 401；未登录 `GET /api/get_messages` 无失物招领；未登录 `POST /api/get_partition_messages` 对「失物招领」返回空数组；正式 Origin CORS 允许，恶意 Origin 无 `Access-Control-Allow-Origin` | **通过** | 2026-09-10 12:41 CST / Cursor Agent |
+
+### 15.13 撤回阅读面改版并恢复登录后进墙
+
+前台视觉回退到 `665959c` 对应的 SwiftUI 风格页面（安全相关默认值与后台开关不回退）。游客打开 `/` 仍看首页；已登录访问根路径、点校徽或完成登录（无更深跳转）进入 `/wall`。失物招领未登录不再请求列表。**本轮没有执行压力、容量、长稳或渗透测试。**
+
+| 项目 | 命令/证据 | 状态 | 时间/执行人 |
+| --- | --- | --- | --- |
+| 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | **通过，15/15** | 2026-09-10 / Cursor Agent |
+| GitHub 发布门禁 | 待推送后补录 | 待补 |  |
+| 生产备份与发布 | 待 CI 通过后按第 17 节执行 | 待补 |  |
 
 ## 16. Git 工作流
 
