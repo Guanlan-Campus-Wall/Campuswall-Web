@@ -3,10 +3,10 @@ import { usePlatform } from '../contexts/PlatformContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
 
 export const campusEntries = Object.freeze([
-  { id: 'confessions', to: '/confessions', label: '表白墙', description: '把没说出口的心意，留在这里', icon: 'bi-heart', tone: 'rose' },
-  { id: 'lost-found', to: '/lost-found', label: '失物招领', description: '让遗失的物品，找到回来的路', icon: 'bi-search', tone: 'amber' },
-  { id: 'topics', to: '/p', label: '话题广场', description: '学习、日常、互助，总有同频的人', icon: 'bi-hash', tone: 'green' },
-  { id: 'help', to: '/help', label: '帮助与反馈', description: '你的一个建议，让校园墙更好', icon: 'bi-life-preserver', tone: 'blue' }
+  { id: 'confessions', to: '/confessions', label: '表白墙', description: '匿名表白与心情记录', icon: 'bi-heart', tone: 'rose' },
+  { id: 'lost-found', to: '/lost-found', label: '失物招领', description: '寻物启事与物品招领', icon: 'bi-search', tone: 'amber' },
+  { id: 'topics', to: '/p', label: '话题广场', description: '按标签查找感兴趣的讨论', icon: 'bi-hash', tone: 'green' },
+  { id: 'help', to: '/help', label: '帮助与反馈', description: '使用帮助、问题与建议', icon: 'bi-life-preserver', tone: 'blue' }
 ])
 
 export default function CampusGuide() {
@@ -17,9 +17,9 @@ export default function CampusGuide() {
     <aside className="campus-guide" aria-label="校园指南">
       <section className="guide-intro">
         <img src="/school-badge.webp" alt="观澜中学校徽" width="48" height="48" />
-        <span className="campus-eyebrow">OUR CAMPUS, OUR STORIES</span>
-        <h2>在观澜，<br />遇见同频的你。</h2>
-        <p>分享课间的小事，接住彼此的心声。这里是属于我们的校园一角。</p>
+        <h2>观澜中学校园墙</h2>
+        <p>校园日常、消息与讨论。由学生搭建和维护。</p>
+        {!user ? <Link className="btn btn-primary" to="/login">登录 / 注册</Link> : <Link className="btn btn-outline" to="/me">我的主页</Link>}
       </section>
       <section className="guide-directory">
         <h2>校园生活</h2>
@@ -36,9 +36,10 @@ export default function CampusGuide() {
       {enabledModuleIds.has('help') ? (
         <section className="guide-note">
           <i className="bi bi-shield-check" aria-hidden="true" />
-          <h2>让表达，多一点善意</h2>
-          <p>尊重不同的声音，保护彼此的隐私，一起维护友善的校园社区。</p>
-          <Link to="/rules">阅读社区公约 <i className="bi bi-arrow-right" aria-hidden="true" /></Link>
+          <h2>社区须知</h2>
+          <p>请勿公开个人隐私，讨论时尊重他人。发现违规内容可在帖子内举报。</p>
+          <Link to="/rules">社区公约 <i className="bi bi-arrow-right" aria-hidden="true" /></Link>
+          <Link to="/help/form"><i className="bi bi-envelope" aria-hidden="true" />联系我</Link>
         </section>
       ) : null}
     </aside>

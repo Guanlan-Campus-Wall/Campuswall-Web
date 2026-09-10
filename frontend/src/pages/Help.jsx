@@ -8,7 +8,7 @@ export default function Help() {
         <div className="hero-content space-y-3">
           <span className="page-kicker hero-kicker">
             <i className="bi bi-life-preserver" />
-            <span>Support & Helpdesk</span>
+            <span>帮助中心</span>
           </span>
           <h1>帮助与服务反馈</h1>
         </div>
@@ -77,7 +77,7 @@ export default function Help() {
           <i className="bi bi-info-circle-fill" />
         </div>
         <span>
-          温馨提示：描述越详尽、信息越具体（例如附带复现步骤或截图），管理员越能迅速定位问题并高效处理。
+          反馈问题时，请附上具体的操作步骤或截图，方便管理员排查。
         </span>
       </div>
     </div>

@@ -1,9 +1,9 @@
 # 龙华区观澜中学校园墙——项目交接文档
 
 > - 最后更新：2026-09-10
-> - 文档版本：3.9
+> - 文档版本：3.10
 > - 适用分支：`main`
-> - 代码仓库：<https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan>
+> - 代码仓库：<https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan>（**private**）
 > - 学校名称：龙华区观澜中学
 > - 最近一次架构基线：Cloudflare Pages 前端 + 独立 HTTPS API 源站
 > - 最近一次生产发布：2026-09-10 14:14 CST（应用提交 `3c0898468c5ef1299ea1a30aac7115c7efb32a97`，Pages `https://9b1c0440.guanlan-campus-wall.pages.dev`；Codex 重构前台 UI，游客首页保留欢迎卡与关于本站，已登录默认进入校园动态）
@@ -32,7 +32,7 @@
 | 环境 | 位置 | 用途 |
 | --- | --- | --- |
 | 本机工作区 | `<本机工作区>\campuswall-react` | 开发、测试、构建与提交；实际绝对路径由接手人自行记录，不写入公开仓库 |
-| GitHub | `ZONGRUICHD/Campus-Wall-For-GuanLan` 的 `main` | 唯一代码交付分支 |
+| GitHub | 私有仓库 `ZONGRUICHD/Campus-Wall-For-GuanLan` 的 `main` | 唯一代码交付分支；不要把仓库改回 public |
 | 正式前端 | `https://wall.zongtech.xyz` | Cloudflare Pages 自定义域名，所有浏览器页面请求从这里进入 |
 | Pages 项目 | `guanlan-campus-wall` | 前端静态构建托管；默认地址为 `https://guanlan-campus-wall.pages.dev` |
 | 正式 API | `https://api-wall.zongtech.xyz` | Cloudflare 代理后的后端、健康检查与受保护静态资源入口 |
@@ -175,7 +175,7 @@ campuswall-react/
 
 | 路由 | 页面 | 访问条件 |
 | --- | --- | --- |
-| `/` | 游客首页：公告、欢迎区、常用入口与关于本站。已登录访问根路径会转到校园动态 | 游客公开；已登录默认进入 `/wall` |
+| `/` | 游客论坛首页：欢迎区、最新讨论、板块目录与关于本站；侧栏「联系我」进入 `/help/form`。已登录访问根路径会转到校园动态 | 游客公开；已登录默认进入 `/wall` |
 | `/wall` | 校园动态与发布入口 | 浏览公开；发帖受总开关和游客发帖开关约束 |
 | `/wall/message/:id` | 帖子详情 | 仅公开状态可由游客读取；失物招领详情必须登录 |
 | `/confessions` | 表白墙便签列表；爱心场景为次级入口 | 公开浏览；发布受总开关和游客发帖开关约束；游客/无免审能力账号待审，具备免审 capability 的账号立即公开 |
@@ -203,8 +203,8 @@ campuswall-react/
 
 ### 6.1 前端视觉、主题与动效
 
-- 视觉基线仍是校园阅读面：微暖纸白、墨色正文、强调色只用于操作和选中。权威设计变量在 `frontend/src/apple-design-tokens.css`，`frontend/src/styles.css` 建立应用语义；前台公共路由另有 `frontend/src/campus-ui.css`，只作用在 `.public-shell`，后台保持原样式。新增颜色、圆角、字号、间距前优先复用已有 token；
-- 字体栈优先系统字体、苹方与微软雅黑；中文正文 16/26px、字距 0。浅色与深色必须分别验收；不要用霓虹光晕、全屏玻璃或 iOS Settings 式彩色图标方块充当校园入口；
+- 前台公共路由视觉基线是论坛阅读面：中性浅灰底、白卡片、细边框、讨论列表与板块目录优先，不要用营销大标语、霓虹光晕、全屏玻璃或 iOS Settings 式彩色图标方块。权威应用语义仍在 `frontend/src/apple-design-tokens.css` 与 `frontend/src/styles.css`；前台覆盖在 `frontend/src/campus-ui.css`，只作用在 `.public-shell`，后台保持原样式。新增颜色、圆角、字号、间距前优先复用已有 token；
+- 字体栈优先系统字体、苹方与微软雅黑。浅色与深色必须分别验收。学校仓库为 private，前台不再放 GitHub 入口，公开联系入口是「联系我」→ `/help/form`；
 - `ThemePicker` 已提供完整主题入口：`theme-preference` 保存 `system/light/dark`，`theme-palette` 保存 `blue/rose/violet/green/orange`；未选过强调色时默认 `green`。用户可在界面中随时恢复“跟随系统”，不需要清 localStorage。解析后的明暗写入 `<html data-theme>`，强调色写入 `<html data-palette>`，同时更新 `meta[name=theme-color]`；同源标签页通过 `storage` 事件同步，存储不可用时安全回退；
 - 所有页面组件已经通过 `React.lazy` 按路由拆分。页面路径变化时由 `.route-transition` 提供轻量进入动效，路由切换同时回到页面顶部；
 - CSS 和 Three.js 场景都尊重 `prefers-reduced-motion`，毛玻璃降级尊重 `prefers-reduced-transparency`，高对比偏好使用 `prefers-contrast: more`。新增动效必须是非阻塞、可中断的辅助反馈，不能影响点击、键盘焦点或阅读；
@@ -212,8 +212,8 @@ campuswall-react/
 - 共享 `Modal.jsx` 通过 Portal 挂到 `document.body`，负责背景锁滚动、焦点圈闭、Escape/遮罩关闭、关闭后恢复原焦点。新增弹层优先复用它；当前没有禁用 Escape/遮罩关闭的配置，如果业务不允许这种关闭方式，必须先扩展 Modal API，并继续保留可见关闭按钮与焦点管理；
 - `styles.css` 是长期演进的层叠文件：前部有基础主题/Modal/media，约 3087 行后是当前 SwiftUI 覆盖，底部导航与路由动效在后半部，表白墙新版样式位于更后。后定义的同名 selector 会覆盖前文，仅修改早期规则可能看似无效；`mobile-menu-toggle/mobile-nav-drawer` 等规则目前没有 JSX 引用，清理前先用 `rg` 和浏览器回归确认；
 - 图标来自本地 Bootstrap Icons 子集，不依赖外网字体。新增图标后必须同步子集文件并在生产构建中确认显示，避免再次出现空方框。网站 favicon 与顶栏品牌使用 `frontend/public/school-badge.webp` 校徽，不要再换回聊天气泡；
-- 页面标题只保留一行主标题。不要使用 `page-kicker` + `h1`，也不要在主标题下再挂说明段形成双行标题。提示放到操作按钮旁或社区公约。后续新功能同样遵守；
-- 深色主题使用近墨底和抬升卡片分层；弹层才强调阴影。当前 `meta[name=theme-color]` 浅色为 `#f6f7f3`，深色为 `#151d19`。
+- 页面标题只保留一行主标题。不要再加营销大标语或英文 eyebrow。论坛首页和校园动态允许面包屑 + 主标题 + 一句导语；其它页面不要用 `page-kicker` + `h1` 或双行标题。提示放到操作按钮旁或社区公约。后续新功能同样遵守；
+- 深色主题使用近墨底和抬升卡片分层；弹层才强调阴影。当前 `meta[name=theme-color]` 浅色为 `#f2f3f5`，深色为 `#17191c`。
 
 ### 6.2 校园动态与发布器
 
@@ -891,7 +891,7 @@ npm run build
 git diff --check
 ```
 
-GitHub Actions 使用 Node.js 22，并固定跑在仓库自托管 Runner `instance-20260908-1753`（标签 `self-hosted`、`Linux`、`ARM64`）上，不再使用 `ubuntu-latest`。Job 启动系统 PostgreSQL，确保测试角色 `campus_wall` 存在后重建测试库，以该角色实际执行 `SELECT 1`，再执行安装、审计、构建、语法检查与健康冒烟。CI 的数据库主版本跟随该 Runner 的系统 PostgreSQL，作为 SQL 兼容性下限；生产当前实测为 PostgreSQL 17.11，本地新环境推荐 18。CI 不依赖容器服务；修改数据库初始化时必须同时验证 PostgreSQL 17 兼容性、新版 PostgreSQL 和 CI 原生服务，不能只让其中一个环境通过。自托管机器会保留上次运行的文件，因此每次必须 `dropdb --if-exists` 再建库，不能假设干净的 ephemeral 环境。
+GitHub Actions 使用 Node.js 22，并固定跑在仓库自托管 Runner `instance-20260908-1753`（标签 `self-hosted`、`Linux`、`ARM64`）上，不再使用 `ubuntu-latest`。Job 先确认系统 PostgreSQL 可登录：服务或 cluster 未安装时由 workflow 安装发行版软件包并启动，再幂等创建测试角色 `campus_wall`、删除并重建测试库，以该角色实际执行 `SELECT 1`，然后安装、审计、构建、语法检查与健康冒烟。CI 的数据库主版本跟随该 Runner 的系统 PostgreSQL，作为 SQL 兼容性下限；生产当前实测为 PostgreSQL 17.11，本地新环境推荐 18。CI 不依赖容器服务；修改数据库初始化时必须同时验证 PostgreSQL 17 兼容性、新版 PostgreSQL 和 CI 原生服务，不能只让其中一个环境通过。自托管机器会保留上次运行的文件，因此每次必须 `dropdb --if-exists` 再建库，不能假设干净的 ephemeral 环境。
 
 还应人工验证：
 
@@ -1167,7 +1167,19 @@ Codex `gpt-6-astra` xhigh 直接改 `frontend` 的 CSS/JSX：新增 `campus-ui.c
 
 | 项目 | 命令/证据 | 状态 | 时间/执行人 |
 | --- | --- | --- | --- |
+| GitHub 发布门禁 | Actions run `34455686390`（提交 `9ed683289d1178fdc7b06761c3e89ad9a7cd03f9`） | **失败**；`Start native PostgreSQL`：`Failed to start postgresql.service: Unit postgresql.service not found.`（exit 5）。Runner `instance-20260908-1753` 当时没有系统 PostgreSQL。未部署。 | 2026-09-10 / GitHub Actions |
+
+### 15.17 论坛风前台与联系入口
+
+学校仓库已改为 **private**。Codex `gpt-6-astra` 参考论坛站点把前台改成讨论列表、板块目录和侧栏；原「浏览 GitHub 仓库」改为「联系我」，进入现有 `/help/form`。会话在限额处中断后由 Cursor 收口登录页英文营销句、`theme-color` 与 CI 安装 PostgreSQL。产品规则未改：未登录打开网站仍是首页（欢迎、常用入口、关于本站都在）；已登录打开网站或点校徽进入 `/wall`；游客默认不能发帖/评论；失物招领必须登录才能看。**本轮没有执行压力、容量、长稳或渗透测试。** Windows Application Control 仍拦住本机 Git HTTPS，推送走 isomorphic-git，完整测试与前端构建走源站 Linux。
+
+| 项目 | 命令/证据 | 状态 | 时间/执行人 |
+| --- | --- | --- | --- |
+| 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | 待执行 |  |
 | GitHub 发布门禁 | 待该提交在自托管 Runner 上跑完后补录 | 待验证 |  |
+| 生产备份 | 待 CI 通过后按第 17 节执行 | 待执行 |  |
+| 服务器发布 | 本轮以后端无行为变更为前提；CI 通过后再快进 | 待执行 |  |
+| Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload | 待执行 |  |
 
 ## 16. Git 工作流
 

@@ -167,9 +167,8 @@ export default function Login() {
       <aside className="auth-welcome">
         <Link className="auth-home-link" to="/"><i className="bi bi-arrow-left" aria-hidden="true" />返回首页</Link>
         <img src="/school-badge.webp" alt="观澜中学校徽" width="68" height="68" />
-        <span className="campus-eyebrow">YOUR CAMPUS, YOUR CONNECTION</span>
-        <h2>熟悉的校园，<br />更多的连接。</h2>
-        <p>从围观到参与，<br />让校园生活里，多一个你的声音。</p>
+        <h2>观澜中学校园墙</h2>
+        <p>聊聊校园日常，分享消息，也可以在这里寻物、提问。</p>
         <div className="auth-welcome-bottom"><i className="bi bi-chat-square-heart" aria-hidden="true" />观澜中学 · 校园墙</div>
       </aside>
       <section className="card auth-form-card space-y-5 p-5 sm:p-6">

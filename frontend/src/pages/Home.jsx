@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import Modal from '../components/Modal.jsx'
 import NoticeCard from '../components/NoticeCard.jsx'
+import RecentDiscussions from '../components/RecentDiscussions.jsx'
 import { campusEntries } from '../components/CampusGuide.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
@@ -132,103 +133,33 @@ export default function Home() {
   }
 
   return (
-    <div className="campus-home">
-      <section className="campus-welcome" aria-labelledby="home-welcome-title">
-        <div className="welcome-copy">
-          <span className="campus-eyebrow"><span className="campus-dot" /> 龙华区观澜中学 · 我们的校园社区</span>
-          <h1>校园里的小事，<br /><em>都值得被看见。</em></h1>
-          <h2 id="home-welcome-title">欢迎来到校园墙</h2>
-          <p className="welcome-description">分享日常、传递心意、寻找失物。<br />从一句「你好」开始，让我们的校园更近一点。</p>
-
-          {wallEnabled ? (
-            <div className="welcome-actions">
-              <Link to="/wall" className="btn btn-primary">
-                <span>浏览校园动态</span>
-                <i className="bi bi-arrow-right" aria-hidden="true" />
-              </Link>
-              {canPublish ? (
-                <button type="button" className="btn btn-outline" onClick={triggerPublishModal} title="快速发帖">
-                  <i className="bi bi-pencil-square" aria-hidden="true" />
-                  <span>发布动态</span>
-                </button>
-              ) : (
-                <Link to="/login" className="btn btn-outline">
-                  <i className="bi bi-box-arrow-in-right" aria-hidden="true" />
-                  <span>登录参与</span>
-                </Link>
-              )}
-            </div>
-          ) : null}
-
-          <div
-            className="campus-runtime"
-            aria-label={`本站已上线 ${runTime.days} 天 ${runTime.hours} 小时 ${runTime.minutes} 分钟 ${runTime.seconds} 秒`}
-            title="自 2026 年 8 月 25 日 01:48:50（北京时间）首次公开访问起计算"
-          >
-            <i className="bi bi-clock" aria-hidden="true" />
-            <span>已陪伴校园 {runTime.days} 天 <span className="runtime-clock">{String(runTime.hours).padStart(2, '0')}:{String(runTime.minutes).padStart(2, '0')}:{String(runTime.seconds).padStart(2, '0')}</span></span>
-          </div>
+    <div className="forum-home">
+      <header className="forum-welcome">
+        <div><span className="forum-breadcrumb">社区首页 / 观澜中学</span><h1>欢迎来到观澜校园墙</h1><p>聊聊校园日常，分享消息，也可以在这里寻物、提问。</p></div>
+        {wallEnabled ? <div className="forum-welcome-actions"><Link className="btn btn-outline" to="/wall">随便看看</Link>{canPublish ? <button className="btn btn-primary" onClick={triggerPublishModal}>发布动态</button> : <Link className="btn btn-primary" to="/login">登录 / 注册</Link>}</div> : null}
+      </header>
+      {latestNotice ? <section className="forum-announcement" aria-label="校园公告"><NoticeCard notice={latestNotice} compact onClick={openNotices} /></section> : null}
+      <div className="forum-home-layout">
+        <div className="forum-main">
+          {wallEnabled ? <RecentDiscussions /> : null}
+          <section className="forum-panel" aria-labelledby="campus-services-title">
+            <header className="forum-panel-heading"><h2 id="campus-services-title">板块目录</h2><span>按内容逛逛</span></header>
+            <nav className="forum-directory" aria-label="校园功能入口">
+              {visibleServiceEntries.map((entry) => <Link className="forum-board-row" to={entry.to} key={entry.id}><span className={`entry-symbol tone-${entry.tone}`} aria-hidden="true"><i className={`bi ${entry.icon}`} /></span><span><strong>{entry.label}</strong><small>{entry.description}</small></span><i className={`bi ${entry.id === 'lost-found' ? 'bi-lock' : 'bi-chevron-right'}`} aria-hidden="true" /></Link>)}
+            </nav>
+          </section>
         </div>
-        <div className="welcome-board" aria-hidden="true">
-          <div className="board-heading"><span>校园生活手记</span><span>GUANLAN / 日常</span></div>
-          <div className="board-orbit" />
-          <div className="board-note note-main"><span className="note-pin" /><i className="bi bi-chat-square-heart" /><span>今天，校园里<br />有什么新鲜事？</span><small>每一种声音，都值得被听见</small></div>
-          <div className="board-note note-heart"><i className="bi bi-heart" /><span>把心意<br />说给你听。</span></div>
-          <div className="board-note note-together"><i className="bi bi-people" /><span>很高兴，<br />在这里遇见你。</span></div>
-          <span className="board-caption">把平凡的日子，写成我们的故事。</span>
-        </div>
-      </section>
-
-      {latestNotice ? (
-        <section className="campus-announcement" aria-labelledby="campus-announcement-title">
-          <h2 id="campus-announcement-title" className="sr-only">校园公告</h2>
-          <NoticeCard notice={latestNotice} compact onClick={openNotices} />
-        </section>
-      ) : null}
-
-      <section className="campus-section" aria-labelledby="campus-services-title">
-        <div className="campus-section-heading">
-          <div><span className="campus-eyebrow">EXPLORE CAMPUS</span><h2 id="campus-services-title">在这里，连接校园生活</h2></div>
-          <span>找到你想去的地方 <i className="bi bi-arrow-right" aria-hidden="true" /></span>
-        </div>
-
-        <nav className="campus-entry-grid" aria-label="校园功能入口">
-          {visibleServiceEntries.map((entry) => (
-            <Link className="campus-entry" to={entry.to} key={entry.id}>
-              <span className={`entry-symbol tone-${entry.tone}`} aria-hidden="true"><i className={`bi ${entry.icon}`} /></span>
-              <i className="bi bi-arrow-up-right entry-arrow" aria-hidden="true" />
-              <h3>{entry.label}</h3>
-              <p>{entry.description}</p>
-              <small>{entry.id === 'lost-found' ? '登录后查看' : '去看看'} <i className={`bi ${entry.id === 'lost-found' ? 'bi-lock' : 'bi-arrow-right'}`} aria-hidden="true" /></small>
-            </Link>
-          ))}
-        </nav>
-      </section>
-
-      <section className="campus-about" aria-labelledby="about-campus-wall-title">
-        <div className="about-heading">
-          <span className="campus-eyebrow">MADE BY STUDENTS</span>
-          <h2 id="about-campus-wall-title">关于本站</h2>
-          <span className="about-signature">一面墙，连接你我。</span>
-        </div>
-        <div className="about-copy">
-          <p>
-            龙华区观澜中学校园墙由学生自主搭建与维护，旨在为师生提供一个平等、自由、温馨的交流互动平台。
-            欢迎大家提出宝贵建议，共同建设美好的校园社区。
-          </p>
-          <nav className="about-links" aria-label="关于本站链接">
-            <a href="https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan" target="_blank" rel="noreferrer">
-              <i className="bi bi-github" aria-hidden="true" /><span>开源代码仓库</span><i className="bi bi-arrow-up-right" aria-hidden="true" />
-            </a>
-            {enabledModuleIds.has('help') ? (
-              <>
-                <Link to="/rules"><i className="bi bi-file-earmark-ruled" aria-hidden="true" /><span>社区公约</span><i className="bi bi-chevron-right" aria-hidden="true" /></Link>
-                <Link to="/help"><i className="bi bi-envelope" aria-hidden="true" /><span>联系站长</span><i className="bi bi-chevron-right" aria-hidden="true" /></Link>
-              </>
-            ) : null}
-          </nav>
-        </div>
-      </section>
+        <aside className="forum-sidebar" aria-label="关于社区">
+          <section className="forum-panel forum-about" aria-labelledby="about-campus-wall-title">
+            <div className="forum-school"><img src="/school-badge.webp" alt="" width="40" height="40" /><div><h2 id="about-campus-wall-title">关于本站</h2><span>观澜中学 · 学生搭建与维护</span></div></div>
+            <p>一个供观澜师生交流的地方。欢迎分享日常、发起讨论，或给网站提点建议。</p>
+            {enabledModuleIds.has('help') ? <Link className="btn btn-outline forum-contact" to="/help/form"><i className="bi bi-envelope" aria-hidden="true" />联系我<i className="bi bi-arrow-up-right" aria-hidden="true" /></Link> : null}
+            <div className="forum-runtime" title="自 2026 年 8 月 25 日首次上线起计算"><span className="campus-dot" />已运行 {runTime.days} 天 <span className="runtime-clock">{String(runTime.hours).padStart(2, '0')}:{String(runTime.minutes).padStart(2, '0')}:{String(runTime.seconds).padStart(2, '0')}</span></div>
+          </section>
+          {enabledModuleIds.has('help') ? <section className="forum-panel forum-side-note"><h2>发帖前看一眼</h2><ul><li>请勿公开他人的个人信息。</li><li>讨论事情，避免人身攻击。</li><li>寻物请写清时间与地点。</li></ul><Link to="/rules">社区公约 <i className="bi bi-chevron-right" aria-hidden="true" /></Link></section> : null}
+          <p className="forum-sidebar-footer">龙华区观澜中学<br />校园墙 · 始于 2026</p>
+        </aside>
+      </div>
 
       {/* System Announcement Modal */}
       <Modal

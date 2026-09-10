@@ -374,18 +374,18 @@ export default function Wall() {
     <div className="campus-wall">
       <header className="feed-heading">
         <div>
-          <span className="campus-eyebrow">THE CAMPUS FEED</span>
-          <h1>校园动态<span className="heading-dot">.</span></h1>
-          <p>课间、放学后，还有此刻想分享的小事。</p>
+          <span className="forum-breadcrumb">观澜校园墙 / 讨论区</span>
+          <h1>校园动态</h1>
+          <p>看看大家最近在聊什么。</p>
         </div>
-        <span className="feed-heading-note"><i className="bi bi-chat-square-heart" aria-hidden="true" /> 让每一种声音，都有回响</span>
+        <Link className="feed-heading-note" to="/p">浏览话题 <i className="bi bi-arrow-right" aria-hidden="true" /></Link>
       </header>
       <div className="feed-layout">
       <section className="wall-page" aria-label="校园动态列表">
 
       <div className="feed-compose-card">
         <span className="compose-symbol" aria-hidden="true"><i className={`bi ${user ? 'bi-pencil-square' : 'bi-chat-dots'}`} /></span>
-        <div><h2>{user ? `${user.nickname || user.username}，今天想分享什么？` : '校园里的故事，等你一起续写'}</h2><p>{canPublish ? '一段日常、一个问题，或一次小小的发现。' : publishDisabledReason}</p></div>
+        <div><h2>{user ? `${user.nickname || user.username}，今天想分享什么？` : '登录后参与校园讨论'}</h2><p>{canPublish ? '支持文字、图片、附件与投票。' : publishDisabledReason}</p></div>
         {canPublish ? <button className="btn btn-primary" type="button" onClick={openPublish}><i className="bi bi-plus-lg" aria-hidden="true" />发布动态</button> : !user ? <Link className="btn btn-primary" to="/login" state={{ from: location }}>登录参与<i className="bi bi-arrow-right" aria-hidden="true" /></Link> : null}
       </div>
 
@@ -406,7 +406,7 @@ export default function Wall() {
               className="field"
               value={searchWord}
               onChange={(event) => setSearchWord(event.target.value)}
-              placeholder="搜索校园里的新鲜事、关键词或标签"
+              placeholder="搜索动态或标签"
             />
             {searchWord ? (
               <button
@@ -479,8 +479,8 @@ export default function Wall() {
       {!loading && messages.length === 0 ? (
         <div className="empty-state-card">
           <i className="bi bi-chat-square-dots" />
-          <p className="mt-4 text-base font-bold text-[var(--text-primary)]">{searchWord || filter !== 'all' ? '还没有找到相关动态' : '校园故事，从第一条动态开始'}</p>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">{searchWord || filter !== 'all' ? '试试其他关键词，或切换到全部动态。' : '分享一件小事，让大家的讨论从这里开始。'}</p>
+          <p className="mt-4 text-base font-bold text-[var(--text-primary)]">{searchWord || filter !== 'all' ? '还没有找到相关动态' : '还没有公开动态'}</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">{searchWord || filter !== 'all' ? '试试其他关键词，或切换到全部动态。' : '发布一条动态，发起讨论。'}</p>
           {canPublish ? <button className="btn btn-primary mt-5" type="button" onClick={openPublish}>
             <i className="bi bi-pencil-square" />
             <span>立即发帖</span>
@@ -495,7 +495,7 @@ export default function Wall() {
         ))}
       </div>
 
-      {!loading && !hasMore && messages.length > 0 ? <p className="feed-end">你已看完这些动态，去创造新的故事吧。</p> : null}
+      {!loading && !hasMore && messages.length > 0 ? <p className="feed-end">已显示全部动态</p> : null}
 
       {/* Load More */}
       {hasMore && messages.length ? (

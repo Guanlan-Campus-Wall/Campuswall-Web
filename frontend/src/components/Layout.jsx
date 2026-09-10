@@ -53,7 +53,7 @@ export default function Layout() {
             <span className="brand-mark shrink-0" aria-hidden="true">
               <img src="/school-badge.webp" alt="" width="32" height="32" />
             </span>
-            <span className="brand-copy font-semibold text-[var(--text-primary)]"><span>观澜中学 <b>校园墙</b></span><small>GUANLAN CAMPUS</small></span>
+            <span className="brand-copy font-semibold text-[var(--text-primary)]"><span>观澜中学 <b>校园墙</b></span></span>
           </Link>
 
           {/* Desktop Navigation Links */}
@@ -165,7 +165,7 @@ export default function Layout() {
           <p className="footer-brand text-sm font-semibold text-[var(--text-primary)]">
             龙华区观澜中学 · 校园墙
           </p>
-          <p className="footer-caption">由学生搭建，为校园里的每一个你。</p>
+          <p className="footer-caption">学生自主搭建与维护</p>
         </div>
       </footer>
     </div>
