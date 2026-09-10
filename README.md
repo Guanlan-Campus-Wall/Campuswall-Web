@@ -4,7 +4,7 @@
 
 > 当前文档版本：**3.0**（2026-08-26）。本轮代码验收与部署状态不在 README 中预先宣告，最终记录见 [HANDOFF.md 的“本轮验收记录”](./HANDOFF.md#151-30-本轮验收记录)。
 
-代码仓库：[ZONGRUICHD/Campus-Wall-For-GuanLan](https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan)
+代码仓库：[Guanlan-Campus-Wall/Campuswall-Web](https://github.com/Guanlan-Campus-Wall/Campuswall-Web)
 
 完整的开发、审核、部署、备份、回滚与应急接管说明见 [HANDOFF.md](./HANDOFF.md)。每次功能、修复、主要交互或运维变更都必须在同一提交同步更新交接文档。
 

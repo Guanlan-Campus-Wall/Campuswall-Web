@@ -252,7 +252,7 @@ export default function AdminNotifications() {
           <section className="notification-channel-notes">
             <div><i className="bi bi-chat-dots" /><span><b>QQ</b><small>普通 QQ 群暂无稳定的官方通用 Webhook，需要合规机器人或中继服务后再接入。</small></span></div>
             <div><i className="bi bi-chat-dots" /><span><b>个人微信</b><small>个人微信群不提供官方群机器人 Webhook；企业微信请使用上方企业微信群机器人。</small></span></div>
-            <a href="https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan/blob/main/docs/NOTIFICATION_INTEGRATION.md" target="_blank" rel="noreferrer">查看完整接入文档 <i className="bi bi-arrow-up-right" /></a>
+            <a href="https://github.com/Guanlan-Campus-Wall/Campuswall-Web/blob/main/docs/NOTIFICATION_INTEGRATION.md" target="_blank" rel="noreferrer">查看完整接入文档 <i className="bi bi-arrow-up-right" /></a>
           </section>
 
           <div className="settings-security-note"><i className="bi bi-shield-lock" /><span>测试按钮只发送服务器生成的固定内容，不会把帖子正文、用户身份、联系方式、Webhook 或密钥写入页面、日志与审计记录。</span></div>

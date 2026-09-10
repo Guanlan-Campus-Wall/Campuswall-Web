@@ -10,7 +10,7 @@ alwaysApply: true
 按 `HANDOFF.md` 第 16–17 节执行：
 
 1. 同一提交更新 `HANDOFF.md`；提交后 `git push schoolrepo HEAD:main`。
-2. 交付远端只允许 `schoolrepo` = `ZONGRUICHD/Campus-Wall-For-GuanLan` 的 `main`。禁止推送到 `origin`（`Gavin-LHX/campuswall-react`），禁止强推 `main`。
+2. 交付远端只允许 `schoolrepo` = `Guanlan-Campus-Wall/Campuswall-Web` 的 `main`。禁止推送到 `origin`（`Gavin-LHX/campuswall-react`），禁止强推 `main`。
 3. 等该提交的 GitHub Actions 全部通过后再部署。
 4. 源站先做 `/www/backups/campuswall/*-before-deploy` 隔离备份，再快进 `origin/main`、`npm ci`、后端测试、`deploy/prepare-runtime.sh`、重启 `campuswall.service`。
 5. 本机 Vite 若被 Application Control 拦住，在源站 Linux 构建 `frontend/dist`，再用 Wrangler Direct Upload 发布 Pages 项目 `guanlan-campus-wall`。

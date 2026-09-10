@@ -1,9 +1,9 @@
 # 龙华区观澜中学校园墙——项目交接文档
 
 > - 最后更新：2026-09-10
-> - 文档版本：3.10
+> - 文档版本：3.11
 > - 适用分支：`main`
-> - 代码仓库：<https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan>（**private**）
+> - 代码仓库：<https://github.com/Guanlan-Campus-Wall/Campuswall-Web>（**public**）
 > - 学校名称：龙华区观澜中学
 > - 最近一次架构基线：Cloudflare Pages 前端 + 独立 HTTPS API 源站
 > - 最近一次生产发布：2026-09-10 18:06 CST（应用提交 `412b9062b738e7c115fade4215b488ff58e9576f`，Pages `https://57df53cf.guanlan-campus-wall.pages.dev`；论坛风前台与「联系我」入口，学校仓库保持 private）
@@ -32,7 +32,9 @@
 | 环境 | 位置 | 用途 |
 | --- | --- | --- |
 | 本机工作区 | `<本机工作区>\campuswall-react` | 开发、测试、构建与提交；实际绝对路径由接手人自行记录，不写入公开仓库 |
-| GitHub | 私有仓库 `ZONGRUICHD/Campus-Wall-For-GuanLan` 的 `main` | 唯一代码交付分支；不要把仓库改回 public |
+| GitHub 组织 | `Guanlan-Campus-Wall` | 校园墙代码托管组织 |
+| GitHub Web | 公开仓库 `Guanlan-Campus-Wall/Campuswall-Web` 的 `main` | 唯一 Web 交付分支 |
+| GitHub App | 公开仓库 `Guanlan-Campus-Wall/Campuswall-App` | App 仓库；当前仅占位，不参与 Web 发布 |
 | 正式前端 | `https://wall.zongtech.xyz` | Cloudflare Pages 自定义域名，所有浏览器页面请求从这里进入 |
 | Pages 项目 | `guanlan-campus-wall` | 前端静态构建托管；默认地址为 `https://guanlan-campus-wall.pages.dev` |
 | 正式 API | `https://api-wall.zongtech.xyz` | Cloudflare 代理后的后端、健康检查与受保护静态资源入口 |
@@ -57,7 +59,7 @@
 - 不得恢复旧名 `api.wall.zongtech.xyz`：当前 Free 区域的 Universal SSL 通常覆盖根域与一级通配符 `*.zongtech.xyz`，不会覆盖再嵌套一层的 `api.wall.zongtech.xyz`；`api-wall.zongtech.xyz` 是一级子域，可由现有边缘证书覆盖；
 - 真实上线起点：`2026-08-25T01:48:50+08:00`，由 `SITE_LAUNCHED_AT` 提供；这是首次验证公网 HTTP 200 的时间，不得在普通重启或发布时重置；
 - 服务器时区应保持 `Asia/Shanghai`（用 `timedatectl` 核对）；公告、反馈等 JSON 的无时区时间字符串直接使用服务器本地时间，时区错误会造成展示和排序歧义；
-- 生产 Git 远端应指向 `ZONGRUICHD/Campus-Wall-For-GuanLan`，部署来源只允许 `origin/main` 的快进提交；
+- 生产 Git 远端应指向 `https://github.com/Guanlan-Campus-Wall/Campuswall-Web.git`，部署来源只允许 `origin/main` 的快进提交；旧个人仓库路径会重定向，但源站仍应改成新 URL；
 - 最新实际状态必须以生产机上的 `git rev-parse HEAD`、`systemctl status campuswall.service` 和 `/health` 为准，不能只凭本文档日期判断。
 
 当前前端发布入口由 Cloudflare Pages 决定，源站 Nginx 只处理 API、健康检查、受控静态资源和旧 IP 的确定性重定向。仓库内 `deploy/nginx-campuswall-api.conf`、`deploy/nginx-campuswall-legacy-redirect.conf`、`deploy/cloudflare-realip.conf`、`wrangler.jsonc`、`frontend/.env.production` 与 `frontend/public/_headers` 是该架构的权威基线。源站 `5412/5432` 永不公开，`8443` 只允许 Cloudflare 官方 IPv4/IPv6 网段访问；不要把它开放给全网。
@@ -204,7 +206,7 @@ campuswall-react/
 ### 6.1 前端视觉、主题与动效
 
 - 前台公共路由视觉基线是论坛阅读面：中性浅灰底、白卡片、细边框、讨论列表与板块目录优先，不要用营销大标语、霓虹光晕、全屏玻璃或 iOS Settings 式彩色图标方块。权威应用语义仍在 `frontend/src/apple-design-tokens.css` 与 `frontend/src/styles.css`；前台覆盖在 `frontend/src/campus-ui.css`，只作用在 `.public-shell`，后台保持原样式。新增颜色、圆角、字号、间距前优先复用已有 token；
-- 字体栈优先系统字体、苹方与微软雅黑。浅色与深色必须分别验收。学校仓库为 private，前台不再放 GitHub 入口，公开联系入口是「联系我」→ `/help/form`；
+- 字体栈优先系统字体、苹方与微软雅黑。浅色与深色必须分别验收。Web 仓库现为组织下的公开仓库，前台仍不放 GitHub 入口，公开联系入口是「联系我」→ `/help/form`；
 - `ThemePicker` 已提供完整主题入口：`theme-preference` 保存 `system/light/dark`，`theme-palette` 保存 `blue/rose/violet/green/orange`；未选过强调色时默认 `green`。用户可在界面中随时恢复“跟随系统”，不需要清 localStorage。解析后的明暗写入 `<html data-theme>`，强调色写入 `<html data-palette>`，同时更新 `meta[name=theme-color]`；同源标签页通过 `storage` 事件同步，存储不可用时安全回退；
 - 所有页面组件已经通过 `React.lazy` 按路由拆分。页面路径变化时由 `.route-transition` 提供轻量进入动效，路由切换同时回到页面顶部；
 - CSS 和 Three.js 场景都尊重 `prefers-reduced-motion`，毛玻璃降级尊重 `prefers-reduced-transparency`，高对比偏好使用 `prefers-contrast: more`。新增动效必须是非阻塞、可中断的辅助反馈，不能影响点击、键盘焦点或阅读；
@@ -1181,6 +1183,19 @@ Codex `gpt-6-astra` xhigh 直接改 `frontend` 的 CSS/JSX：新增 `campus-ui.c
 | 服务器发布 | 源站 `37b4e80` 快进至 `412b906`，`npm ci`、完整后端测试（139/139）、`check`、`deploy/prepare-runtime.sh` 后重启 `campuswall.service` | **通过**；服务于 18:05:50 CST `active`，本机与公网 `/health` 正常。本轮无后端行为变更。源站拉取已改为 private 仓库的一次性 Git 凭证 | 2026-09-10 18:05 CST / Cursor Agent |
 | Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload；deployment `https://57df53cf.guanlan-campus-wall.pages.dev` | **通过**；`https://guanlan-campus-wall.pages.dev/` 与 `https://wall.zongtech.xyz/` 的 `theme-color` 为 `#f2f3f5`/`#17191c`，资源 `index-CFosWNEx.js`；游客首页有欢迎、最新讨论、板块目录、关于本站与「联系我」→`/help/form`，无 GitHub 按钮；未登录 `/api/user/lost-found` 为 401；游客动态为「登录后参与讨论」 | 2026-09-10 18:06 CST / Cursor Agent |
 
+### 15.18 仓库改公开、迁入组织并拆出 App 仓
+
+Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanlan-Campus-Wall`。同组织新建公开占位仓库 `Campuswall-App`。前台仍不放 GitHub 入口。自托管 Runner `instance-20260908-1753` 随仓库转移后仍为 online。**本轮没有执行压力、容量、长稳或渗透测试。**
+
+| 项目 | 命令/证据 | 状态 | 时间/执行人 |
+| --- | --- | --- | --- |
+| 组织与仓库 | `Guanlan-Campus-Wall/Campuswall-Web` public；`Guanlan-Campus-Wall/Campuswall-App` public 占位 | **完成** | 2026-09-10 / Cursor Agent |
+| 本地相关测试 | `node --test test/lostFoundAccess.test.js test/communityWritePolicy.test.js test/originGuard.test.js test/visitorIdentity.test.js test/publicMessageView.test.js` | **通过**；15/15 | 2026-09-10 / Cursor Agent |
+| GitHub 发布门禁 | 待该提交在自托管 Runner 上跑完后补录 | 待验证 |  |
+| 生产备份 | 待 CI 通过后按第 17 节执行 | 待执行 |  |
+| 服务器发布 | 源站改 `origin` URL 并快进；本轮无后端行为变更 | 待执行 |  |
+| Pages 发布 | 源站 Linux 构建后 Wrangler Direct Upload | 待执行 |  |
+
 ## 16. Git 工作流
 
 1. 从最新 `schoolrepo/main` 开发；
@@ -1360,7 +1375,7 @@ target_commit="$(git rev-parse origin/main)"
 test "$(git rev-parse HEAD)" = "$target_commit"
 ```
 
-交付仓库现为 **private**。源站 `git fetch origin main` 必须带具备 `repo` 权限的一次性凭证，例如临时 `credential.helper` 向 Git 提供 `x-access-token` 与短时 token。不要把 token 写入仓库、`backend.env` 或长期明文配置。`gh` 用户令牌（`gho_`）不能当作 HTTP Bearer `http.extraHeader` 使用。
+交付仓库现为公开的 `Guanlan-Campus-Wall/Campuswall-Web`。源站 `origin` 必须指向 `https://github.com/Guanlan-Campus-Wall/Campuswall-Web.git`。公开仓库可直接 `git fetch origin main`；若再次改为 private，fetch 才需要一次性 `repo` 凭证（临时 `credential.helper` 提供 `x-access-token` 与短时 token）。不要把 token 写入仓库、`backend.env` 或长期明文配置。`gh` 用户令牌（`gho_`）不能当作 HTTP Bearer `http.extraHeader` 使用。
 
 ```bash
 set -euo pipefail

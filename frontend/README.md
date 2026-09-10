@@ -2,7 +2,7 @@
 
 这是龙华区观澜中学校园墙的 React + Vite 前端，包含公开校园墙、表白墙、可浏览的失物招领、个人中心与按角色授权的管理后台。
 
-项目仓库：[ZONGRUICHD/Campus-Wall-For-GuanLan](https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan)
+项目仓库：[Guanlan-Campus-Wall/Campuswall-Web](https://github.com/Guanlan-Campus-Wall/Campuswall-Web)
 
 ## 技术栈
 

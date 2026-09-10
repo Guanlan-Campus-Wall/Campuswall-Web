@@ -2,7 +2,7 @@
 
 这是校园墙的 Node.js + Express API。PostgreSQL 18 是账号、权限、留言与结构化审计的运行时数据源。
 
-项目仓库：[ZONGRUICHD/Campus-Wall-For-GuanLan](https://github.com/ZONGRUICHD/Campus-Wall-For-GuanLan)
+项目仓库：[Guanlan-Campus-Wall/Campuswall-Web](https://github.com/Guanlan-Campus-Wall/Campuswall-Web)
 
 ## 运行
 
