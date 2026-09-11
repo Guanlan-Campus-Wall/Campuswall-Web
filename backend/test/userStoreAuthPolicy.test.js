@@ -267,10 +267,11 @@ test('register creates a pending student-id account without a session cookie sid
 
   const shortId = await store.register('202553213', 'password12')
   assert.equal(shortId.success, false)
-  assert.match(shortId.error, /10 位/)
+  assert.equal(shortId.error, '学号格式不正确')
+  assert.doesNotMatch(shortId.error, /\d+\s*位/)
   const reserved = await store.register(feishuUsernameForOpenId('ou_reserved'), 'password12')
   assert.equal(reserved.success, false)
-  assert.match(reserved.error, /10 位/)
+  assert.equal(reserved.error, '学号格式不正确')
 })
 
 test('register with optional email types pending_email so PostgreSQL can infer nulls', async () => {

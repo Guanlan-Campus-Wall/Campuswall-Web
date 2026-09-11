@@ -273,9 +273,28 @@ body:has(.public-shell) > .modal-backdrop-custom {
 
 
 /* Volumetric Three.js heart: independent of note count and motion preference. */
-.volumetric-heart-layout { grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); }
-.volumetric-heart-frame { min-width: 0; overflow: hidden; border-radius: 10px; background: #120e18; border: 1px solid #312333; }
-.volumetric-heart-viewport { position: relative; height: 480px; background: radial-gradient(ellipse at 50% 45%, #29111f 0%, #120e18 70%); touch-action: pan-y; cursor: grab; outline-offset: -4px; }
+.volumetric-heart-layout {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+}
+.volumetric-heart-frame {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #120e18;
+  border: 1px solid #312333;
+}
+.volumetric-heart-viewport {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  background: radial-gradient(ellipse at 50% 45%, #29111f 0%, #120e18 70%);
+  touch-action: pan-y;
+  cursor: grab;
+  outline-offset: -4px;
+}
 .volumetric-heart-viewport[data-dragging="true"] { cursor: grabbing; }
 .volumetric-heart-viewport:focus-visible { outline: 2px solid #f7a7c0; }
 .volumetric-heart-viewport .volumetric-heart-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -288,23 +307,39 @@ body:has(.public-shell) > .modal-backdrop-custom {
 .volumetric-heart-fallback p { font-size: 12px; }
 .volumetric-heart-layout .confession-note-browser { min-height: 0; max-height: 540px; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: none; }
 .volumetric-heart-layout .confession-note-browser-heading h2 { font-size: 15px; margin: 0; }
-.volumetric-heart-layout .confession-note-list { overflow-y: auto; }
-@media (max-width: 800px) {
-  .volumetric-heart-layout { grid-template-columns: 1fr; }
-  .volumetric-heart-viewport { height: 390px; }
-  .volumetric-heart-layout .confession-note-browser { max-height: 460px; }
-}
-@media (max-width: 420px) {
-  .volumetric-heart-viewport { height: 340px; }
-  .volumetric-heart-caption { padding-inline: 12px; font-size: 10px; }
-}
-
+.volumetric-heart-layout .confession-note-list { overflow-y: auto; grid-template-columns: 1fr; }
+.volumetric-heart-layout .confession-note-list-item { border-radius: 6px; }
 .public-shell .confession-notes-page { width: 100%; min-width: 0; }
 .public-shell .confession-note-stage { width: 100%; min-width: 0; justify-items: stretch; }
 .public-shell .confession-stage-toolbar { width: 100%; flex-wrap: wrap; }
-.volumetric-heart-layout { width: 100%; min-width: 0; }
-.volumetric-heart-layout .confession-note-list { grid-template-columns: 1fr; }
-.volumetric-heart-layout .confession-note-list-item { border-radius: 6px; }
+@media (max-width: 800px) {
+  .volumetric-heart-layout { grid-template-columns: 1fr; }
+  .volumetric-heart-viewport {
+    height: min(92vw, 68svh);
+  }
+  .volumetric-heart-layout .confession-note-browser { max-height: none; }
+}
 @media (max-width: 600px) {
-  .public-shell .page-wrap:has(.confession-notes-page) { padding-inline: 0; }
+  .public-shell .page-wrap:has(.confession-notes-page) {
+    width: 100%;
+    max-width: none;
+    padding-inline: 0;
+  }
+  .public-shell .confession-notes-page { width: 100%; }
+  .public-shell .confession-page-intro,
+  .public-shell .confession-stage-toolbar,
+  .public-shell .confession-compose {
+    padding-inline: 16px;
+  }
+  .volumetric-heart-frame {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+  .volumetric-heart-viewport {
+    height: min(100vw, 70svh);
+  }
+}
+@media (max-width: 420px) {
+  .volumetric-heart-caption { padding-inline: 12px; font-size: 10px; }
 }

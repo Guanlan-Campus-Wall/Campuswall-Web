@@ -455,7 +455,7 @@ export default function Me() {
           <h2 className="text-xl font-bold text-[var(--text-primary)]">学号账号</h2>
           <p className="text-sm leading-6 text-[var(--text-secondary)]">
             {user.student_id
-              ? `当前学号 ${user.student_id}。前台登录请使用这 10 位学号和密码。`
+              ? `当前学号 ${user.student_id}。前台登录请使用该学号和密码。`
               : '这是后台创建的账号，没有绑定学号。请使用用户名从管理员入口登录。'}
           </p>
         </section>

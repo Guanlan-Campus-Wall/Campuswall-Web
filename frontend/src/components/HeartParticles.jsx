@@ -125,8 +125,10 @@ export default function HeartParticles({ notes = [], activeId = null, onSelect, 
       renderer.setSize(width, height, false)
       material.uniforms.pixelRatio.value = ratio
       camera.aspect = width / height
-      // Fit a bounding sphere for every rotation, including portrait screens.
-      camera.position.z = 1.58 / Math.sin(Math.atan(Math.tan(19 * Math.PI / 180) * Math.min(camera.aspect, 1)))
+      // Fit a bounding sphere. Narrow phones use a tighter radius so the heart
+      // fills the full-bleed square instead of sitting in a padded strip.
+      const radius = Math.min(width, height) < 520 ? 1.16 : 1.32
+      camera.position.z = radius / Math.sin(Math.atan(Math.tan(19 * Math.PI / 180) * Math.min(camera.aspect, 1)))
       camera.updateProjectionMatrix()
       refresh()
     }

@@ -8,7 +8,7 @@ export const validateStudentId = (value = '') => {
   if (!STUDENT_ID_PATTERN.test(studentId) || studentId.length !== STUDENT_ID_LENGTH) {
     return {
       success: false,
-      error: `学号必须是 ${STUDENT_ID_LENGTH} 位数字`
+      error: '学号格式不正确'
     }
   }
   return { success: true, studentId }

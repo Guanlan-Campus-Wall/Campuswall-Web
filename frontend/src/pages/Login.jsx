@@ -5,8 +5,7 @@ import { useAlert } from '../contexts/AlertContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
 import api from '../services/api'
 
-const STUDENT_ID_LENGTH = 10
-const studentIdPattern = /^\d{10}$/
+const STUDENT_ID_INPUT_MAX = 32
 
 const destinationFrom = (location) => {
   const from = location.state?.from
@@ -87,8 +86,8 @@ export default function Login() {
     event.preventDefault()
     const cleanId = studentId.trim()
     const isRegister = mode === 'register'
-    if (isRegister && !studentIdPattern.test(cleanId)) {
-      alert.showTopRightAlert(`学号必须是 ${STUDENT_ID_LENGTH} 位数字`, 'warning', '学号长度不正确')
+    if (isRegister && !/^\d+$/.test(cleanId)) {
+      alert.showTopRightAlert('学号格式不正确', 'warning', '无法注册')
       return
     }
     if (!isRegister && !cleanId) {
@@ -158,7 +157,7 @@ export default function Login() {
         <Link className="auth-home-link" to="/"><i className="bi bi-arrow-left" aria-hidden="true" />返回首页</Link>
         <img src="/school-badge.webp" alt="观澜中学校徽" width="68" height="68" />
         <h2>观澜中学校园墙</h2>
-        <p>使用 {STUDENT_ID_LENGTH} 位学号注册和登录，再参与校园讨论。</p>
+        <p>使用本校学号注册和登录，再参与校园讨论。</p>
         <div className="auth-welcome-bottom"><i className="bi bi-chat-square-heart" aria-hidden="true" />观澜中学 · 校园墙</div>
       </aside>
       <section className="card auth-form-card space-y-5 p-5 sm:p-6">
@@ -166,7 +165,7 @@ export default function Login() {
           <h1 className="text-[1.75rem] font-bold leading-9 text-[var(--text-primary)]">{isRegister ? '学号注册' : '学号登录'}</h1>
           <p className="text-[0.9375rem] leading-6 text-[var(--text-secondary)]">
             {isRegister
-              ? `注册必须填写 ${STUDENT_ID_LENGTH} 位学号，长度不符会直接拒绝。提交后需审核员通过才能登录。`
+              ? '请填写本校学号。提交后需审核员通过才能登录。'
               : '学生使用学号登录。后台人员请走管理员入口。'}
           </p>
         </div>
@@ -183,23 +182,18 @@ export default function Login() {
               id="account-student-id"
               className="field auth-field w-full"
               value={studentId}
-              onChange={(event) => setStudentId(isRegister ? event.target.value.replace(/\D/g, '').slice(0, STUDENT_ID_LENGTH) : event.target.value)}
+              onChange={(event) => setStudentId(isRegister ? event.target.value.replace(/\D/g, '').slice(0, STUDENT_ID_INPUT_MAX) : event.target.value)}
               inputMode={isRegister ? 'numeric' : 'text'}
               autoComplete="username"
-              maxLength={isRegister ? STUDENT_ID_LENGTH : 24}
-              placeholder={isRegister ? `请输入 ${STUDENT_ID_LENGTH} 位学号` : '请输入学号'}
+              maxLength={isRegister ? STUDENT_ID_INPUT_MAX : 24}
+              placeholder="请输入学号"
             />
-            {isRegister ? (
-              <span className={`block text-xs ${cleanLengthHint(studentId) === STUDENT_ID_LENGTH ? 'text-emerald-600' : 'text-[var(--text-muted)]'}`}>
-                已输入 {studentId.trim().length} / {STUDENT_ID_LENGTH} 位
-              </span>
-            ) : null}
           </label>
 
           {isRegister ? (
             <label className="block space-y-1.5" htmlFor="account-nickname">
               <span className="text-sm font-medium text-[var(--text-secondary)]">昵称（选填）</span>
-              <input id="account-nickname" className="field auth-field w-full" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={40} placeholder="不填则显示同学+学号后四位" />
+              <input id="account-nickname" className="field auth-field w-full" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={40} placeholder="不填则使用默认昵称" />
             </label>
           ) : null}
 
@@ -253,8 +247,4 @@ export default function Login() {
       </section>
     </div>
   )
-}
-
-function cleanLengthHint(value) {
-  return String(value || '').trim().length
 }
