@@ -1252,11 +1252,13 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 
 | 项目 | 命令/证据 | 状态 | 时间/执行人 |
 | --- | --- | --- | --- |
-| 学号位数 | 本地 `/login` 注册页无「10 位」文案与计数；学号框 `maxLength=32`；接口错误为「学号格式不正确」 | **通过** | 2026-09-11 18:48 CST / Cursor Agent |
-| 粒子爱心 | 390×844 视口爱心画布 390×390 全宽；桌面仍为双栏 677×480 + 便签 | **通过** | 2026-09-11 18:48 CST / Cursor Agent |
-| GitHub 发布门禁 | Actions | 待推送 | |
-| 生产备份 | `/www/backups/campuswall/*-before-deploy` | 待部署 | |
-| 服务器发布 | 快进、测试、构建 `frontend/dist`、重启 | 待部署 | |
+| 学号位数 | 公网 `/login` 注册页无位数文案与计数；学号框不再截断到真实长度；接口错误为「学号格式不正确」 | **通过** | 2026-09-11 18:54 CST / Cursor Agent |
+| 粒子爱心 | 公网 390×844 视口爱心画布 390×390 全宽，便签在下方；桌面仍为双栏 | **通过** | 2026-09-11 18:54 CST / Cursor Agent |
+| GitHub 发布门禁 | Actions run `34591078862`（提交 `29f5c3a`） | **通过** | 2026-09-11 / GitHub Actions |
+| 生产备份 | `/www/backups/campuswall/20260911-185141-before-deploy` | **通过** | 2026-09-11 18:51 CST / Cursor Agent |
+| 服务器发布 | 源站快进至 `29f5c3a`，后端测试 145/145，源站构建 `frontend/dist`，重启 `campuswall.service` | **通过**；服务 `active`，`/health` 正常 | 2026-09-11 18:52 CST / Cursor Agent |
+| homelab 前端 | 同步同一份 `dist`；`https://home.zongtech.xyz:12345/login` 200 | **通过** | 2026-09-11 18:52 CST / Cursor Agent |
+| 双重异机备份 | OCI `campuswall-backups/20260911-185239`；Grok Bot 同名目录 | **通过** | 2026-09-11 18:52 CST / Cursor Agent |
 
 ## 16. Git 工作流
 
