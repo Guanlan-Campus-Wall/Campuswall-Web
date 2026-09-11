@@ -117,6 +117,7 @@ jobs:
       - run: npm ci
       - run: npm audit --audit-level=high
       - run: npm run test:backend
+      - run: node --test frontend/tests/*.test.mjs
       - run: npm run build
       - name: Check backend syntax
         run: find backend/src -name '*.js' -print0 | xargs -0 -n1 node --check

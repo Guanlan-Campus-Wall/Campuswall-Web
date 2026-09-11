@@ -49,7 +49,7 @@ export default function ConfessionWall() {
   const [selectedConfession, setSelectedConfession] = useState(null)
   const [reducedMotion, setReducedMotion] = useState(initialReducedMotion)
   const [composeOpen, setComposeOpen] = useState(false)
-  const [heartLive, setHeartLive] = useState(false)
+  const [heartLive, setHeartLive] = useState(true)
 
   const canPublish = community.posting_enabled && Boolean(user || community.guest_posting_enabled)
   const publishDisabledReason = !community.posting_enabled
@@ -127,7 +127,7 @@ export default function ConfessionWall() {
       setSubmissionReceipt({ id: response.data.id, pendingReview })
       if (!pendingReview) await loadConfessions()
       alert.showTopRightAlert(
-        pendingReview ? '便签已提交审核，通过后会出现在爱心中' : '便签已发布，现在可以在爱心中看到',
+        pendingReview ? '便签已提交审核，通过后会出现在公开便签中' : '便签已发布，现在可以在公开便签中看到',
         'success',
         pendingReview ? '等待审核' : '发布成功'
       )
@@ -156,16 +156,16 @@ export default function ConfessionWall() {
         </div>
       </header>
 
-      <section className={`confession-stage confession-note-stage${heartLive ? ' is-live' : ''}`} aria-label="便签爱心">
+      <section className={`confession-stage confession-note-stage${heartLive ? ' is-live' : ''}`} aria-label="立体粒子爱心与公开便签">
         <div className="confession-stage-toolbar">
           <div className="confession-stage-status" aria-live="polite">
-            {loading ? <><span className="spinner" />正在装好便签...</> : null}
+            {loading ? <><span className="spinner" />正在加载便签…</> : null}
             {!loading && loadError ? <span className="text-danger">{loadError}</span> : null}
             {!loading && !loadError ? <span>{confessions.length} 张便签已经公开</span> : null}
           </div>
           <div className="confession-stage-actions">
-            <button className="btn btn-sm btn-outline" type="button" onClick={() => setHeartLive((open) => !open)} disabled={reducedMotion}>
-              {heartLive ? '收起爱心' : '展开互动爱心'}
+            <button className="btn btn-sm btn-outline" type="button" onClick={() => setHeartLive((open) => !open)} disabled={reducedMotion} aria-pressed={heartLive && !reducedMotion}>
+              {reducedMotion ? '已减少动态效果' : heartLive ? '暂停动画' : '播放动画'}
             </button>
             <button className="btn btn-sm btn-outline" type="button" onClick={loadConfessions} disabled={loading}>
               <i className="bi bi-arrow-clockwise" aria-hidden="true" />
@@ -237,7 +237,7 @@ export default function ConfessionWall() {
             <i className={`bi ${submissionReceipt.pendingReview ? 'bi-hourglass-split' : 'bi-check-circle-fill'}`} aria-hidden="true" />
             <span>
               <b>便签 #{submissionReceipt.id} {submissionReceipt.pendingReview ? '已进入审核队列。' : '已公开发布。'}</b>{' '}
-              {submissionReceipt.pendingReview ? '审核通过后刷新页面即可看到。' : '它现在已经加入爱心便签序列。'}
+              {submissionReceipt.pendingReview ? '审核通过后刷新页面即可看到。' : '它现在已经加入公开便签列表。'}
             </span>
           </div>
         ) : null}

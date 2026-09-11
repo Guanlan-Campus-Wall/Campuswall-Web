@@ -271,3 +271,40 @@ body:has(.public-shell) > .modal-backdrop-custom {
 .email-status-badge.is-bad { background: color-mix(in srgb, #dc2626 16%, var(--card-secondary-bg)); color: #b91c1c; }
 .email-settings-card .badge { max-width: 100%; overflow-wrap: anywhere; }
 
+
+/* Volumetric Three.js heart: independent of note count and motion preference. */
+.volumetric-heart-layout { grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); }
+.volumetric-heart-frame { min-width: 0; overflow: hidden; border-radius: 10px; background: #120e18; border: 1px solid #312333; }
+.volumetric-heart-viewport { position: relative; height: 480px; background: radial-gradient(ellipse at 50% 45%, #29111f 0%, #120e18 70%); touch-action: pan-y; cursor: grab; outline-offset: -4px; }
+.volumetric-heart-viewport[data-dragging="true"] { cursor: grabbing; }
+.volumetric-heart-viewport:focus-visible { outline: 2px solid #f7a7c0; }
+.volumetric-heart-viewport .volumetric-heart-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.volumetric-heart-viewport[data-webgl="unavailable"] canvas { visibility: hidden; }
+.volumetric-heart-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 18px; color: #c4abb7; border-top: 1px solid #312333; font-size: 11px; }
+.volumetric-heart-caption button { padding: 6px 8px; color: #f5cada; background: transparent; border: 1px solid #674451; border-radius: 4px; cursor: pointer; }
+.volumetric-heart-caption button:disabled { opacity: .5; cursor: default; }
+.volumetric-heart-fallback { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; color: #dc9ab3; }
+.volumetric-heart-fallback > span { font-size: 130px; line-height: 1.4; }
+.volumetric-heart-fallback p { font-size: 12px; }
+.volumetric-heart-layout .confession-note-browser { min-height: 0; max-height: 540px; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: none; }
+.volumetric-heart-layout .confession-note-browser-heading h2 { font-size: 15px; margin: 0; }
+.volumetric-heart-layout .confession-note-list { overflow-y: auto; }
+@media (max-width: 800px) {
+  .volumetric-heart-layout { grid-template-columns: 1fr; }
+  .volumetric-heart-viewport { height: 390px; }
+  .volumetric-heart-layout .confession-note-browser { max-height: 460px; }
+}
+@media (max-width: 420px) {
+  .volumetric-heart-viewport { height: 340px; }
+  .volumetric-heart-caption { padding-inline: 12px; font-size: 10px; }
+}
+
+.public-shell .confession-notes-page { width: 100%; min-width: 0; }
+.public-shell .confession-note-stage { width: 100%; min-width: 0; justify-items: stretch; }
+.public-shell .confession-stage-toolbar { width: 100%; flex-wrap: wrap; }
+.volumetric-heart-layout { width: 100%; min-width: 0; }
+.volumetric-heart-layout .confession-note-list { grid-template-columns: 1fr; }
+.volumetric-heart-layout .confession-note-list-item { border-radius: 6px; }
+@media (max-width: 600px) {
+  .public-shell .page-wrap:has(.confession-notes-page) { padding-inline: 0; }
+}
