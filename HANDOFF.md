@@ -1264,7 +1264,9 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 
 - 原生安卓源码与自动签名发布放在独立的 `Guanlan-Campus-Wall/Campuswall-App` 仓库。
 - 网站增加 `/native-captcha.html`，仅用于系统浏览器中的登录、注册及管理员登录验证。校验动作白名单和请求随机状态，验证失效后撤销返回链接；不接收账号密码。
-- 新增两项验证页测试并通过。生产发布、CI 与备份结果待本轮部署后补录。
+- 新增两项验证页测试并通过；GitHub Actions `34683188675` 通过，源站已部署 `1fb1974`，后端测试 145/145 通过，服务及公网健康正常。
+- 部署前备份：`/www/backups/campuswall/20260912-162631-before-deploy`；双重异机备份批次 `20260912-162654-assets` 已分别推送 OCI 与 Grok Bot。
+- 公网 `/native-captcha.html` 与源码 SHA-256 一致：`a26b2e8af7713bdacfd26a5ac3e5f035fa3d1befe2dfdc0d5736cf6708dd9dfc`。
 
 ## 16. Git 工作流
 
