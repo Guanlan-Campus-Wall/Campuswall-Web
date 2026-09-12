@@ -1260,6 +1260,12 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 | homelab 前端 | 同步同一份 `dist`；`https://home.zongtech.xyz:12345/login` 200 | **通过** | 2026-09-11 18:52 CST / Cursor Agent |
 | 双重异机备份 | OCI `campuswall-backups/20260911-185239`；Grok Bot 同名目录 | **通过** | 2026-09-11 18:52 CST / Cursor Agent |
 
+### 15. 最新安卓客户端配套验证页（2026-09-12）
+
+- 原生安卓源码与自动签名发布放在独立的 `Guanlan-Campus-Wall/Campuswall-App` 仓库。
+- 网站增加 `/native-captcha.html`，仅用于系统浏览器中的登录、注册及管理员登录验证。校验动作白名单和请求随机状态，验证失效后撤销返回链接；不接收账号密码。
+- 新增两项验证页测试并通过。生产发布、CI 与备份结果待本轮部署后补录。
+
 ## 16. Git 工作流
 
 1. 从最新 `schoolrepo/main` 开发；
