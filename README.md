@@ -2,7 +2,7 @@
 
 面向龙华区观澜中学的校园交流平台，采用 React、Node.js/Express 与 PostgreSQL 构建。
 
-> 当前文档版本：**3.12**（2026-09-10）。本轮代码验收与部署状态不在 README 中预先宣告，最终记录见 [HANDOFF.md 的“本轮验收记录”](./HANDOFF.md#1519-312-学号登录ai-审核源站前端权限开关电信优选与双重备份)。
+> 当前文档版本：**3.13**（2026-10-01）。本轮代码验收与部署状态不在 README 中预先宣告，最终记录见 [HANDOFF.md 的“本轮验收记录”](./HANDOFF.md#1519-312-学号登录ai-审核源站前端权限开关电信优选与双重备份)。
 
 代码仓库：[Guanlan-Campus-Wall/Campuswall-Web](https://github.com/Guanlan-Campus-Wall/Campuswall-Web)
 

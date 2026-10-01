@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import Avatar from '../components/Avatar.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
 import { firstAdminDestination } from '../services/permissions.js'
@@ -194,350 +195,171 @@ export default function Me() {
     navigate('/', { replace: true })
   }
 
+  const shortcuts = [
+    { to: '/me/posts', icon: 'bi-journal-text', tone: 'sky', label: '我的发布', hint: '帖子与便签' },
+    { to: '/me/comments', icon: 'bi-chat-left-text', tone: 'olive', label: '我的评论', hint: '评论与回复' },
+    { to: '/me/favorites', icon: 'bi-bookmark-fill', tone: 'kraft', label: '我的收藏', hint: '留住喜欢的内容' },
+    { to: '/me/notifications', icon: 'bi-bell-fill', tone: 'fig', label: '消息通知', hint: notificationUnread ? `${notificationUnread} 条未读` : '暂无未读', badge: notificationUnread }
+  ]
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      {/* Profile Banner */}
-      <section className="card overflow-hidden">
-        <div className="profile-cover" />
-        <div className="profile-summary -mt-14 flex flex-col md:flex-row items-start md:items-end justify-between gap-6 p-6 md:p-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-            <div className="relative shrink-0">
-              <img
-                className="profile-avatar h-28 w-28 md:h-32 md:w-32 rounded-full object-cover shadow-lg"
-                src={`${getAvatarUrl(user.id, user.avatar_url)}?v=${avatarStamp}`}
-                alt={user.nickname}
-                onError={handleAvatarError}
-              />
-              <span className="absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs border-2 border-white shadow">
-                <i className="bi bi-check-lg" />
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="page-kicker text-xs">
-                  <i className="bi bi-person-fill" />
-                  <span>已登录校园用户</span>
-                </span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)]">
-                {user.nickname || '未设置昵称'}
-              </h1>
-              <div className="profile-meta-grid">
-                <span>
-                  <i className="bi bi-person-badge text-[var(--primary-color)]" />
-                  {user.student_id ? `学号 ${user.student_id}` : `@${user.username}`}
-                </span>
-                <span>
-                  <i className={`${getGenderIcon(user.gender)} text-amber-500`} />
-                  {genderText(user.gender)}
-                </span>
-                <Link to={`/user/${user.id}`} className="profile-meta-link">
-                  <span>查看我的公开主页</span>
-                  <i className="bi bi-arrow-right-short" />
-                </Link>
-              </div>
-            </div>
+    <div className="page page--account">
+      <section className="profile card">
+        <div className="profile__cover" aria-hidden="true" />
+        <div className="profile__body">
+          <img
+            className="profile__avatar"
+            src={`${getAvatarUrl(user.id, user.avatar_url)}?v=${avatarStamp}`}
+            alt={user.nickname}
+            onError={handleAvatarError}
+          />
+          <div className="profile__main">
+            <h1>{user.nickname || '未设置昵称'}</h1>
+            <ul className="profile__meta">
+              <li><i className="bi bi-person-badge" aria-hidden="true" />{user.student_id ? `学号 ${user.student_id}` : `@${user.username}`}</li>
+              <li><i className={getGenderIcon(user.gender)} aria-hidden="true" />{genderText(user.gender)}</li>
+              <li><Link className="text-link" to={`/user/${user.id}`}>公开主页 <i className="bi bi-arrow-right" aria-hidden="true" /></Link></li>
+            </ul>
+            {user.bio ? <p className="profile__bio">{user.bio}</p> : null}
           </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2.5 self-end md:self-auto">
-            {adminDestination ? (
-              <Link className="btn btn-outline" to={adminDestination}>
-                <i className="bi bi-shield-check" />
-                <span>{adminLabel}</span>
-              </Link>
-            ) : null}
-            <Link className="btn btn-outline" to="/me/posts">
-              <i className="bi bi-journal-text" />
-              <span>我的发布</span>
-            </Link>
-            <Link className="btn btn-outline" to="/me/comments">
-              <i className="bi bi-chat-left-text-fill" />
-              <span>我的评论</span>
-            </Link>
-            <Link className="btn btn-primary" to="/me/favorites">
-              <i className="bi bi-heart-fill" />
-              <span>我的收藏</span>
-            </Link>
-            <Link className="btn btn-outline relative" to="/me/notifications">
-              <i className="bi bi-bell" />
-              <span>消息通知</span>
-              {notificationUnread ? <span className="badge">{notificationUnread > 99 ? '99+' : notificationUnread}</span> : null}
-            </Link>
-            <button className="btn btn-outline" type="button" onClick={doLogout}>
-              <i className="bi bi-box-arrow-right" />
-              <span>退出登录</span>
-            </button>
+          <div className="profile__actions">
+            {adminDestination ? <Link className="btn btn-soft btn-sm" to={adminDestination}><i className="bi bi-shield-check" aria-hidden="true" />{adminLabel}</Link> : null}
+            <button className="btn btn-outline btn-sm" type="button" onClick={doLogout}><i className="bi bi-box-arrow-right" aria-hidden="true" />退出登录</button>
           </div>
         </div>
       </section>
 
-      {/* Mute Warning */}
+      <nav className="shortcuts" aria-label="个人内容">
+        {shortcuts.map((item) => (
+          <Link className="shortcut card" to={item.to} key={item.to}>
+            <span className={`tile-icon tone-${item.tone}`}><i className={`bi ${item.icon}`} aria-hidden="true" /></span>
+            <span className="shortcut__text"><b>{item.label}</b><small>{item.hint}</small></span>
+            {item.badge ? <span className="badge badge-count">{item.badge > 99 ? '99+' : item.badge}</span> : null}
+          </Link>
+        ))}
+      </nav>
+
       {user.is_muted ? (
-        <section className="status-warning rounded-2xl p-4 flex items-start gap-3">
-          <i className="bi bi-exclamation-octagon-fill text-xl shrink-0 mt-0.5" />
-          <div className="space-y-0.5">
-            <b className="text-sm">账号当前处于禁言状态</b>
-            <p className="text-xs opacity-90">
-              到期时间：{user.muted_until || '未设置'}
-              {user.mute_reason ? ` · 原因：${user.mute_reason}` : ''}
-            </p>
+        <div className="info-callout status-warning">
+          <i className="bi bi-exclamation-octagon-fill" aria-hidden="true" />
+          <div>
+            <b>账号当前处于禁言状态</b>
+            <small>到期时间：{user.muted_until || '未设置'}{user.mute_reason ? ` · 原因：${user.mute_reason}` : ''}</small>
           </div>
-        </section>
+        </div>
       ) : null}
 
-      {/* Main Settings Grid */}
-      <section className="grid gap-6 lg:grid-cols-[1.2fr_380px]">
-        {/* Profile Info Form */}
-        <form className="card p-6 md:p-8 space-y-5" onSubmit={saveProfile}>
-          <div className="space-y-1">
-            <span className="page-kicker text-xs">
-              <i className="bi bi-sliders" />
-              <span>Settings</span>
-            </span>
-            <h2 className="text-xl font-bold text-[var(--text-primary)]">个人资料设置</h2>
-          </div>
+      <div className="settings-grid">
+        <form className="card form-card form-stack" onSubmit={saveProfile}>
+          <header className="card-title"><h2>个人资料</h2><p>公开页面和发帖时展示的信息。</p></header>
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-[var(--text-secondary)]">展示昵称</span>
-            <input
-              className="field w-full"
-              value={nickname}
-              onChange={(event) => setNickname(event.target.value)}
-              maxLength={40}
-              placeholder="公开页面展示的个性昵称"
-            />
+          <label>
+            <span className="field-label">展示昵称</span>
+            <input value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={40} placeholder="公开页面展示的昵称" />
           </label>
 
-          <label className="block space-y-1.5">
-            <span className="flex items-center justify-between gap-3 text-xs font-bold text-[var(--text-secondary)]">
-              <span>个人简介</span>
-              <span className="font-normal text-[var(--text-muted)]">{bio.length}/200</span>
-            </span>
-            <textarea
-              className="field min-h-28 w-full resize-y"
-              value={bio}
-              onChange={(event) => setBio(event.target.value)}
-              maxLength={200}
-              placeholder="介绍一下自己，公开主页会展示这段内容"
-            />
+          <label>
+            <span className="field-label flex justify-between"><span>个人简介</span><span className="text-muted tabular">{bio.length}/200</span></span>
+            <textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength={200} placeholder="介绍一下自己，公开主页会展示这段内容" />
           </label>
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-[var(--text-secondary)]">性别</span>
-            <select
-              className="field w-full"
-              value={gender}
-              onChange={(event) => setGender(Number(event.target.value))}
-            >
+          <label>
+            <span className="field-label">性别</span>
+            <select value={gender} onChange={(event) => setGender(Number(event.target.value))}>
               <option value={0}>保密 / 未设置</option>
-              <option value={1}>男生 👦</option>
-              <option value={2}>女生 👧</option>
+              <option value={1}>男生</option>
+              <option value={2}>女生</option>
             </select>
           </label>
 
-          <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-secondary-bg)] p-4 text-xs text-[var(--text-secondary)] leading-relaxed">
-            <i className="bi bi-info-circle-fill text-[var(--primary-color)] mr-1.5" />
-            用户名是你的登录标识，暂不支持自行修改。发帖时可选择匿名或使用上述昵称。
-          </div>
+          <p className="field-hint"><i className="bi bi-info-circle-fill" aria-hidden="true" /> 用户名是你的登录标识，暂不支持自行修改。发帖时可选择匿名或使用上述昵称。</p>
 
-          <button className="btn btn-primary px-6" type="submit" disabled={saving}>
-            <i className="bi bi-check-circle" />
-            <span>{saving ? '正在保存...' : '保存资料'}</span>
-          </button>
+          <div>
+            <button className="btn btn-primary" type="submit" disabled={saving}>
+              <i className="bi bi-check-circle" aria-hidden="true" />{saving ? '正在保存…' : '保存资料'}
+            </button>
+          </div>
         </form>
 
-        {/* Avatar Upload Card */}
-        <section className="card p-6 md:p-8 space-y-5 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <span className="page-kicker text-xs">
-                <i className="bi bi-image" />
-                <span>Avatar</span>
-              </span>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">头像管理</h2>
-              <p className="text-xs text-[var(--text-muted)]">自动居中裁剪为正方形并压缩，最大 5MB</p>
-            </div>
+        <section className="card form-card form-stack">
+          <header className="card-title"><h2>头像</h2><p>自动居中裁剪为正方形并压缩，最大 5 MB。</p></header>
 
-            <label className="upload-dropzone flex min-h-36 cursor-pointer flex-col items-center justify-center p-4 text-center">
-              {avatarPreviewUrl ? (
-                <img
-                  className="mb-3 h-20 w-20 rounded-2xl border border-[var(--border-color)] object-cover shadow-sm"
-                  src={avatarPreviewUrl}
-                  alt="头像居中裁剪预览"
-                />
-              ) : (
-                <i className="bi bi-cloud-arrow-up-fill text-3xl text-[var(--primary-color)] mb-2" />
-              )}
-              <p className="text-xs font-bold text-[var(--text-primary)]">
-                {avatarFile ? avatarFile.name : '点击选择新头像图片'}
-              </p>
-              <p className="text-[0.7rem] text-[var(--text-muted)] mt-1">
-                {avatarFile ? '预览为中心裁剪效果' : 'GIF 将取首帧作为静态头像'}
-              </p>
-              <input
-                hidden
-                ref={avatarInputRef}
-                type="file"
-                disabled={uploading}
-                accept="image/png,image/jpeg,image/gif,image/webp"
-                onChange={selectAvatar}
-              />
-            </label>
-          </div>
+          <label className="dropzone">
+            {avatarPreviewUrl ? (
+              <img src={avatarPreviewUrl} alt="头像居中裁剪预览" />
+            ) : (
+              <Avatar user={user} size="xl" />
+            )}
+            <b>{avatarFile ? avatarFile.name : '点击选择新头像'}</b>
+            <small>{avatarFile ? '预览为中心裁剪效果' : 'GIF 将取首帧作为静态头像'}</small>
+            <input hidden ref={avatarInputRef} type="file" disabled={uploading} accept="image/png,image/jpeg,image/gif,image/webp" onChange={selectAvatar} />
+          </label>
 
-          <div className="space-y-2.5">
-            <button
-              className="btn btn-primary w-full justify-center"
-              type="button"
-              disabled={uploading || !avatarFile}
-              onClick={uploadAvatar}
-            >
-              <i className="bi bi-cloud-upload" />
-              <span>{uploading ? '上传中...' : '确认更换头像'}</span>
-            </button>
-            <button
-              className="btn btn-sm btn-outline w-full justify-center"
-              type="button"
-              onClick={refreshMe}
-            >
-              <i className="bi bi-arrow-clockwise" />
-              <span>刷新登录状态</span>
-            </button>
-          </div>
+          <button className="btn btn-primary btn-block" type="button" disabled={uploading || !avatarFile} onClick={uploadAvatar}>
+            <i className="bi bi-cloud-upload" aria-hidden="true" />{uploading ? '上传中…' : '确认更换头像'}
+          </button>
         </section>
-      </section>
+      </div>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <form className="card p-6 md:p-8 space-y-5 email-settings-card" onSubmit={saveEmail}>
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold text-[var(--text-primary)]">邮箱通知</h2>
-            <p className="text-xs text-[var(--text-muted)]">验证通过后才会发送评论等通知。链接 24 小时内有效。</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {user.email_verified ? <span className="badge status-success"><i className="bi bi-check-circle" />已验证</span> : <span className="badge status-warning"><i className="bi bi-hourglass-split" />尚未验证</span>}
+      <div className="settings-grid settings-grid--even">
+        <form className="card form-card form-stack" onSubmit={saveEmail}>
+          <header className="card-title"><h2>邮箱通知</h2><p>验证通过后才会发送评论等通知，链接 24 小时内有效。</p></header>
+          <div className="chip-row">
+            {user.email_verified ? <span className="badge status-success"><i className="bi bi-check-circle" aria-hidden="true" />已验证</span> : <span className="badge status-warning"><i className="bi bi-hourglass-split" aria-hidden="true" />尚未验证</span>}
             {user.email_pending ? <span className="badge">待验证：{user.email_pending}</span> : null}
           </div>
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-[var(--text-secondary)]">
-              {user.email_verified ? '已验证邮箱' : '添加邮箱'}
-            </span>
-            <input
-              className="field w-full"
-              type="email"
-              value={emailDraft}
-              onChange={(event) => setEmailDraft(event.target.value)}
-              maxLength={320}
-              placeholder="用于接收评论等消息"
-              autoComplete="email"
-            />
+          <label>
+            <span className="field-label">{user.email_verified ? '已验证邮箱' : '添加邮箱'}</span>
+            <input type="email" value={emailDraft} onChange={(event) => setEmailDraft(event.target.value)} maxLength={320} placeholder="用于接收评论等消息" autoComplete="email" />
           </label>
-          {user.email_pending ? (
-            <p className="text-xs leading-5 text-[var(--text-muted)]">已向 {user.email_pending} 发送验证信。请打开邮件中的按钮完成绑定；没收到就检查垃圾箱，或在这里重新发送。</p>
-          ) : null}
-          <label className="flex items-start gap-2 text-xs leading-5 text-[var(--text-secondary)]">
-            <input
-              className="mt-0.5"
-              type="checkbox"
-              checked={user.email_notify !== false}
-              disabled={emailNotifySaving || !user.email_verified}
-              onChange={(event) => toggleEmailNotify(event.target.checked)}
-            />
+          {user.email_pending ? <p className="field-hint">已向 {user.email_pending} 发送验证信。请打开邮件中的按钮完成绑定；没收到就检查垃圾箱，或在这里重新发送。</p> : null}
+          <label className="check-row">
+            <input type="checkbox" checked={user.email_notify !== false} disabled={emailNotifySaving || !user.email_verified} onChange={(event) => toggleEmailNotify(event.target.checked)} />
             <span>{user.email_verified ? '接收邮件通知' : '验证完成前不能打开邮件通知'}</span>
           </label>
-          <button className="btn btn-primary px-6" type="submit" disabled={emailSaving || !emailDraft.trim()}>
-            <i className="bi bi-envelope" />
-            <span>{emailSaving ? '正在发送...' : (user.email_verified ? '更换并重新验证' : '发送验证邮件')}</span>
-          </button>
+          <div>
+            <button className="btn btn-primary" type="submit" disabled={emailSaving || !emailDraft.trim()}>
+              <i className="bi bi-envelope" aria-hidden="true" />{emailSaving ? '正在发送…' : (user.email_verified ? '更换并重新验证' : '发送验证邮件')}
+            </button>
+          </div>
         </form>
 
-        <section className="card p-6 md:p-8 space-y-4">
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">学号账号</h2>
-          <p className="text-sm leading-6 text-[var(--text-secondary)]">
-            {user.student_id
-              ? `当前学号 ${user.student_id}。前台登录请使用该学号和密码。`
-              : '这是后台创建的账号，没有绑定学号。请使用用户名从管理员入口登录。'}
-          </p>
-        </section>
-      </section>
+        {user?.has_password ? (
+          <form className="card form-card form-stack" onSubmit={changePassword}>
+            <header className="card-title"><h2>修改登录密码</h2><p>修改后，其他设备上的旧登录状态会自动失效。</p></header>
+            <label>
+              <span className="field-label">当前密码</span>
+              <input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} placeholder="请输入当前密码" required />
+            </label>
+            <div className="form-grid">
+              <label>
+                <span className="field-label">新密码</span>
+                <input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} maxLength={128} placeholder="至少 8 个字符" required />
+              </label>
+              <label>
+                <span className="field-label">确认新密码</span>
+                <input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} maxLength={128} placeholder="再次输入" required />
+              </label>
+            </div>
+            <div>
+              <button className="btn btn-primary" type="submit" disabled={passwordSaving}>
+                <i className="bi bi-shield-check" aria-hidden="true" />{passwordSaving ? '正在修改…' : '确认修改密码'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <section className="card form-card form-stack">
+            <header className="card-title"><h2>未设置密码</h2><p>此账号没有登录密码。请联系管理员重置后再从学号或管理员入口登录。</p></header>
+          </section>
+        )}
+      </div>
 
-      {user?.has_password ? (
-      <form className="card p-6 md:p-8 space-y-5" onSubmit={changePassword}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <span className="page-kicker text-xs">
-              <i className="bi bi-shield-lock" />
-              <span>Security</span>
-            </span>
-            <h2 className="text-xl font-bold text-[var(--text-primary)]">修改登录密码</h2>
-            <p className="text-xs text-[var(--text-muted)]">修改后，其他设备上的旧登录状态会自动失效。</p>
-          </div>
-          <span className="badge">
-            <i className="bi bi-key" />
-            最少 8 个字符
-          </span>
+      {!user.student_id ? (
+        <div className="info-callout">
+          <i className="bi bi-info-circle-fill" aria-hidden="true" />
+          <span>这是后台创建的账号，没有绑定学号。请使用用户名从管理员入口登录。</span>
         </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-[var(--text-secondary)]">当前密码</span>
-            <input
-              className="field w-full"
-              type="password"
-              autoComplete="current-password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              placeholder="请输入当前密码"
-              required
-            />
-          </label>
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-[var(--text-secondary)]">新密码</span>
-            <input
-              className="field w-full"
-              type="password"
-              autoComplete="new-password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              minLength={8}
-              maxLength={128}
-              placeholder="输入新的登录密码"
-              required
-            />
-          </label>
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-[var(--text-secondary)]">确认新密码</span>
-            <input
-              className="field w-full"
-              type="password"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              minLength={8}
-              maxLength={128}
-              placeholder="再次输入新密码"
-              required
-            />
-          </label>
-        </div>
-
-        <div className="flex justify-end">
-          <button className="btn btn-primary px-6" type="submit" disabled={passwordSaving}>
-            <i className="bi bi-shield-check" />
-            <span>{passwordSaving ? '正在修改...' : '确认修改密码'}</span>
-          </button>
-        </div>
-      </form>
-      ) : (
-        <section className="card p-6 md:p-8 space-y-2">
-          <span className="page-kicker text-xs">
-            <i className="bi bi-shield-lock" />
-            <span>Security</span>
-          </span>
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">未设置密码</h2>
-          <p className="text-xs text-[var(--text-muted)]">此账号没有登录密码。请联系管理员重置后再从学号或管理员入口登录。</p>
-        </section>
-      )}
+      ) : null}
     </div>
   )
 }

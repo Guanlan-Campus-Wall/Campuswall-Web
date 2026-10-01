@@ -1,0 +1,504 @@
+/* 校园动态页：输入框式发布入口、工具栏、发布器、侧栏小组件 */
+
+@layer components {
+  /* ---- 辅助色方块（入口图标、通知类型等） ---- */
+  .tile-icon {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    font-size: 17px;
+  }
+
+  .tone-clay { background: var(--tone-clay-soft); color: var(--tone-clay); }
+  .tone-kraft { background: var(--tone-kraft-soft); color: var(--tone-kraft); }
+  .tone-olive { background: var(--tone-olive-soft); color: var(--tone-olive); }
+  .tone-sky { background: var(--tone-sky-soft); color: var(--tone-sky); }
+  .tone-fig { background: var(--tone-fig-soft); color: var(--tone-fig); }
+  .tone-heather { background: var(--tone-heather-soft); color: var(--tone-heather); }
+
+  /* ---- 侧栏卡片 ---- */
+  .school-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 24px 20px 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    text-align: center;
+  }
+
+  .school-card img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 6px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: #fff;
+    object-fit: contain;
+  }
+
+  .school-card h2 { font-family: var(--font-serif); font-size: var(--fs-xl); font-weight: 500; }
+  .school-card p { margin-bottom: 10px; color: var(--ink-2); font-size: var(--fs-sm); }
+
+  .widget {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+  }
+
+  .widget__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lg);
+    font-weight: 500;
+  }
+
+  .widget__title > i { color: var(--accent); font-size: 16px; }
+
+  .widget__nav { display: grid; gap: 2px; margin: -6px -10px -10px; }
+
+  .widget__nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    transition: background-color var(--dur-1);
+  }
+
+  .widget__nav a:hover { background: var(--surface-3); }
+  .widget__nav a > .bi-chevron-right { color: var(--ink-3); font-size: 12px; }
+  .widget__nav-text { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+  .widget__nav-text b { font-size: 14px; font-weight: 500; }
+  .widget__nav-text small { color: var(--ink-3); font-size: var(--fs-xs); }
+
+  .widget--note p { color: var(--ink-2); font-size: var(--fs-sm); }
+
+  .widget__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 12px;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+
+  .widget__links a { color: var(--accent-strong); }
+  .widget__links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  .tag--count small {
+    margin-left: 6px;
+    font-size: 11px;
+    opacity: 0.65;
+  }
+
+  /* ---- 发布入口：仿 Claude 的输入框 ---- */
+  .composer-card {
+    display: grid;
+    gap: 6px;
+    padding: 18px 18px 14px 22px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-xl);
+    background: var(--surface);
+    box-shadow: var(--shadow-2);
+    transition: border-color var(--dur-1);
+  }
+
+  .composer-card:hover { border-color: var(--ink-3); }
+
+  .composer-card__hello {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink-2);
+    font-family: var(--font-serif);
+    font-size: var(--fs-xl);
+    font-weight: 400;
+  }
+
+  .composer-card__hello > i { color: var(--accent); font-size: 20px; }
+
+  .composer-card__input {
+    display: block;
+    width: 100%;
+    min-height: 56px;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    color: var(--ink-3);
+    font-size: var(--fs-lg);
+    text-align: left;
+    line-height: 1.6;
+  }
+
+  .composer-card__input.is-static { cursor: default; }
+  .composer-card__input.is-static b { display: block; color: var(--ink); font-weight: 500; }
+  .composer-card__input.is-static small { font-size: var(--fs-sm); }
+
+  .composer-card__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .composer-card__tools { display: flex; gap: 2px; }
+
+  .composer-card__send {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 17px;
+    transition: background-color var(--dur-1);
+  }
+
+  .composer-card__send:hover { background: var(--accent-hover); }
+
+  /* ---- 工具栏 ---- */
+  .toolbar {
+    display: grid;
+    gap: 12px;
+    padding: 14px 16px;
+    box-shadow: none;
+  }
+
+  .searchbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 5px 0 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    background: var(--surface);
+    transition: border-color var(--dur-1), box-shadow var(--dur-2);
+  }
+
+  .searchbox:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
+  .searchbox > i { color: var(--ink-3); }
+
+  .searchbox input {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .searchbox input:focus { border: 0; box-shadow: none; }
+
+  .searchbox__clear {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: none;
+    color: var(--ink-3);
+    font-size: 16px;
+  }
+
+  .toolbar__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 12px;
+  }
+
+  .toolbar__side {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .field--compact {
+    width: auto;
+    min-height: 36px;
+    padding: 4px 34px 4px 12px;
+    border-radius: 10px;
+    font-size: var(--fs-sm);
+  }
+
+  .feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .feed-end {
+    padding: 12px 0;
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+    text-align: center;
+  }
+
+  .chip--sm { min-height: 28px; padding: 0 11px; font-size: var(--fs-xs); }
+  .chip.is-static { cursor: default; }
+  .chip.is-static:hover { background: transparent; color: var(--ink-2); }
+
+  /* ---- 发布器 ---- */
+  .composer { display: grid; gap: 16px; }
+
+  .composer__who {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .composer__surface {
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    transition: border-color var(--dur-1), box-shadow var(--dur-2);
+  }
+
+  .composer__surface:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
+  .composer__text {
+    display: block;
+    width: 100%;
+    min-height: 150px;
+    padding: 14px 16px 4px;
+    border: 0;
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    background: none;
+    font-size: 16px;
+    line-height: 1.75;
+    box-shadow: none;
+  }
+
+  .composer__text:focus { border: 0; box-shadow: none; }
+
+  .composer__media {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px 14px;
+  }
+
+  .composer__tile {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    background: var(--surface-3);
+    overflow: hidden;
+  }
+
+  .composer__tile > img,
+  .composer__tile > video { width: 100%; height: 100%; object-fit: cover; }
+
+  .composer__tile-icon {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    color: var(--accent);
+    font-size: 28px;
+  }
+
+  .composer__tile-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px 1px 3px;
+    border-radius: var(--r-pill);
+    background: rgb(20 20 19 / 0.72);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .composer__tile-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(20 20 19 / 0.74);
+    color: #fff;
+    font-size: 11px;
+  }
+
+  .composer__tile-remove:hover { background: var(--danger); }
+
+  .composer__tile-name {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 16px 6px 4px;
+    background: linear-gradient(transparent, rgb(0 0 0 / 0.6));
+    color: #fff;
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .composer__add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    aspect-ratio: 1;
+    border: 1.5px dashed var(--line-strong);
+    border-radius: 12px;
+    color: var(--ink-3);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--dur-1), color var(--dur-1), background-color var(--dur-1);
+  }
+
+  .composer__add > i { font-size: 20px; }
+  .composer__add:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+  .composer__add small { font-size: 10px; opacity: 0.8; }
+
+  .composer__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 16px 10px;
+    font-size: var(--fs-xs);
+  }
+
+  .composer__draft {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--success);
+  }
+
+  .composer__draft button {
+    margin-left: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent-strong);
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .composer__poll {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+  }
+
+  .composer__poll-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .composer__poll-head h3 { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .composer__poll-head p { margin-top: 2px; color: var(--ink-3); font-size: var(--fs-xs); }
+  .composer__poll-options { display: grid; gap: 8px; }
+
+  .composer__poll-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .composer__poll-index {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+
+  .composer__poll-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .composer__poll-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-2);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+  }
+
+  .composer__poll-time select { width: auto; min-height: 36px; padding-block: 4px; font-size: var(--fs-sm); }
+
+  .composer__tags {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+  }
+
+  .composer__tags-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+
+  .composer__tags-head span { display: inline-flex; align-items: center; gap: 6px; }
+  .composer__tags-head small { color: var(--ink-3); font-weight: 400; }
+
+  .composer__progress { display: grid; gap: 8px; }
+  .composer__progress p { color: var(--ink-2); font-size: var(--fs-xs); font-weight: 500; text-align: center; }
+
+  @media (max-width: 720px) {
+    .composer-card { padding: 14px 14px 12px 18px; border-radius: var(--r-lg); }
+    .toolbar { padding: 12px; }
+    .composer__media { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+}

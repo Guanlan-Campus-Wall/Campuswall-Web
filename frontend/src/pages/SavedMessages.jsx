@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import api from '../services/api'
+import EmptyState from '../components/EmptyState.jsx'
 import MessageCard from '../components/MessageCard.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
@@ -56,73 +57,47 @@ export default function SavedMessages() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <section className="wall-overview p-6 md:p-8">
-        <div className="wall-overview-copy space-y-2">
-          <span className="page-kicker">
-            <i className="bi bi-heart-fill text-rose-500" />
-            <span>Saved</span>
-          </span>
-          <h1 className="text-3xl font-black text-[var(--text-primary)]">我的收藏</h1>
-          <p className="max-w-xl text-sm leading-relaxed text-[var(--text-secondary)]">
-            收藏会跟随你的学生账号保存，换设备登录后也能继续查看。
-          </p>
+    <div className="page page--reading">
+      <Link to="/me" className="back-link"><i className="bi bi-arrow-left" aria-hidden="true" />个人中心</Link>
+      <header className="page-head">
+        <div className="page-head__text">
+          <h1>我的收藏</h1>
+          <p>收藏会跟随你的学生账号保存，换设备登录后也能继续查看。</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="wall-stat-card min-w-28">
-            <b>{total}</b>
-            <span>已收藏留言</span>
-          </div>
-          <Link className="btn btn-outline" to="/me">
-            <i className="bi bi-person" />
-            <span>返回个人中心</span>
-          </Link>
-        </div>
-      </section>
+        <div className="stat-chip"><b className="tabular">{total}</b><span>已收藏留言</span></div>
+      </header>
 
       {loading ? (
-        <div className="space-y-4">
+        <div className="feed-list" aria-hidden="true">
           {[1, 2].map((item) => (
-            <div className="card p-6 space-y-4" key={item}>
+            <div className="post" key={item}>
               <div className="skeleton h-11 w-44" />
-              <div className="skeleton h-20 w-full" />
+              <div className="skeleton mt-4 h-20 w-full" />
             </div>
           ))}
         </div>
       ) : null}
 
       {!loading && messages.length === 0 ? (
-        <section className="empty-state-card">
-          <i className="bi bi-heart" />
-          <h2 className="mt-4 text-lg font-bold text-[var(--text-primary)]">还没有收藏留言</h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">在校园墙点击心形按钮，就能把感兴趣的内容留在这里。</p>
-          <Link className="btn btn-primary mt-5" to="/wall">
-            <i className="bi bi-chat-square-text" />
-            <span>去逛校园墙</span>
-          </Link>
-        </section>
+        <EmptyState
+          icon="bi-bookmark"
+          title="还没有收藏留言"
+          action={<Link className="btn btn-primary" to="/wall"><i className="bi bi-chat-square-text" aria-hidden="true" />去逛逛校园动态</Link>}
+        >
+          在帖子底部点击书签按钮，就能把感兴趣的内容留在这里。
+        </EmptyState>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="feed-list">
         {messages.map((message) => (
-          <MessageCard
-            key={message.id}
-            message={message}
-            onFavoriteChange={handleFavoriteChange}
-          />
+          <MessageCard key={message.id} message={message} onFavoriteChange={handleFavoriteChange} />
         ))}
       </div>
 
       {page < totalPages ? (
-        <div className="text-center">
-          <button
-            className="btn btn-outline min-w-44"
-            type="button"
-            disabled={loadingMore}
-            onClick={() => loadFavorites(page + 1, true)}
-          >
-            <i className="bi bi-plus-circle" />
-            <span>{loadingMore ? '加载中...' : '加载更多收藏'}</span>
+        <div className="text-center mt-6">
+          <button className="btn btn-outline" type="button" disabled={loadingMore} onClick={() => loadFavorites(page + 1, true)}>
+            <i className="bi bi-plus-circle" aria-hidden="true" />{loadingMore ? '加载中…' : '加载更多收藏'}
           </button>
         </div>
       ) : null}

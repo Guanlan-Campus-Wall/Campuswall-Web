@@ -56,54 +56,34 @@ export default function Report() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Link to={`/wall/message/${id}`} className="btn btn-sm btn-outline">
-          <i className="bi bi-arrow-left" />
-          <span>返回留言详情</span>
-        </Link>
-      </div>
+    <div className="page page--narrow">
+      <Link to={`/wall/message/${id}`} className="back-link"><i className="bi bi-arrow-left" aria-hidden="true" />返回留言详情</Link>
 
-      <div className="hero-section hero-section-compact text-center">
-        <div className="hero-content space-y-2">
-          <span className="page-kicker hero-kicker">
-            <i className="bi bi-shield-fill-exclamation text-rose-300" />
-            <span>Community Report</span>
-          </span>
-          <h1>举报违规{targetTypeText} #{id}</h1>
-          <p className="hero-subtitle max-w-md mx-auto">
-            共同守护健康友善的校园交流社区。我们将严格保密举报人信息并及时核实处理。
-          </p>
+      <header className="page-head">
+        <div className="page-head__text">
+          <h1>举报违规{targetTypeText}</h1>
+          <p>共同守护友善的校园交流社区。我们会严格保密举报人信息并及时核实处理。</p>
         </div>
-      </div>
+      </header>
 
       {loaded && targetMissing ? (
-        <div className="status-warning rounded-2xl p-5 text-sm">
-          <i className="bi bi-exclamation-triangle mr-2" />
-          被举报{targetTypeText}已删除或暂时不可访问，无法继续提交举报。
+        <div className="info-callout status-warning mb-5">
+          <i className="bi bi-exclamation-triangle" aria-hidden="true" />
+          <span>被举报{targetTypeText}已删除或暂时不可访问，无法继续提交举报。</span>
         </div>
       ) : null}
 
       {!targetMissing && (message || targetComment) ? (
-        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--card-secondary-bg)] p-5 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)]">
-            <i className="bi bi-quote text-[var(--primary-color)] text-lg" />
-            <span>被举报的{targetTypeText}内容原样摘要：</span>
-          </div>
-          <p className="text-xs text-[var(--text-primary)] leading-relaxed pl-6 border-l-2 border-[var(--primary-color)]">
-            {targetExcerpt || '该内容仅包含附件'}
-          </p>
-        </div>
+        <blockquote className="quote-block">
+          <span><i className="bi bi-quote" aria-hidden="true" />被举报{targetTypeText} #{id}{commentId ? ' 的评论' : ''}</span>
+          <p>{targetExcerpt || '该内容仅包含附件'}</p>
+        </blockquote>
       ) : null}
 
-      <form className="card p-6 md:p-8 space-y-5" onSubmit={submit}>
-        <label className="block space-y-1.5">
-          <span className="text-xs font-bold text-[var(--text-secondary)]">违规分类</span>
-          <select
-            className="field w-full"
-            value={form.category}
-            onChange={(event) => setForm({ ...form, category: event.target.value })}
-          >
+      <form className="card form-card form-stack" onSubmit={submit}>
+        <label>
+          <span className="field-label">违规分类</span>
+          <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
             <option value="abuse">辱骂攻击 / 恶意人肉 / 骚扰</option>
             <option value="spam">广告推销 / 刷屏刷榜</option>
             <option value="porn">色情低俗 / 违法违禁信息</option>
@@ -112,32 +92,20 @@ export default function Report() {
           </select>
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-bold text-[var(--text-secondary)]">联系邮箱 (选填)</span>
-          <input
-            className="field w-full"
-            type="email"
-            value={form.email}
-            onChange={(event) => setForm({ ...form, email: event.target.value })}
-            placeholder="如需管理员联系，可填写常用邮箱"
-          />
+        <label>
+          <span className="field-label">联系邮箱（选填）</span>
+          <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="如需管理员联系，可填写常用邮箱" />
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-bold text-[var(--text-secondary)]">举报详细说明 *</span>
-          <textarea
-            className="field min-h-36 w-full text-sm"
-            value={form.text}
-            onChange={(event) => setForm({ ...form, text: event.target.value })}
-            placeholder="请详细描述具体的违规事实或理由..."
-            maxLength={1000}
-          />
+        <label>
+          <span className="field-label">举报详细说明 *</span>
+          <textarea style={{ minHeight: 150 }} value={form.text} onChange={(event) => setForm({ ...form, text: event.target.value })} placeholder="请详细描述具体的违规事实或理由…" maxLength={1000} />
+          <span className="field-hint text-right tabular">{form.text.length}/1000</span>
         </label>
 
-        <div className="pt-2">
-          <button className="btn btn-primary px-8" type="submit" disabled={submitting || targetMissing}>
-            <i className="bi bi-shield-fill-check" />
-            <span>{submitting ? '正在提交...' : '确认提交举报'}</span>
+        <div>
+          <button className="btn btn-danger btn-lg" type="submit" disabled={submitting || targetMissing}>
+            <i className="bi bi-shield-fill-check" aria-hidden="true" />{submitting ? '正在提交…' : '提交举报'}
           </button>
         </div>
       </form>

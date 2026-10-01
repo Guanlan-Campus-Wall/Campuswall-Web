@@ -128,33 +128,33 @@ function ApplicationRoutes() {
             const Component = route.component
             return <Route key={`${route.id}:${route.path}`} path={route.path} element={<Component />} />
           })}
-              <Route path="/login" element={<Login />} />
-              <Route path="/email/status" element={<EmailStatus />} />
-              <Route path="/me" element={<UserProtectedRoute><Me /></UserProtectedRoute>} />
-              <Route path="/me/posts" element={<UserProtectedRoute><MyPosts /></UserProtectedRoute>} />
-              <Route path="/me/comments" element={<UserProtectedRoute><MyComments /></UserProtectedRoute>} />
-              <Route path="/me/favorites" element={<UserProtectedRoute><SavedMessages /></UserProtectedRoute>} />
-              <Route path="/me/notifications" element={<UserProtectedRoute><Notifications /></UserProtectedRoute>} />
-              <Route path="/user/:id" element={<UserProfile />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<ProtectedRoute requiredCapability="dashboard.read"><Admin /></ProtectedRoute>} />
-              <Route path="/admin/wall" element={<ProtectedRoute requiredCapability="content.queue.read"><AdminWall key="posts" scope="posts" /></ProtectedRoute>} />
-              <Route path="/admin/confessions" element={<ProtectedRoute requiredCapability="content.queue.read"><AdminWall key="confessions" scope="confessions" /></ProtectedRoute>} />
-              <Route path="/admin/comments" element={<ProtectedRoute requiredCapability="content.comment.read"><AdminComments /></ProtectedRoute>} />
-              <Route path="/admin/trash" element={<ProtectedRoute requiredCapability="content.trash.read"><AdminTrash /></ProtectedRoute>} />
-              <Route path="/admin/managers" element={<Navigate to="/admin/users" replace />} />
-              <Route path="/admin/users" element={<ProtectedRoute requiredCapability="users.read"><AdminUsers /></ProtectedRoute>} />
-              <Route path="/admin/settings" element={<ProtectedRoute requiredCapability="settings.read"><AdminSettings /></ProtectedRoute>} />
-              <Route path="/admin/notifications" element={<ProtectedRoute requiredCapability="settings.notifications.read"><AdminNotifications /></ProtectedRoute>} />
-              <Route path="/admin/notice" element={<ProtectedRoute requiredCapability="notice.read"><AdminNotice /></ProtectedRoute>} />
-              <Route path="/admin/feedback" element={<ProtectedRoute requiredCapability="feedback.read"><AdminFeedback /></ProtectedRoute>} />
-              <Route path="/admin/report" element={<ProtectedRoute requiredCapability="report.read"><AdminReport /></ProtectedRoute>} />
-              <Route path="/admin/log" element={<ProtectedRoute requiredCapability="logs.legacy_admin.read"><AdminLog type="admin" /></ProtectedRoute>} />
-              <Route path="/admin/audit" element={<ProtectedRoute requiredCapability="audit.read"><AdminAudit /></ProtectedRoute>} />
-              <Route path="/admin/error_log" element={<ProtectedRoute requiredCapability="logs.error.read"><AdminLog type="error" /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/email/status" element={<EmailStatus />} />
+          <Route path="/me" element={<UserProtectedRoute><Me /></UserProtectedRoute>} />
+          <Route path="/me/posts" element={<UserProtectedRoute><MyPosts /></UserProtectedRoute>} />
+          <Route path="/me/comments" element={<UserProtectedRoute><MyComments /></UserProtectedRoute>} />
+          <Route path="/me/favorites" element={<UserProtectedRoute><SavedMessages /></UserProtectedRoute>} />
+          <Route path="/me/notifications" element={<UserProtectedRoute><Notifications /></UserProtectedRoute>} />
+          <Route path="/user/:id" element={<UserProfile />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<ProtectedRoute requiredCapability="dashboard.read"><Admin /></ProtectedRoute>} />
+          <Route path="/admin/wall" element={<ProtectedRoute requiredCapability="content.queue.read"><AdminWall key="posts" scope="posts" /></ProtectedRoute>} />
+          <Route path="/admin/confessions" element={<ProtectedRoute requiredCapability="content.queue.read"><AdminWall key="confessions" scope="confessions" /></ProtectedRoute>} />
+          <Route path="/admin/comments" element={<ProtectedRoute requiredCapability="content.comment.read"><AdminComments /></ProtectedRoute>} />
+          <Route path="/admin/trash" element={<ProtectedRoute requiredCapability="content.trash.read"><AdminTrash /></ProtectedRoute>} />
+          <Route path="/admin/managers" element={<Navigate to="/admin/users" replace />} />
+          <Route path="/admin/users" element={<ProtectedRoute requiredCapability="users.read"><AdminUsers /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute requiredCapability="settings.read"><AdminSettings /></ProtectedRoute>} />
+          <Route path="/admin/notifications" element={<ProtectedRoute requiredCapability="settings.notifications.read"><AdminNotifications /></ProtectedRoute>} />
+          <Route path="/admin/notice" element={<ProtectedRoute requiredCapability="notice.read"><AdminNotice /></ProtectedRoute>} />
+          <Route path="/admin/feedback" element={<ProtectedRoute requiredCapability="feedback.read"><AdminFeedback /></ProtectedRoute>} />
+          <Route path="/admin/report" element={<ProtectedRoute requiredCapability="report.read"><AdminReport /></ProtectedRoute>} />
+          <Route path="/admin/log" element={<ProtectedRoute requiredCapability="logs.legacy_admin.read"><AdminLog type="admin" /></ProtectedRoute>} />
+          <Route path="/admin/audit" element={<ProtectedRoute requiredCapability="audit.read"><AdminAudit /></ProtectedRoute>} />
+          <Route path="/admin/error_log" element={<ProtectedRoute requiredCapability="logs.error.read"><AdminLog type="error" /></ProtectedRoute>} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
     </Suspense>
   )
 }

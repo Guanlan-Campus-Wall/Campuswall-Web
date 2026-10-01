@@ -1,0 +1,308 @@
+/*
+ * 观澜校园墙 · 设计令牌
+ *
+ * 设计语言：温暖、克制、偏编辑感——象牙白纸面、近黑墨色、赤陶橙强调，
+ * 标题使用衬线体，界面使用无衬线体，几乎不用阴影，靠 1px 暖灰描边分层。
+ *
+ * 结构：
+ *   1. 与主题无关的常量（字体、字号、圆角、动效、层级）
+ *   2. 浅色 / 深色中性色与语义色
+ *   3. 五种强调色（赤陶 / 天青 / 橄榄 / 无花果 / 石墨），各带浅色与深色取值
+ *   4. 兼容别名：后台页面里仍有少量 var(--text-primary) 一类的旧变量引用
+ *
+ * 所有文字色与背景色的组合已按 WCAG AA（正文 ≥ 4.5:1）核对。
+ */
+
+:root {
+  color-scheme: light;
+
+  /* 字体：只用系统字体，避免外链字体在校园网络下阻塞渲染。
+     衬线栈把西文交给 Georgia，中文优先宋体（苹果设备），其余设备回落到黑体，
+     故意不写通用 serif，避免 Windows 上中文落到 SimSun。 */
+  --font-serif: Georgia, "Iowan Old Style", "Songti SC", "STSongti-SC-Regular", "Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans CJK SC", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Courier New", monospace;
+
+  /* 字号 */
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13.5px;
+  --fs-md: 15px;
+  --fs-lg: 17px;
+  --fs-xl: 21px;
+  --fs-2xl: 30px;
+  --fs-3xl: 40px;
+  --fs-4xl: 56px;
+
+  /* 圆角 */
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+
+  /* 动效 */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 380ms;
+
+  /* 版式 */
+  --header-h: 64px;
+  --tabbar-h: 62px;
+  --page-w: 1120px;
+  --reading-w: 720px;
+  --aside-w: 320px;
+  --gutter: 24px;
+
+  /* 层级 */
+  --z-header: 40;
+  --z-tabbar: 45;
+  --z-popover: 60;
+  --z-modal: 80;
+  --z-lightbox: 90;
+  --z-toast: 100;
+
+  /* ---- 浅色（默认）---- */
+  --bg: #faf9f5;
+  --surface: #ffffff;
+  --surface-2: #f5f4ed;
+  --surface-3: #f0eee6;
+  --surface-4: #e8e6dc;
+
+  --ink: #141413;
+  --ink-2: #3d3d3a;
+  --ink-3: #66655e;
+  --ink-inverse: #faf9f5;
+
+  --line: #e8e6dc;
+  --line-strong: #d3cfc2;
+
+  --success: #4f6b2e;
+  --success-soft: #eef2e4;
+  --success-line: #cdd9b3;
+  --warning: #9a5b0c;
+  --warning-soft: #fbf0dd;
+  --warning-line: #ecd2a2;
+  --danger: #b3261e;
+  --danger-soft: #fbe9e7;
+  --danger-line: #f0c4bf;
+
+  --shadow-1: 0 1px 2px rgb(20 20 19 / 0.04);
+  --shadow-2: 0 1px 2px rgb(20 20 19 / 0.04), 0 10px 28px -12px rgb(20 20 19 / 0.16);
+  --shadow-3: 0 28px 70px -16px rgb(20 20 19 / 0.34);
+
+  --overlay: rgb(20 20 19 / 0.46);
+  --toast-bg: #141413;
+  --toast-fg: #faf9f5;
+
+  /* 便签纸色（表白墙）——取自 Anthropic 调色板的浅色辅助色 */
+  --note-1: #f2e3bf;
+  --note-2: #f3d6cd;
+  --note-3: #d6e4ef;
+  --note-4: #dfe6cf;
+  --note-5: #e2dff0;
+  --note-ink: #2a2620;
+
+  /* 辅助色：用于入口图标、话题卡片、通知类型 */
+  --tone-clay: #b85636;
+  --tone-clay-soft: #f8e9e1;
+  --tone-kraft: #8f5e1e;
+  --tone-kraft-soft: #f6ead3;
+  --tone-olive: #566a3c;
+  --tone-olive-soft: #ebf0df;
+  --tone-sky: #2f6a99;
+  --tone-sky-soft: #e5eef6;
+  --tone-fig: #a8476b;
+  --tone-fig-soft: #f7e6ec;
+  --tone-heather: #5e5a8c;
+  --tone-heather-soft: #eae9f3;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #262624;
+  --surface: #30302e;
+  --surface-2: #3a3935;
+  --surface-3: #43423d;
+  --surface-4: #4d4c46;
+
+  --ink: #faf9f5;
+  --ink-2: #c2c0b6;
+  --ink-3: #a8a69c;
+  --ink-inverse: #1a1918;
+
+  --line: #3f3e3a;
+  --line-strong: #55534d;
+
+  --success: #a3be7e;
+  --success-soft: #2c3322;
+  --success-line: #48553a;
+  --warning: #e0a553;
+  --warning-soft: #3a2f1b;
+  --warning-line: #5e4a28;
+  --danger: #f28b82;
+  --danger-soft: #3f2623;
+  --danger-line: #6c3a35;
+
+  --shadow-1: none;
+  --shadow-2: 0 14px 36px -14px rgb(0 0 0 / 0.6);
+  --shadow-3: 0 30px 80px -12px rgb(0 0 0 / 0.7);
+
+  --overlay: rgb(10 10 9 / 0.62);
+  --toast-bg: #faf9f5;
+  --toast-fg: #141413;
+
+  --note-1: #4d4328;
+  --note-2: #4f3029;
+  --note-3: #2a3f52;
+  --note-4: #36432a;
+  --note-5: #3f3a58;
+  --note-ink: #f6f0e2;
+
+  --tone-clay: #e6957a;
+  --tone-clay-soft: #43302a;
+  --tone-kraft: #e3b36a;
+  --tone-kraft-soft: #403421;
+  --tone-olive: #a9c17f;
+  --tone-olive-soft: #303a24;
+  --tone-sky: #86b6e0;
+  --tone-sky-soft: #26384a;
+  --tone-fig: #e393b0;
+  --tone-fig-soft: #44292f;
+  --tone-heather: #b6b2e0;
+  --tone-heather-soft: #34324e;
+}
+
+/* ---- 强调色：浅色 ---- */
+:root,
+:root[data-palette="clay"] {
+  --accent: #b85636;
+  --accent-hover: #a64a2c;
+  --accent-ink: #ffffff;
+  --accent-strong: #9c4526;
+  --accent-soft: #f8ebe4;
+  --accent-soft-2: #f2dace;
+  --accent-line: #e6bba6;
+}
+
+:root[data-palette="sky"] {
+  --accent: #2f6a99;
+  --accent-hover: #285b84;
+  --accent-ink: #ffffff;
+  --accent-strong: #245a85;
+  --accent-soft: #e8f0f7;
+  --accent-soft-2: #d5e5f2;
+  --accent-line: #b2cce2;
+}
+
+:root[data-palette="olive"] {
+  --accent: #566a3c;
+  --accent-hover: #495c32;
+  --accent-ink: #ffffff;
+  --accent-strong: #455732;
+  --accent-soft: #edf1e3;
+  --accent-soft-2: #dee6cc;
+  --accent-line: #bfcea3;
+}
+
+:root[data-palette="fig"] {
+  --accent: #a8476b;
+  --accent-hover: #943d5d;
+  --accent-ink: #ffffff;
+  --accent-strong: #8a3556;
+  --accent-soft: #f8e8ee;
+  --accent-soft-2: #f0d3de;
+  --accent-line: #e2b0c3;
+}
+
+:root[data-palette="slate"] {
+  --accent: #2b2b28;
+  --accent-hover: #141413;
+  --accent-ink: #faf9f5;
+  --accent-strong: #141413;
+  --accent-soft: #efede5;
+  --accent-soft-2: #e8e6dc;
+  --accent-line: #d3cfc2;
+}
+
+/* ---- 强调色：深色（按钮用亮色底配深色字，保证对比度） ---- */
+:root[data-theme="dark"],
+:root[data-theme="dark"][data-palette="clay"] {
+  --accent: #e08a6a;
+  --accent-hover: #e99d82;
+  --accent-ink: #1a1918;
+  --accent-strong: #eba88f;
+  --accent-soft: #43302a;
+  --accent-soft-2: #523a31;
+  --accent-line: #7a5242;
+}
+
+:root[data-theme="dark"][data-palette="sky"] {
+  --accent: #7fb0de;
+  --accent-hover: #98c0e5;
+  --accent-ink: #14202b;
+  --accent-strong: #a6c9e8;
+  --accent-soft: #26384a;
+  --accent-soft-2: #2e445a;
+  --accent-line: #43607e;
+}
+
+:root[data-theme="dark"][data-palette="olive"] {
+  --accent: #9bb07a;
+  --accent-hover: #adc08e;
+  --accent-ink: #1b2112;
+  --accent-strong: #b6c898;
+  --accent-soft: #303a24;
+  --accent-soft-2: #3a472b;
+  --accent-line: #55683f;
+}
+
+:root[data-theme="dark"][data-palette="fig"] {
+  --accent: #dc86a4;
+  --accent-hover: #e49bb3;
+  --accent-ink: #2a121b;
+  --accent-strong: #eaa7be;
+  --accent-soft: #44292f;
+  --accent-soft-2: #53333b;
+  --accent-line: #7d4a5b;
+}
+
+:root[data-theme="dark"][data-palette="slate"] {
+  --accent: #e8e6dc;
+  --accent-hover: #ffffff;
+  --accent-ink: #141413;
+  --accent-strong: #faf9f5;
+  --accent-soft: #3a3935;
+  --accent-soft-2: #43423d;
+  --accent-line: #5a5851;
+}
+
+/* ---- 兼容别名（后台页面中保留的旧变量名） ---- */
+:root {
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --border-color: var(--line);
+  --card-bg: var(--surface);
+  --card-solid-bg: var(--surface);
+  --card-secondary-bg: var(--surface-2);
+  --bg-color: var(--bg);
+  --primary-color: var(--accent);
+  --primary-dark: var(--accent-hover);
+  --primary-light: var(--accent-soft);
+  --secondary-light: var(--accent-soft);
+  --action-fill: var(--accent);
+  --hover-bg: var(--surface-3);
+  --admin-table-row-hover: var(--surface-2);
+  --radius-md: var(--r-md);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 16px;
+    --header-h: 56px;
+  }
+}
