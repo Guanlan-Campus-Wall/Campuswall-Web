@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
@@ -17,6 +17,7 @@ export default function Layout() {
   const location = useLocation()
   const alert = useAlert()
   const isAdminRoute = location.pathname.startsWith('/admin')
+  const [headerHidden, setHeaderHidden] = useState(false)
 
   const wallEnabled = enabledModuleIds.has('wall')
   const canPublish = wallEnabled && community.posting_enabled && Boolean(user || community.guest_posting_enabled)
@@ -28,12 +29,38 @@ export default function Layout() {
   const navModules = (placement) => navigationModules(placement, enabledModuleIds)
     .filter((module) => userLoading || !user || module.id !== 'home')
   const desktopModules = navModules('desktop')
-  const mobileModules = navModules('mobile')
   const footerModules = navModules('footer')
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
+    setHeaderHidden(false)
   }, [location.pathname])
+
+  // 手机端向下滚动时收起顶栏，向上滚动时再出现，给内容让出空间
+  useEffect(() => {
+    let last = window.scrollY
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const y = window.scrollY
+      if (Math.abs(y - last) < 8) return
+      setHeaderHidden(y > last && y > 140)
+      last = y
+    }
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame) window.cancelAnimationFrame(frame)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isAdminRoute) return
+    document.querySelector('.subnav a.active')?.scrollIntoView({ inline: 'center', block: 'nearest' })
+  }, [isAdminRoute, location.pathname, userLoading, user])
 
   useEffect(() => {
     const host = window.location.hostname
@@ -83,18 +110,25 @@ export default function Layout() {
   const hasAdminAccess = Boolean(adminDestination)
   const adminLabel = user?.role === 'reviewer' ? '运营后台' : '管理后台'
 
-  // 移动端标签栏：把「发布」按钮放在正中间
-  const tabItems = [
-    ...mobileModules.map((module) => ({ kind: 'module', key: module.id, module })),
-    { kind: 'account', key: 'account' }
-  ]
-  if (wallEnabled) tabItems.splice(Math.floor(tabItems.length / 2), 0, { kind: 'publish', key: 'publish' })
+  // 手机端底部输入条：随当前页面切换成「写动态 / 写便签 / 发布启事」
+  const dock = (() => {
+    if (location.pathname === '/wall' && wallEnabled) {
+      return { label: '分享今天的校园见闻…', action: openPublish }
+    }
+    if (location.pathname === '/confessions' && enabledModuleIds.has('confessions')) {
+      return { label: '写一张便签…', action: () => window.dispatchEvent(new Event('open-confession-compose')) }
+    }
+    if (location.pathname === '/lost-found' && enabledModuleIds.has('lost-found') && user) {
+      return { label: '发布寻物 / 招领启事…', action: () => window.dispatchEvent(new Event('open-lost-found-compose')) }
+    }
+    return null
+  })()
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${dock ? ' has-dock' : ''}`}>
       <a className="skip-to-content" href="#main-content">跳转到主要内容</a>
 
-      <header className="site-header">
+      <header className={`site-header${headerHidden ? ' is-hidden' : ''}`}>
         <div className="site-header__inner">
           <Link to={user ? '/wall' : '/'} className="brand" aria-label={user ? '观澜中学校园墙 · 校园动态' : '观澜中学校园墙 · 首页'}>
             <span className="brand__mark" aria-hidden="true">
@@ -156,6 +190,12 @@ export default function Layout() {
             ) : null}
           </div>
         </div>
+
+        <nav className="subnav" aria-label="版块导航">
+          {desktopModules.map((module) => (
+            <NavLink to={module.path} end={module.end} key={module.id}>{module.label}</NavLink>
+          ))}
+        </nav>
       </header>
 
       <main className="page-main" id="main-content" tabIndex={-1}>
@@ -180,45 +220,18 @@ export default function Layout() {
               <Link to={module.path} key={module.id}>{module.footerLabel || module.label}</Link>
             ))}
             {enabledModuleIds.has('help') ? <Link to="/rules">社区公约</Link> : null}
+            {user ? <Link to="/me">个人中心</Link> : null}
           </nav>
         </div>
       </footer>
 
-      <nav className="tabbar" aria-label="移动端主导航">
-        {tabItems.map((item) => {
-          if (item.kind === 'publish') {
-            return (
-              <button className="tabbar__fab" type="button" key={item.key} onClick={openPublish} aria-label="发布动态">
-                <i className="bi bi-plus-lg" aria-hidden="true" />
-              </button>
-            )
-          }
-          if (item.kind === 'account') {
-            return (
-              <NavLink
-                className="tabbar__item"
-                to={user ? '/me' : '/login'}
-                key={item.key}
-                aria-label={user
-                  ? (notificationUnread > 0 ? `我的，${notificationUnread} 条未读通知` : '我的')
-                  : '我的，登录后查看'}
-              >
-                <span className="tabbar__icon" aria-hidden="true">
-                  <i className={`bi ${user ? 'bi-person-circle' : 'bi-person'}`} />
-                  {user && notificationUnread > 0 ? <span className="tabbar__badge">{unreadLabel}</span> : null}
-                </span>
-                <span>我的</span>
-              </NavLink>
-            )
-          }
-          return (
-            <NavLink className="tabbar__item" to={item.module.path} end={item.module.end} key={item.key}>
-              <span className="tabbar__icon" aria-hidden="true"><i className={`bi ${item.module.icon}`} /></span>
-              <span>{item.module.mobileLabel || item.module.label}</span>
-            </NavLink>
-          )
-        })}
-      </nav>
+      {dock ? (
+        <button className="dock" type="button" onClick={dock.action}>
+          <i className="bi bi-sun dock__icon" aria-hidden="true" />
+          <span className="dock__label">{dock.label}</span>
+          <span className="dock__send" aria-hidden="true"><i className="bi bi-arrow-up" /></span>
+        </button>
+      ) : null}
 
       <BackToTop />
     </div>

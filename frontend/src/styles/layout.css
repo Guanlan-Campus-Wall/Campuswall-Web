@@ -209,84 +209,45 @@
 
   .site-footer__links a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
-  /* ============ 移动端标签栏 ============ */
-  .tabbar {
+  /* ============ 手机端：版块导航 + 底部输入条 ============ */
+  .subnav { display: none; }
+
+  .dock {
     position: fixed;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    right: 14px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 14px;
     z-index: var(--z-tabbar);
     display: none;
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    align-items: end;
-    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
-    padding: 4px 6px env(safe-area-inset-bottom);
-    border-top: 1px solid var(--line);
-    background: color-mix(in srgb, var(--bg) 94%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-
-  .tabbar__item {
-    position: relative;
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 2px;
-    height: 100%;
+    gap: 10px;
+    height: 54px;
+    padding: 0 8px 0 18px;
+    border: 1px solid var(--line-strong);
+    border-radius: 27px;
+    background: var(--surface);
+    box-shadow: var(--shadow-2);
     color: var(--ink-3);
-    font-size: 11px;
-    font-weight: 500;
-    transition: color var(--dur-1);
-  }
-
-  .tabbar__icon {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 28px;
-    font-size: 21px;
-  }
-
-  .tabbar__item.active { color: var(--accent); }
-
-  .tabbar__badge {
-    position: absolute;
-    top: -3px;
-    right: 3px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border: 2px solid var(--bg);
-    border-radius: var(--r-pill);
-    background: var(--accent);
-    color: var(--accent-ink);
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 12px;
-    text-align: center;
-    box-sizing: content-box;
-  }
-
-  .tabbar__fab {
-    display: grid;
-    place-items: center;
-    align-self: start;
-    width: 50px;
-    height: 50px;
-    margin: -10px auto 0;
-    border: 0;
-    border-radius: 16px;
-    background: var(--accent);
-    color: var(--accent-ink);
-    font-size: 22px;
+    font-size: var(--fs-md);
+    text-align: left;
     transition: transform var(--dur-1) var(--ease);
   }
 
-  .tabbar__fab:active { transform: scale(0.94); }
+  .dock:active { transform: scale(0.985); }
+  .dock__icon { color: var(--accent); font-size: 19px; }
+  .dock__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .dock__send {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 18px;
+  }
 
   /* ============ 回到顶部 ============ */
   .back-top {
@@ -326,16 +287,57 @@
 
   @media (max-width: 880px) {
     .top-nav { display: none; }
-    .tabbar { display: grid; }
+    .site-header { transition: transform var(--dur-3) var(--ease); }
+    .site-header.is-hidden { transform: translateY(-100%); }
+    .site-header__inner { height: var(--header-h); gap: 10px; }
     .site-header__actions { gap: 4px; }
 
-    .page-main {
-      --main-pt: 24px;
-      padding: var(--main-pt) 0 calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 28px);
+    .subnav {
+      display: flex;
+      gap: 4px;
+      padding: 0 calc(var(--gutter) - 8px);
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-top: 1px solid var(--line);
     }
 
-    .site-footer { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 20px); }
-    .back-top { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px); right: 16px; }
+    .subnav::-webkit-scrollbar { display: none; }
+
+    .subnav a {
+      position: relative;
+      flex-shrink: 0;
+      padding: 0 12px;
+      color: var(--ink-3);
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 42px;
+      white-space: nowrap;
+      transition: color var(--dur-1);
+    }
+
+    .subnav a.active { color: var(--ink); }
+
+    .subnav a.active::after {
+      content: "";
+      position: absolute;
+      right: 12px;
+      bottom: 0;
+      left: 12px;
+      height: 2px;
+      border-radius: 2px 2px 0 0;
+      background: var(--accent);
+    }
+
+    .page-main {
+      --main-pt: 20px;
+      padding: var(--main-pt) 0 40px;
+    }
+
+    .has-dock .page-main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    .has-dock .dock { display: flex; }
+    .has-dock .site-footer { display: none; }
+    .site-footer { padding-bottom: 40px; }
+    .back-top { bottom: calc(80px + env(safe-area-inset-bottom)); right: 16px; }
     .account-chip__name { display: none; }
     .account-chip { padding-right: 3px; }
     .hide-mobile { display: none !important; }

@@ -84,6 +84,12 @@ export default function LostFound() {
     loadMessages()
   }, [loadMessages])
 
+  useEffect(() => {
+    const open = () => setComposeOpen(true)
+    window.addEventListener('open-lost-found-compose', open)
+    return () => window.removeEventListener('open-lost-found-compose', open)
+  }, [])
+
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }))
   }

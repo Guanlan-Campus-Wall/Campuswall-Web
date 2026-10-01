@@ -369,7 +369,7 @@ export default function Wall() {
 
   return (
     <div className="page">
-      <header className="page-head">
+      <header className="page-head page-head--wall">
         <div className="page-head__text">
           <h1>校园动态</h1>
           <p>看看大家最近在聊什么。</p>
@@ -381,6 +381,8 @@ export default function Wall() {
 
       <div className="split">
         <section className="split__main" aria-label="校园动态列表">
+          <p className="wall-greeting"><i className="bi bi-sun" aria-hidden="true" />{greeting}，{displayName || '同学'}</p>
+
           <div className="composer-card">
             <p className="composer-card__hello"><i className="bi bi-sun" aria-hidden="true" />{greeting}，{displayName || '同学'}</p>
             {canPublish ? (

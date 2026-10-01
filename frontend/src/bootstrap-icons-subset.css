@@ -118,7 +118,6 @@
 .bi-person-badge::before { content: "\f4d3"; }
 .bi-person-check::before { content: "\f4d6"; }
 .bi-person-check-fill::before { content: "\f4d5"; }
-.bi-person-circle::before { content: "\f4d7"; }
 .bi-person-plus::before { content: "\f4dd"; }
 .bi-pin-angle::before { content: "\f4eb"; }
 .bi-play-btn::before { content: "\f4f1"; }
