@@ -108,6 +108,12 @@ export default function ConfessionWall() {
     }
   }, [])
 
+  useEffect(() => {
+    const open = () => setComposeOpen(true)
+    window.addEventListener('open-confession-compose', open)
+    return () => window.removeEventListener('open-confession-compose', open)
+  }, [])
+
   const submitConfession = async (event) => {
     event.preventDefault()
     const text = draft.trim()

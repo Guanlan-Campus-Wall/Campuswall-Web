@@ -1,0 +1,100 @@
+/* 手机端专属排版：更像 Claude 的阅读流——大衬线问候语、无边框帖子、底部输入条 */
+
+@layer components {
+  .wall-greeting { display: none; }
+
+  @media (max-width: 880px) {
+    /* 动态页：用问候语取代标题与发布卡片（发布入口改由底部输入条承担） */
+    .page-head--wall {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .wall-greeting {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 2px 0 6px;
+      color: var(--ink);
+      font-family: var(--font-serif);
+      font-size: 32px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .wall-greeting > i { color: var(--accent); font-size: 26px; }
+    .composer-card { display: none; }
+
+    /* 底部输入条已承担发布入口，页面里的同类按钮就不再重复 */
+    .has-dock .page-head__actions,
+    .has-dock .sky__head > .btn { display: none; }
+
+    /* 搜索与筛选不再装进带边框的卡片 */
+    .toolbar.card {
+      gap: 10px;
+      padding: 0;
+      border: 0;
+      background: none;
+      box-shadow: none;
+    }
+
+    .toolbar__row { gap: 8px; }
+    .split__main { gap: 14px; }
+  }
+
+  @media (max-width: 640px) {
+    :root { --gutter: 20px; }
+
+    .page-head { margin-bottom: 20px; }
+    .page-head p { font-size: var(--fs-md); }
+
+    /* 帖子：去掉卡片框，用发丝线分隔，像一份可以连续阅读的清单 */
+    .feed-list { gap: 0; }
+
+    .post,
+    .post:hover,
+    .post.is-unavailable {
+      padding: 20px 0 6px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .feed-list > .post:last-child,
+    .feed-list > .own-post:last-child .post { border-bottom: 0; }
+
+    .own-post { padding-top: 14px; border-bottom: 1px solid var(--line); }
+    .own-post .post { border-bottom: 0; }
+    .post__text { font-size: 16.5px; line-height: 1.8; }
+    .post__bar { margin-top: 10px; padding-top: 4px; border-top: 0; }
+    .react { padding: 0 10px; }
+    .post__tags { margin-top: 10px; }
+    .thread { margin-top: 6px; padding: 12px; border-radius: var(--r-md); }
+    .poll { background: var(--surface); }
+
+    /* 其余卡片也更克制：保留描边，去掉多余留白 */
+    .widget,
+    .school-card { padding: 18px; }
+    .entry { min-height: 132px; }
+    .panel__head { padding: 18px 18px 10px; }
+    .topic-row { padding: 12px 18px; }
+
+    /* 抽屉与弹窗：更大的圆角与触控目标 */
+    .modal-panel { border-radius: 28px 28px 0 0; }
+    .btn { min-height: 44px; }
+    .btn-sm { min-height: 36px; }
+    .btn-lg { min-height: 50px; }
+    .btn-icon { width: 44px; }
+    .btn-icon.btn-sm { width: 36px; }
+    .menu__item { min-height: 44px; }
+    .chip { min-height: 38px; }
+    .chip--sm { min-height: 32px; }
+  }
+}
