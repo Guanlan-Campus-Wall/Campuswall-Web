@@ -1,0 +1,347 @@
+/* 应用外壳：顶栏、移动端标签栏、页脚、页面容器 */
+
+@keyframes route-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+@layer components {
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--bg);
+  }
+
+  /* ============ 顶栏 ============ */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-header);
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    width: min(100% - 2 * var(--gutter), var(--page-w));
+    height: var(--header-h);
+    margin: 0 auto;
+  }
+
+  .brand {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .brand__mark {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .brand__mark img { width: 28px; height: 28px; object-fit: contain; }
+
+  .brand__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+
+  .brand__text b {
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .top-nav {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .top-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-2);
+    font-size: 14.5px;
+    font-weight: 400;
+    white-space: nowrap;
+    transition: background-color var(--dur-1), color var(--dur-1);
+  }
+
+  .top-nav a > i { display: none; }
+  .top-nav a:hover { background: var(--surface-3); color: var(--ink); }
+  .top-nav a.active { background: var(--surface-3); color: var(--ink); font-weight: 500; }
+
+  .site-header__actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .account-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 3px 12px 3px 3px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color var(--dur-1);
+  }
+
+  .account-chip:hover { background: var(--surface-3); }
+  .account-chip .avatar { --size: 30px; }
+  .account-chip__name { max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .account-chip__dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border: 2px solid var(--bg);
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 14px;
+    text-align: center;
+    box-sizing: content-box;
+    min-width: 14px;
+    height: 14px;
+  }
+
+  /* ============ 主内容 ============ */
+  .page-main {
+    --main-pt: 40px;
+    flex: 1;
+    width: 100%;
+    padding: var(--main-pt) 0 88px;
+  }
+
+  .page {
+    width: min(100% - 2 * var(--gutter), var(--page-w));
+    margin-inline: auto;
+  }
+
+  .page--narrow { width: min(100% - 2 * var(--gutter), 800px); }
+  .page--form { width: min(100% - 2 * var(--gutter), 560px); }
+
+  .route { animation: route-in 0.32s var(--ease) both; }
+
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--aside-w);
+    gap: 32px;
+    align-items: start;
+  }
+
+  .split__main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .split__aside {
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  /* ============ 页脚 ============ */
+  .site-footer {
+    padding: 32px 0 40px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-3);
+    font-size: var(--fs-sm);
+  }
+
+  .site-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px 32px;
+    width: min(100% - 2 * var(--gutter), var(--page-w));
+    margin: 0 auto;
+  }
+
+  .site-footer__brand { display: flex; align-items: center; gap: 12px; }
+  .site-footer__brand b { display: block; color: var(--ink); font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+
+  .site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+  }
+
+  .site-footer__links a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ============ 移动端标签栏 ============ */
+  .tabbar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--z-tabbar);
+    display: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    align-items: end;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    padding: 4px 6px env(safe-area-inset-bottom);
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .tabbar__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 100%;
+    color: var(--ink-3);
+    font-size: 11px;
+    font-weight: 500;
+    transition: color var(--dur-1);
+  }
+
+  .tabbar__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 28px;
+    font-size: 21px;
+  }
+
+  .tabbar__item.active { color: var(--accent); }
+
+  .tabbar__badge {
+    position: absolute;
+    top: -3px;
+    right: 3px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border: 2px solid var(--bg);
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 12px;
+    text-align: center;
+    box-sizing: content-box;
+  }
+
+  .tabbar__fab {
+    display: grid;
+    place-items: center;
+    align-self: start;
+    width: 50px;
+    height: 50px;
+    margin: -10px auto 0;
+    border: 0;
+    border-radius: 16px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 22px;
+    transition: transform var(--dur-1) var(--ease);
+  }
+
+  .tabbar__fab:active { transform: scale(0.94); }
+
+  /* ============ 回到顶部 ============ */
+  .back-top {
+    position: fixed;
+    right: max(16px, calc((100vw - var(--page-w)) / 2));
+    bottom: 28px;
+    z-index: var(--z-header);
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--ink-2);
+    font-size: 17px;
+    box-shadow: var(--shadow-2);
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease), color var(--dur-1);
+  }
+
+  .back-top.is-visible {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .back-top:hover { color: var(--accent); }
+
+  /* ============ 响应式 ============ */
+  @media (max-width: 1040px) {
+    .split { grid-template-columns: 1fr; }
+    .split__aside { position: static; }
+  }
+
+  @media (max-width: 880px) {
+    .top-nav { display: none; }
+    .tabbar { display: grid; }
+    .site-header__actions { gap: 4px; }
+
+    .page-main {
+      --main-pt: 24px;
+      padding: var(--main-pt) 0 calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 28px);
+    }
+
+    .site-footer { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 20px); }
+    .back-top { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px); right: 16px; }
+    .account-chip__name { display: none; }
+    .account-chip { padding-right: 3px; }
+    .hide-mobile { display: none !important; }
+  }
+
+  @media (max-width: 420px) {
+    .brand__text b { font-size: 18px; }
+  }
+}

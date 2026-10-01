@@ -7,6 +7,7 @@ import api from '../services/api'
 import { fileType, fileUrl, messageAuthor } from '../utils/user'
 import UserCard from './UserCard.jsx'
 import FilePreviewModal from './FilePreviewModal.jsx'
+import Menu from './Menu.jsx'
 import Modal from './Modal.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
@@ -15,76 +16,38 @@ import { useUser } from '../contexts/UserContext.jsx'
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
-function Attachment({ file, index, onClick, moments = false, remaining = 0 }) {
+const FEED_MEDIA_LIMIT = 9
+
+function Attachment({ file, index, onClick, remaining = 0 }) {
   const type = fileType(file)
-  const mediaClass = moments ? 'moments-media-item' : ''
+  const more = remaining > 0 ? <span className="media__more">+{remaining}</span> : null
+
   if (type === 'image') {
     return (
-      <button
-        className={`group relative aspect-square overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--card-secondary-bg)] cursor-pointer ${mediaClass}`}
-        type="button"
-        onClick={onClick}
-        aria-label={`预览第 ${index + 1} 张图片`}
-      >
-        <img
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 group-hover:brightness-105"
-          src={fileUrl(file, true)}
-          alt={`留言图片 ${index + 1}`}
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-black/20 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center text-white text-lg">
-          <i className="bi bi-zoom-in" aria-hidden="true" />
-        </div>
-        {remaining > 0 ? <span className="moments-media-more">+{remaining}</span> : null}
+      <button className="media__item" type="button" onClick={onClick} aria-label={`预览第 ${index + 1} 张图片`}>
+        <img src={fileUrl(file, true)} alt={`留言图片 ${index + 1}`} loading="lazy" />
+        {more}
       </button>
     )
   }
   if (type === 'video') {
     return (
-      <button
-        className={`group relative aspect-square overflow-hidden rounded-xl border border-[var(--border-color)] bg-slate-900 cursor-pointer flex items-center justify-center ${mediaClass}`}
-        type="button"
-        onClick={onClick}
-        aria-label={`预览第 ${index + 1} 个视频`}
-      >
-        <video className="h-full w-full object-cover opacity-80" muted playsInline>
+      <button className="media__item is-video" type="button" onClick={onClick} aria-label={`预览第 ${index + 1} 个视频`}>
+        <video muted playsInline preload="metadata">
           <source src={fileUrl(file, true)} />
         </video>
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-all">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-md transition-transform group-hover:scale-110">
-            <i className="bi bi-play-fill text-xl ml-0.5" aria-hidden="true" />
-          </div>
-        </div>
-        {remaining > 0 ? <span className="moments-media-more">+{remaining}</span> : null}
-      </button>
-    )
-  }
-  if (type === 'audio') {
-    return (
-      <button
-        className={`btn btn-outline flex flex-col items-center justify-center gap-1.5 aspect-square rounded-xl p-2 text-xs ${mediaClass}`}
-        type="button"
-        onClick={onClick}
-      >
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-light)] text-[var(--primary-color)]">
-          <i className="bi bi-music-note-beamed text-lg" />
-        </div>
-        <span className="truncate max-w-[80px] font-medium">音频播放</span>
-        {remaining > 0 ? <span className="moments-media-more">+{remaining}</span> : null}
+        <span className="media__play" aria-hidden="true"><i className="bi bi-play-fill" /></span>
+        {more}
       </button>
     )
   }
   return (
-    <button
-      className={`btn btn-outline flex flex-col items-center justify-center gap-1.5 aspect-square rounded-xl p-2 text-xs ${mediaClass}`}
-      type="button"
-      onClick={onClick}
-    >
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-light)] text-[var(--primary-color)]">
-        <i className="bi bi-file-earmark-text text-lg" />
-      </div>
-      <span className="truncate max-w-[80px] font-medium">查看附件</span>
-      {remaining > 0 ? <span className="moments-media-more">+{remaining}</span> : null}
+    <button className="media__item is-file" type="button" onClick={onClick}>
+      <span className="media__file-icon" aria-hidden="true">
+        <i className={`bi ${type === 'audio' ? 'bi-music-note-beamed' : 'bi-file-earmark-text'}`} />
+      </span>
+      <span>{type === 'audio' ? '音频播放' : '查看附件'}</span>
+      {more}
     </button>
   )
 }
@@ -119,43 +82,38 @@ function PollBlock({ poll, busy, onVote }) {
   const showResults = hasVoted || isClosed
 
   return (
-    <section className="poll-card" aria-label={`投票：${poll.question}`}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs font-bold text-[var(--primary-color)]">
-            <i className="bi bi-ui-radios-grid" />
-            单选投票
-          </div>
-          <h3 className="mt-1.5 text-base font-black leading-snug text-[var(--text-primary)]">{poll.question}</h3>
+    <section className="poll" aria-label={`投票：${poll.question}`}>
+      <div className="poll__head">
+        <div>
+          <span className="poll__kicker"><i className="bi bi-ui-radios-grid" aria-hidden="true" />单选投票</span>
+          <h3>{poll.question}</h3>
         </div>
         <span className={`badge ${isClosed ? 'status-warning' : 'status-success'}`}>{isClosed ? '已结束' : '进行中'}</span>
       </div>
-      <div className="mt-3 space-y-2">
+      <div className="poll__options">
         {(poll.options || []).map((option) => {
           const selected = poll.selected_option_id === option.id
           const percent = totalVotes > 0 ? Math.round((Number(option.votes || 0) / totalVotes) * 100) : 0
           return (
             <button
-              className={`poll-option ${selected ? 'selected' : ''}`}
+              className={`poll__option${selected ? ' is-selected' : ''}`}
               type="button"
               key={option.id}
               disabled={busy || hasVoted || isClosed}
               aria-pressed={selected}
               onClick={() => onVote(option.id)}
             >
-              {showResults ? <span className="poll-option-bar" style={{ width: `${percent}%` }} /> : null}
-              <span className="poll-option-content">
-                <span className="flex min-w-0 items-center gap-2">
-                  <i className={`bi ${selected ? 'bi-check-circle' : 'bi-ui-radios-grid'} shrink-0`} />
-                  <span className="truncate">{option.text}</span>
-                </span>
-                {showResults ? <b className="shrink-0 tabular-nums">{percent}%</b> : null}
+              {showResults ? <span className="poll__bar" style={{ width: `${percent}%` }} /> : null}
+              <span className="poll__label">
+                <i className={`bi ${selected ? 'bi-check-circle-fill' : 'bi-circle'}`} aria-hidden="true" />
+                <span>{option.text}</span>
               </span>
+              {showResults ? <b className="poll__percent">{percent}%</b> : null}
             </button>
           )
         })}
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
+      <div className="poll__foot">
         <span>{totalVotes} 人参与{!showResults && !isClosed ? '，选择一项后查看结果' : ''}</span>
         {poll.closes_at ? <span>{isClosed ? '结束于' : '截止'} {dayjs(poll.closes_at).format('MM月DD日 HH:mm')}</span> : <span>长期有效</span>}
       </div>
@@ -163,7 +121,7 @@ function PollBlock({ poll, busy, onVote }) {
   )
 }
 
-export default function MessageCard({ message, compact = false, variant = 'default', onRefresh, onEditRequest, onDeleteRequest }) {
+export default function MessageCard({ message, compact = false, variant = 'default', onRefresh, onEditRequest, onDeleteRequest, onFavoriteChange }) {
   const [item, setItem] = useState(message)
   const [commentOpen, setCommentOpen] = useState(false)
   const [commentText, setCommentText] = useState('')
@@ -177,12 +135,13 @@ export default function MessageCard({ message, compact = false, variant = 'defau
   const textRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [pollBusy, setPollBusy] = useState(false)
+  const [favoriteBusy, setFavoriteBusy] = useState(false)
   const [textExpanded, setTextExpanded] = useState(false)
   const [textOverflows, setTextOverflows] = useState(false)
   const [commentsExpanded, setCommentsExpanded] = useState(false)
   const alert = useAlert()
   const { community } = usePlatform()
-  const { user } = useUser()
+  const { user, isFavorite, toggleFavorite } = useUser()
   const location = useLocation()
 
   useEffect(() => {
@@ -192,12 +151,13 @@ export default function MessageCard({ message, compact = false, variant = 'defau
   }, [message])
 
   const files = item.files || []
-  const isMoments = variant === 'moments'
+  const isFeed = variant === 'moments'
   const isLostFound = variant === 'lost-found' || Boolean(item.lost_found)
+  const isCompactFeed = isFeed || isLostFound
   const lostFound = isLostFound ? describeLostFound(item) : null
-  const visibleFiles = isMoments || isLostFound ? files.slice(0, 9) : files
+  const visibleFiles = isCompactFeed ? files.slice(0, FEED_MEDIA_LIMIT) : files
   const comments = item.comments || []
-  const visibleComments = (isMoments || isLostFound) && !commentsExpanded ? comments.slice(0, 2) : comments
+  const visibleComments = isCompactFeed && !commentsExpanded ? comments.slice(0, 2) : comments
   const author = useMemo(() => messageAuthor(item), [item])
   const isHidden = item.moderation_status === 'hidden'
   const isPending = item.moderation_status === 'pending'
@@ -210,10 +170,14 @@ export default function MessageCard({ message, compact = false, variant = 'defau
     : '登录后才能评论'
   const postedAgo = item.timestamp ? dayjs(item.timestamp).fromNow() : '刚刚'
   const visibilityLabel = item.anonymous === false ? '展示昵称' : '匿名'
-  const authorSubtitle = (isMoments || isLostFound) ? `${postedAgo} · ${visibilityLabel}` : ''
+  const authorSubtitle = `${postedAgo} · ${visibilityLabel}`
+  const favorited = isFavorite(item.id)
   const bodyText = isLostFound
     ? (lostFound.details || (!lostFound.itemName ? item.text : ''))
     : item.text
+  const mediaCount = Math.min(visibleFiles.length, FEED_MEDIA_LIMIT)
+  const mediaCols = mediaCount === 1 ? 1 : (mediaCount === 2 || mediaCount === 4 ? 2 : 3)
+  const clampText = isCompactFeed && !textExpanded && !compact
 
   useLayoutEffect(() => {
     const node = textRef.current
@@ -224,9 +188,10 @@ export default function MessageCard({ message, compact = false, variant = 'defau
     setTextOverflows(node.scrollHeight > node.clientHeight + 1)
   }, [bodyText, compact, textExpanded])
 
-  const doLike = async () => {
+  const react = async (kind) => {
+    const call = kind === 'like' ? api.likeMessage : api.dislikeMessage
     try {
-      const res = await api.likeMessage(item.id)
+      const res = await call(item.id)
       if (res.data?.success) {
         const reaction = Number(res.data.reaction || 0)
         setItem((prev) => ({
@@ -238,25 +203,21 @@ export default function MessageCard({ message, compact = false, variant = 'defau
         }))
       }
     } catch (error) {
-      alert.showTopRightAlert(error.message, 'warning', '点赞失败')
+      alert.showTopRightAlert(error.message, 'warning', kind === 'like' ? '点赞失败' : '点踩失败')
     }
   }
 
-  const doDislike = async () => {
+  const handleFavorite = async () => {
+    if (favoriteBusy) return
+    setFavoriteBusy(true)
     try {
-      const res = await api.dislikeMessage(item.id)
-      if (res.data?.success) {
-        const reaction = Number(res.data.reaction || 0)
-        setItem((prev) => ({
-          ...prev,
-          likes: res.data.likes ?? prev.likes,
-          dislikes: res.data.dislikes ?? prev.dislikes,
-          liked: reaction === 1,
-          disliked: reaction === -1
-        }))
-      }
+      const nowFavorited = await toggleFavorite(item.id)
+      alert.showTopRightAlert(nowFavorited ? '已加入「我的收藏」' : '已取消收藏', 'success', nowFavorited ? '收藏成功' : '已取消')
+      onFavoriteChange?.(nowFavorited, item.id)
     } catch (error) {
-      alert.showTopRightAlert(error.message, 'warning', '点踩失败')
+      alert.showTopRightAlert(error.message, 'warning', '收藏失败')
+    } finally {
+      setFavoriteBusy(false)
     }
   }
 
@@ -382,35 +343,37 @@ export default function MessageCard({ message, compact = false, variant = 'defau
   }
 
   return (
-    <article className={`card message-card ${isMoments ? 'is-moments' : ''} ${isLostFound ? 'is-lost-found' : ''}`}>
-      <div className="message-card-body p-4 md:p-5">
-        <div className="message-card-header flex items-start justify-between gap-3">
-          <UserCard user={author} compact hideDescription={isMoments || isLostFound} subtitle={authorSubtitle} />
-          <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs text-[var(--text-muted)] shrink-0">
-            {item.pinned ? <span className="badge status-warning"><i className="bi bi-pin-angle" />置顶</span> : null}
-            {item.featured ? <span className="badge status-success"><i className="bi bi-star-fill" />精华</span> : null}
-            {isLostFound ? (
-              <span className={`badge ${lostFound.resolved ? 'status-success' : 'status-warning'}`}>
-                {lostFound.status}
-              </span>
-            ) : null}
-            {!isMoments && !isLostFound ? (
-              <>
-                <span className="flex items-center gap-1.5">
-                  <i className="bi bi-clock text-[0.8rem]" />
-                  <span>{item.timestamp ? dayjs(item.timestamp).fromNow() : ''}</span>
-                </span>
-                {item.edited_at ? <span className="badge" title={`编辑于 ${item.edited_at}`}>已编辑</span> : null}
-              </>
-            ) : null}
-          </div>
+    <article className={`post${isFeed ? ' is-feed' : ''}${isLostFound ? ' is-lost-found' : ''}${isUnavailable ? ' is-unavailable' : ''}`}>
+      <header className="post__head">
+        <UserCard user={author} compact hideDescription subtitle={authorSubtitle} />
+        <div className="post__flags">
+          {item.pinned ? <span className="badge status-warning"><i className="bi bi-pin-angle" aria-hidden="true" />置顶</span> : null}
+          {item.featured ? <span className="badge status-success"><i className="bi bi-star-fill" aria-hidden="true" />精华</span> : null}
+          {item.edited_at ? <span className="badge" title={`编辑于 ${item.edited_at}`}>已编辑</span> : null}
         </div>
+        <Menu label="更多操作">
+          <button className="menu__item" type="button" onClick={handleShare} disabled={isUnavailable}>
+            <i className="bi bi-share" aria-hidden="true" />分享
+          </button>
+          {!isUnavailable ? (
+            <>
+              <Link className="menu__item" to={`/wall/message/${item.id}`}><i className="bi bi-arrow-up-right" aria-hidden="true" />查看详情</Link>
+              <Link className="menu__item" to={`/help/report/${item.id}`}><i className="bi bi-flag" aria-hidden="true" />举报违规</Link>
+            </>
+          ) : null}
+          {onEditRequest ? (
+            <button className="menu__item" type="button" onClick={() => onEditRequest(item)}><i className="bi bi-pencil" aria-hidden="true" />编辑</button>
+          ) : null}
+          {onDeleteRequest ? (
+            <button className="menu__item is-danger" type="button" onClick={() => onDeleteRequest(item)}><i className="bi bi-trash" aria-hidden="true" />删除</button>
+          ) : null}
+        </Menu>
+      </header>
 
-        <div className="message-card-content">
-
+      <div className="post__body">
         {isUnavailable ? (
-          <div className="message-hidden-notice" role="status">
-            <i className={`bi ${isPending ? 'bi-hourglass-split' : 'bi-eye-slash'}`} />
+          <div className="post__notice" role="status">
+            <i className={`bi ${isPending ? 'bi-hourglass-split' : 'bi-eye-slash'}`} aria-hidden="true" />
             <div>
               <b>{isPending ? '这条留言正在等待审核' : '这条留言已被管理员下架'}</b>
               <p>{isPending ? '通过后才会出现在公开页面。' : (item.hidden_reason || '违反社区规范')}</p>
@@ -419,198 +382,141 @@ export default function MessageCard({ message, compact = false, variant = 'defau
         ) : null}
 
         {isLostFound ? (
-          <div className="lost-found-card-copy">
-            <h3>{lostFound.itemName || (lostFound.kind === 'found' ? '招领启事' : '寻物启事')}</h3>
-            <p>
-              {lostFound.location ? `地点 ${lostFound.location}` : '地点未填写'}
-              {lostFound.eventTime ? ` · ${lostFound.kind === 'found' ? '拾获时间' : '丢失时间'} ${lostFound.eventTime}` : ''}
-            </p>
-            {item.timestamp ? <p className="lost-found-posted">发布于 {dayjs(item.timestamp).format('YYYY年M月D日 HH:mm')}</p> : null}
+          <div className="lf">
+            <div className="lf__top">
+              <span className={`lf__kind lf__kind--${lostFound.kind}`}>
+                <i className={`bi ${lostFound.kind === 'found' ? 'bi-inbox' : 'bi-search'}`} aria-hidden="true" />
+                {lostFound.kind === 'found' ? '招领启事' : '寻物启事'}
+              </span>
+              <span className={`badge ${lostFound.resolved ? 'status-success' : 'status-warning'}`}>{lostFound.status}</span>
+            </div>
+            <h3 className="lf__title">{lostFound.itemName || (lostFound.kind === 'found' ? '招领启事' : '寻物启事')}</h3>
+            <ul className="lf__facts">
+              <li><i className="bi bi-geo-alt" aria-hidden="true" /><span>{lostFound.location || '地点未填写'}</span></li>
+              {lostFound.eventTime ? <li><i className="bi bi-clock" aria-hidden="true" /><span>{lostFound.kind === 'found' ? '拾获' : '丢失'} · {lostFound.eventTime}</span></li> : null}
+              {lostFound.contact ? <li><i className="bi bi-chat-dots" aria-hidden="true" /><span>{lostFound.contact}</span></li> : null}
+            </ul>
           </div>
         ) : null}
 
         {bodyText ? (
-          <div className="message-text-block">
-            <p
-              ref={textRef}
-              className={`message-text text-[0.98rem] md:text-[1.02rem] leading-relaxed text-[var(--text-primary)] ${compact ? 'line-clamp-3' : ''} ${(isMoments || isLostFound) && !textExpanded && !compact ? 'is-clamped' : ''}`}
-            >
-              {bodyText}
-            </p>
-            {(isMoments || isLostFound) && textOverflows && !textExpanded && !compact ? (
-              <button className="message-expand-text" type="button" onClick={() => setTextExpanded(true)}>展开全文</button>
+          <div className="post__text-wrap">
+            <p ref={textRef} className={`post__text${compact ? ' clamp-3' : ''}${clampText ? ' clamp-6' : ''}`}>{bodyText}</p>
+            {isCompactFeed && textOverflows && !textExpanded && !compact ? (
+              <button className="post__more" type="button" onClick={() => setTextExpanded(true)}>展开全文</button>
             ) : null}
           </div>
         ) : null}
 
         <PollBlock poll={item.poll} busy={pollBusy} onVote={votePoll} />
 
-        {item.tags?.length ? (
-          <div className="message-topic-row">
-            {item.tags.map((tag) => (
-              <Link className="message-topic-link" key={tag} to={`/p/${encodeURIComponent(tag)}`}>
-                #{tag}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-
-        {isLostFound && lostFound.contact ? (
-          <p className="lost-found-contact">联系：{lostFound.contact}</p>
-        ) : null}
-
         {files.length ? (
-          <div className={`message-attachments pt-1 ${isMoments || isLostFound ? `moments-media-grid moments-media-count-${Math.min(files.length, 9)}` : ''}`}>
+          <div className={`media media--${mediaCols}${mediaCount === 1 ? ' is-single' : ''}`}>
             {visibleFiles.map((file, index) => (
               <Attachment
                 key={`${file}-${index}`}
                 file={file}
                 index={index}
-                moments={isMoments || isLostFound}
-                remaining={(isMoments || isLostFound) && index === 8 ? Math.max(0, files.length - 9) : 0}
+                remaining={isCompactFeed && index === FEED_MEDIA_LIMIT - 1 ? Math.max(0, files.length - FEED_MEDIA_LIMIT) : 0}
                 onClick={() => openFilePreview(files, index)}
               />
             ))}
           </div>
         ) : null}
 
-        <div className={`message-actions mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-color)] pt-3 ${isMoments || isLostFound ? 'moments-action-bar' : ''}`}>
-          <div className="flex items-center gap-1">
-            <button
-              className={`btn btn-sm ${item.liked ? 'btn-primary' : 'btn-ghost'}`}
-              type="button"
-              onClick={doLike}
-              disabled={isUnavailable}
-              title={isUnavailable ? unavailableActionText : '点赞'}
-            >
-              <i className={`bi ${item.liked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`} aria-hidden="true" />
-              <span>{isMoments || isLostFound ? `赞 ${item.likes || 0}` : (item.likes || 0)}</span>
-            </button>
-            <button
-              className={`btn btn-sm ${commentOpen ? 'bg-[var(--primary-light)] text-[var(--primary-color)]' : 'btn-ghost'}`}
-              type="button"
-              onClick={() => setCommentOpen((open) => !open)}
-              disabled={isUnavailable || (!canComment && !guestNeedsLogin)}
-              title={isUnavailable ? (isPending ? '待审核的留言不能评论' : '已下架的留言不能评论') : (canComment || guestNeedsLogin ? '评论' : commentDisabledReason)}
-            >
-              <i className="bi bi-chat-dots" aria-hidden="true" />
-              <span>{isMoments || isLostFound ? `评论 ${comments.length}` : `评论${comments.length ? ` (${comments.length})` : ''}`}</span>
-            </button>
-            <button
-              className={`btn btn-sm ${item.disliked ? 'btn-primary' : 'btn-ghost'}`}
-              type="button"
-              onClick={doDislike}
-              disabled={isUnavailable}
-              title={isUnavailable ? unavailableActionText : '点踩'}
-            >
-              <i className={`bi ${item.disliked ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`} aria-hidden="true" />
-              <span>{isMoments || isLostFound ? `踩 ${item.dislikes || 0}` : (item.dislikes || 0)}</span>
-            </button>
+        {item.tags?.length ? (
+          <div className="post__tags">
+            {item.tags.map((tag) => (
+              <Link className="tag" key={tag} to={`/p/${encodeURIComponent(tag)}`}>#{tag}</Link>
+            ))}
           </div>
-
-          {isMoments || isLostFound ? (
-            <details className="moments-overflow ml-auto">
-              <summary aria-label="更多动态操作" title="更多操作"><span aria-hidden="true">•••</span></summary>
-              <div className="moments-overflow-menu">
-                <button type="button" onClick={handleShare} disabled={isUnavailable}>
-                  <i className="bi bi-share" aria-hidden="true" /><span>分享动态</span>
-                </button>
-                {!isUnavailable ? (
-                  <>
-                    <Link to={`/wall/message/${item.id}`}><i className="bi bi-arrow-up-right" aria-hidden="true" /><span>查看详情</span></Link>
-                    <Link to={`/help/report/${item.id}`}><i className="bi bi-flag" aria-hidden="true" /><span>举报违规</span></Link>
-                  </>
-                ) : null}
-                {onEditRequest ? (
-                  <button type="button" onClick={() => onEditRequest(item)}><i className="bi bi-pencil" aria-hidden="true" /><span>编辑动态</span></button>
-                ) : null}
-                {onDeleteRequest ? (
-                  <button className="is-danger" type="button" onClick={() => onDeleteRequest(item)}><i className="bi bi-trash" aria-hidden="true" /><span>删除动态</span></button>
-                ) : null}
-              </div>
-            </details>
-          ) : (
-            <div className="flex items-center gap-1.5 ml-auto">
-              <button
-                className="btn btn-sm btn-ghost p-2 text-[var(--text-secondary)]"
-                type="button"
-                onClick={handleShare}
-                disabled={isUnavailable}
-                title={isUnavailable ? '留言公开后才能分享' : '分享链接'}
-              >
-                <i className="bi bi-share text-sm" />
-              </button>
-              {!isUnavailable ? (
-                <>
-                  <Link className="btn btn-sm btn-outline text-xs px-2.5" to={`/wall/message/${item.id}`} title="查看详情">
-                    <i className="bi bi-arrow-up-right" /><span>详情</span>
-                  </Link>
-                  <Link className="btn btn-sm btn-ghost p-2 text-[var(--text-muted)] hover:text-rose-500" to={`/help/report/${item.id}`} title="举报违规">
-                    <i className="bi bi-flag text-xs" />
-                  </Link>
-                </>
-              ) : null}
-              {onDeleteRequest ? (
-                <button className="btn btn-sm btn-ghost p-2 text-[var(--text-muted)] hover:text-rose-500" type="button" onClick={() => onDeleteRequest(item)} title="删除我的留言">
-                  <i className="bi bi-trash text-sm" />
-                </button>
-              ) : null}
-              {onEditRequest ? (
-                <button className="btn btn-sm btn-ghost p-2 text-[var(--text-muted)] hover:text-[var(--primary-color)]" type="button" onClick={() => onEditRequest(item)} title="编辑我的留言">
-                  <i className="bi bi-pencil text-sm" />
-                </button>
-              ) : null}
-            </div>
-          )}
-        </div>
-
-        {guestNeedsLogin && !isUnavailable ? (
-          <Link className="moments-login-prompt" to="/login" state={{ from: location }}>登录后参与讨论</Link>
         ) : null}
+      </div>
 
-        {comments.length || commentOpen ? (
-          <div className="space-y-3 pt-2">
-            {comments.length ? (
-              <div className="comment-panel space-y-2.5">
-                <div className="flex items-center justify-between text-xs font-bold text-[var(--text-secondary)] pb-1 border-b border-[var(--border-color)]">
-                  <span className="flex items-center gap-1.5">
-                    <i className="bi bi-chat-left-text-fill text-[var(--primary-color)]" />
-                    <span>{commentsExpanded || comments.length <= 2 ? '评论' : '评论预览'}</span>
-                  </span>
-                  <span className="badge">{comments.length} 条</span>
-                </div>
-                <div className="space-y-2">
-                  {visibleComments.map((comment, index) => (
-                    <div key={comment.id || index} className="comment-item space-y-2">
-                      <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                        <span className="flex items-center gap-2 font-semibold text-[var(--text-secondary)]">
-                          <span>#{index + 1} 楼</span>
-                          {comment.owned ? <span className="badge">我的评论</span> : null}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <span>{comment.timestamp}</span>
-                          {comment.owned ? (
-                            <button
-                              className="comment-delete-button"
-                              type="button"
-                              title="删除我的评论"
-                              onClick={() => setCommentToDelete(comment)}
-                            >
-                              <i className="bi bi-trash" />
-                            </button>
-                          ) : null}
-                        </span>
+      <div className="post__bar">
+        <button
+          className={`react${item.liked ? ' is-on' : ''}`}
+          type="button"
+          onClick={() => react('like')}
+          disabled={isUnavailable}
+          aria-pressed={Boolean(item.liked)}
+          title={isUnavailable ? unavailableActionText : '点赞'}
+        >
+          <i className={`bi ${item.liked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`} aria-hidden="true" />
+          <span>{item.likes || 0}<span className="sr-only"> 个赞</span></span>
+        </button>
+        <button
+          className={`react${commentOpen ? ' is-on' : ''}`}
+          type="button"
+          onClick={() => setCommentOpen((open) => !open)}
+          disabled={isUnavailable || (!canComment && !guestNeedsLogin)}
+          aria-expanded={commentOpen}
+          title={isUnavailable ? (isPending ? '待审核的留言不能评论' : '已下架的留言不能评论') : (canComment || guestNeedsLogin ? '评论' : commentDisabledReason)}
+        >
+          <i className="bi bi-chat-dots" aria-hidden="true" />
+          <span>{comments.length}<span className="sr-only"> 条评论</span></span>
+        </button>
+        <button
+          className={`react${item.disliked ? ' is-on is-down' : ''}`}
+          type="button"
+          onClick={() => react('dislike')}
+          disabled={isUnavailable}
+          aria-pressed={Boolean(item.disliked)}
+          title={isUnavailable ? unavailableActionText : '点踩'}
+        >
+          <i className={`bi ${item.disliked ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`} aria-hidden="true" />
+          <span>{item.dislikes || 0}<span className="sr-only"> 个踩</span></span>
+        </button>
+        <span className="post__bar-gap" />
+        {user && !isUnavailable ? (
+          <button
+            className={`react react--icon${favorited ? ' is-on is-star' : ''}`}
+            type="button"
+            onClick={handleFavorite}
+            disabled={favoriteBusy}
+            aria-pressed={favorited}
+            title={favorited ? '取消收藏' : '收藏'}
+          >
+            <i className={`bi ${favorited ? 'bi-bookmark-fill' : 'bi-bookmark'}`} aria-hidden="true" />
+            <span className="sr-only">{favorited ? '取消收藏' : '收藏'}</span>
+          </button>
+        ) : null}
+      </div>
+
+      {guestNeedsLogin && !isUnavailable ? (
+        <Link className="post__login" to="/login" state={{ from: location }}>
+          <i className="bi bi-box-arrow-in-right" aria-hidden="true" />登录后参与讨论
+        </Link>
+      ) : null}
+
+      {comments.length || commentOpen ? (
+        <section className="thread" aria-label="评论">
+          {comments.length ? (
+            <>
+              <ol className="thread__list">
+                {visibleComments.map((comment, index) => (
+                  <li key={comment.id || index} className="comment">
+                    <span className="comment__floor">#{index + 1}</span>
+                    <div className="comment__main">
+                      <div className="comment__meta">
+                        {comment.owned ? <span className="badge badge-accent">我的评论</span> : null}
+                        <time>{comment.timestamp}</time>
+                        {comment.owned ? (
+                          <button className="comment__link is-danger" type="button" title="删除我的评论" onClick={() => setCommentToDelete(comment)}>
+                            <i className="bi bi-trash" aria-hidden="true" />删除
+                          </button>
+                        ) : null}
                       </div>
                       {comment.refer_id ? (
-                        <div className="comment-reference">
-                          <i className="bi bi-reply-fill" />
+                        <div className="comment__quote">
+                          <i className="bi bi-reply-fill" aria-hidden="true" />
                           <b>回复 {replyFloor(comment.refer_id)}</b>
                           <span>{comment.refer || '评论内容已不可见'}</span>
                         </div>
                       ) : null}
-                      {comment.text ? <p className="message-text text-xs md:text-sm text-[var(--text-primary)]">{comment.text}</p> : null}
+                      {comment.text ? <p className="comment__text">{comment.text}</p> : null}
                       {comment.files?.length ? (
-                        <div className="comment-attachments">
+                        <div className="media media--3 is-compact">
                           {comment.files.map((file, fileIndex) => (
                             <Attachment
                               file={file}
@@ -622,77 +528,69 @@ export default function MessageCard({ message, compact = false, variant = 'defau
                         </div>
                       ) : null}
                       {!isUnavailable && canComment ? (
-                        <div className="flex justify-end gap-2">
+                        <div className="comment__actions">
+                          <button className="comment__link" type="button" onClick={() => startReply(comment, index)}>
+                            <i className="bi bi-reply" aria-hidden="true" />回复
+                          </button>
                           {comment.id ? (
                             <Link
-                              className="comment-reply-button"
+                              className="comment__link"
                               to={`/help/report/${item.id}/comment/${encodeURIComponent(comment.id)}`}
-                              title={`举报第 ${index + 1} 楼评论`}
                               aria-label={`举报第 ${index + 1} 楼评论`}
                             >
-                              <i className="bi bi-flag" />
-                              <span>举报</span>
+                              <i className="bi bi-flag" aria-hidden="true" />举报
                             </Link>
                           ) : null}
-                          <button className="comment-reply-button" type="button" title="回复评论" onClick={() => startReply(comment, index)}>
-                            <i className="bi bi-reply" />
-                            <span>回复</span>
-                          </button>
                         </div>
                       ) : null}
                     </div>
-                  ))}
-                </div>
-                {comments.length > 2 && !commentsExpanded ? (
-                  <button className="message-expand-text" type="button" onClick={() => { setCommentsExpanded(true); setCommentOpen(true) }}>
-                    展开全部 {comments.length} 条评论
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+                  </li>
+                ))}
+              </ol>
+              {comments.length > 2 && !commentsExpanded && isCompactFeed ? (
+                <button className="post__more" type="button" onClick={() => { setCommentsExpanded(true); setCommentOpen(true) }}>
+                  展开全部 {comments.length} 条评论
+                </button>
+              ) : null}
+            </>
+          ) : null}
 
-            {commentOpen && !isUnavailable && !canComment && !guestNeedsLogin ? (
-              <div className="info-callout status-warning"><i className="bi bi-info-circle-fill" /><span>{commentDisabledReason}</span></div>
-            ) : null}
+          {commentOpen && !isUnavailable && !canComment && !guestNeedsLogin ? (
+            <div className="info-callout status-warning"><i className="bi bi-info-circle-fill" aria-hidden="true" /><span>{commentDisabledReason}</span></div>
+          ) : null}
 
-            {commentOpen && !isUnavailable && canComment ? (
-              <div className="comment-composer">
-                {replyTarget ? (
-                  <div className="reply-target-banner">
-                    <span className="min-w-0">
-                      <b>正在回复 #{replyTarget.floor} 楼</b>
-                      <span>{replyTarget.text}</span>
-                    </span>
-                    <button type="button" title="取消回复" onClick={() => setReplyTarget(null)}>
-                      <i className="bi bi-x-lg" />
-                    </button>
-                  </div>
-                ) : null}
-                <textarea
-                  ref={commentInputRef}
-                  className="field min-h-20 w-full text-sm"
-                  value={commentText}
-                  onChange={(event) => setCommentText(event.target.value)}
-                  placeholder={replyTarget ? `回复 #${replyTarget.floor} 楼...` : '友善表达，写下你的精彩评论...'}
-                  maxLength={500}
-                />
-                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-                  <button
-                    className="btn btn-sm btn-primary ml-auto"
-                    type="button"
-                    disabled={busy || !commentText.trim()}
-                    onClick={submitComment}
-                  >
-                    <i className="bi bi-send" />
-                    <span>{busy ? '发送中...' : '发表评论'}</span>
+          {commentOpen && !isUnavailable && canComment ? (
+            <div className="composer-mini">
+              {replyTarget ? (
+                <div className="composer-mini__reply">
+                  <span>
+                    <b>正在回复 #{replyTarget.floor} 楼</b>
+                    <span>{replyTarget.text}</span>
+                  </span>
+                  <button type="button" title="取消回复" aria-label="取消回复" onClick={() => setReplyTarget(null)}>
+                    <i className="bi bi-x-lg" aria-hidden="true" />
                   </button>
                 </div>
+              ) : null}
+              <textarea
+                ref={commentInputRef}
+                className="field"
+                value={commentText}
+                onChange={(event) => setCommentText(event.target.value)}
+                placeholder={replyTarget ? `回复 #${replyTarget.floor} 楼…` : '友善表达，写下你的评论…'}
+                maxLength={500}
+                rows={3}
+              />
+              <div className="composer-mini__foot">
+                <span className="text-muted tabular">{commentText.length} / 500</span>
+                <button className="btn btn-primary btn-sm" type="button" disabled={busy || !commentText.trim()} onClick={submitComment}>
+                  <i className="bi bi-send" aria-hidden="true" />{busy ? '发送中…' : '发表评论'}
+                </button>
               </div>
-            ) : null}
-          </div>
-        ) : null}
-        </div>
-      </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       <FilePreviewModal
         files={previewFiles}
@@ -704,18 +602,18 @@ export default function MessageCard({ message, compact = false, variant = 'defau
       <Modal
         visible={Boolean(commentToDelete)}
         title="删除我的评论"
+        width="480px"
         onClose={() => !deletingComment && setCommentToDelete(null)}
         footer={(
           <>
             <button className="btn btn-outline" type="button" disabled={deletingComment} onClick={() => setCommentToDelete(null)}>取消</button>
-            <button className="btn bg-rose-600 text-white hover:bg-rose-700" type="button" disabled={deletingComment} onClick={deleteOwnComment}>
-              <i className="bi bi-trash" />
-              <span>{deletingComment ? '删除中...' : '确认删除'}</span>
+            <button className="btn btn-danger" type="button" disabled={deletingComment} onClick={deleteOwnComment}>
+              <i className="bi bi-trash" aria-hidden="true" />{deletingComment ? '删除中…' : '确认删除'}
             </button>
           </>
         )}
       >
-        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">删除后评论会立即从公开页面和你的评论列表中移除，留言作者收到的历史通知仍会保留。</p>
+        <p className="text-soft">删除后评论会立即从公开页面和你的评论列表中移除，留言作者收到的历史通知仍会保留。</p>
       </Modal>
     </article>
   )

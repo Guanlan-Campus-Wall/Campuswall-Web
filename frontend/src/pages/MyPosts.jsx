@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import api from '../services/api'
+import EmptyState from '../components/EmptyState.jsx'
 import MessageCard from '../components/MessageCard.jsx'
 import Modal from '../components/Modal.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
@@ -121,70 +122,51 @@ export default function MyPosts() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <section className="wall-overview p-6 md:p-8">
-        <div className="wall-overview-copy space-y-2">
-          <span className="page-kicker">
-            <i className="bi bi-journal-text text-[var(--primary-color)]" />
-            <span>My posts</span>
-          </span>
-          <h1 className="text-3xl font-black text-[var(--text-primary)]">我的发布</h1>
-          <p className="max-w-xl text-sm leading-relaxed text-[var(--text-secondary)]">
-            这里会显示当前账号发布的全部内容，包括公开页面无法追溯身份的匿名留言。
-          </p>
+    <div className="page page--reading">
+      <Link to="/me" className="back-link"><i className="bi bi-arrow-left" aria-hidden="true" />个人中心</Link>
+      <header className="page-head">
+        <div className="page-head__text">
+          <h1>我的发布</h1>
+          <p>这里会显示当前账号发布的全部内容，包括公开页面无法追溯身份的匿名留言。</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="wall-stat-card min-w-28">
-            <b>{total}</b>
-            <span>发布总数</span>
-          </div>
-          <Link className="btn btn-outline" to="/me">
-            <i className="bi bi-person" />
-            <span>返回个人中心</span>
-          </Link>
-        </div>
-      </section>
+        <div className="stat-chip"><b className="tabular">{total}</b><span>发布总数</span></div>
+      </header>
+
+      {!canEdit ? (
+        <div className="info-callout status-warning mb-4"><i className="bi bi-info-circle-fill" aria-hidden="true" /><span>{community.pause_reason || '管理员暂时关闭了发帖与留言编辑功能'}</span></div>
+      ) : null}
 
       {loading ? (
-        <div className="space-y-4">
+        <div className="feed-list" aria-hidden="true">
           {[1, 2].map((item) => (
-            <div className="card p-6 space-y-4" key={item}>
+            <div className="post" key={item}>
               <div className="skeleton h-11 w-44" />
-              <div className="skeleton h-20 w-full" />
+              <div className="skeleton mt-4 h-20 w-full" />
             </div>
           ))}
         </div>
       ) : null}
 
-      {!canEdit ? (
-        <div className="info-callout status-warning"><i className="bi bi-info-circle-fill" /><span>{community.pause_reason || '管理员暂时关闭了发帖与留言编辑功能'}</span></div>
-      ) : null}
-
       {!loading && messages.length === 0 ? (
-        <section className="empty-state-card">
-          <i className="bi bi-journal-text" />
-          <h2 className="mt-4 text-lg font-bold text-[var(--text-primary)]">还没有发布记录</h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">写下第一条校园动态，它会出现在这里。</p>
-          <Link className="btn btn-primary mt-5" to="/wall">
-            <i className="bi bi-pencil-square" />
-            <span>去发布留言</span>
-          </Link>
-        </section>
+        <EmptyState
+          icon="bi-journal-text"
+          title="还没有发布记录"
+          action={<Link className="btn btn-primary" to="/wall"><i className="bi bi-pencil-square" aria-hidden="true" />去发布留言</Link>}
+        >
+          写下第一条校园动态，它会出现在这里。
+        </EmptyState>
       ) : null}
 
-      <div className="space-y-6">
+      <div className="feed-list">
         {messages.map((message) => (
-          <section className="space-y-2" key={message.id}>
-            <div className="flex items-center justify-between gap-3 px-1 text-xs text-[var(--text-muted)]">
-              <span className="flex items-center gap-1.5 font-bold text-[var(--text-secondary)]">
-                <i className={`bi ${message.anonymous === false ? 'bi-person-check-fill' : 'bi-incognito'} text-[var(--primary-color)]`} />
-                {message.anonymous === false ? '展示昵称发布' : '匿名发布'}
-              </span>
-              <span>仅你和管理员可确认归属</span>
+          <section className="own-post" key={message.id}>
+            <div className="own-post__meta">
+              <span><i className={`bi ${message.anonymous === false ? 'bi-person-check-fill' : 'bi-incognito'}`} aria-hidden="true" />{message.anonymous === false ? '展示昵称发布' : '匿名发布'}</span>
+              <small>仅你和管理员可确认归属</small>
             </div>
             {message.moderation_status === 'pending' ? (
               <div className="info-callout status-warning">
-                <i className="bi bi-hourglass-split" />
+                <i className="bi bi-hourglass-split" aria-hidden="true" />
                 <span>这条留言正在等待管理员审核，通过后才会出现在公开页面。</span>
               </div>
             ) : null}
@@ -194,15 +176,9 @@ export default function MyPosts() {
       </div>
 
       {page < totalPages ? (
-        <div className="text-center">
-          <button
-            className="btn btn-outline min-w-44"
-            type="button"
-            disabled={loadingMore}
-            onClick={() => loadMessages(page + 1, true)}
-          >
-            <i className="bi bi-plus-circle" />
-            <span>{loadingMore ? '加载中...' : '加载更多发布'}</span>
+        <div className="text-center mt-6">
+          <button className="btn btn-outline" type="button" disabled={loadingMore} onClick={() => loadMessages(page + 1, true)}>
+            <i className="bi bi-plus-circle" aria-hidden="true" />{loadingMore ? '加载中…' : '加载更多发布'}
           </button>
         </div>
       ) : null}
@@ -210,95 +186,66 @@ export default function MyPosts() {
       <Modal
         visible={Boolean(selectedMessage)}
         title="删除我的留言"
+        width="480px"
         onClose={() => !deleting && setSelectedMessage(null)}
         footer={(
           <>
-            <button className="btn btn-outline" type="button" disabled={deleting} onClick={() => setSelectedMessage(null)}>
-              取消
-            </button>
-            <button className="btn bg-rose-600 text-white hover:bg-rose-700" type="button" disabled={deleting} onClick={deleteMessage}>
-              <i className="bi bi-trash" />
-              <span>{deleting ? '删除中...' : '确认删除'}</span>
+            <button className="btn btn-outline" type="button" disabled={deleting} onClick={() => setSelectedMessage(null)}>取消</button>
+            <button className="btn btn-danger" type="button" disabled={deleting} onClick={deleteMessage}>
+              <i className="bi bi-trash" aria-hidden="true" />{deleting ? '删除中…' : '确认删除'}
             </button>
           </>
         )}
       >
-        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-          删除后留言会立即从公开页面和你的发布列表中移除，由管理员在回收站中统一保留或清理。
-        </p>
+        <p className="text-soft">删除后留言会立即从公开页面和你的发布列表中移除，由管理员在回收站中统一保留或清理。</p>
       </Modal>
 
       <Modal
         visible={Boolean(editingMessage)}
         title="编辑我的留言"
-        width="760px"
+        width="680px"
         onClose={() => !savingEdit && setEditingMessage(null)}
         footer={(
           <>
             <button className="btn btn-outline" type="button" disabled={savingEdit} onClick={() => setEditingMessage(null)}>取消</button>
-            <button className="btn btn-primary px-6" type="button" disabled={savingEdit} onClick={saveEdit}>
-              <i className="bi bi-check-circle" />
-              <span>{savingEdit ? '保存中...' : '保存修改'}</span>
+            <button className="btn btn-primary" type="button" disabled={savingEdit} onClick={saveEdit}>
+              <i className="bi bi-check-circle" aria-hidden="true" />{savingEdit ? '保存中…' : '保存修改'}
             </button>
           </>
         )}
       >
-        <div className="space-y-5">
+        <div className="form-stack">
           {editingMessage?.moderation_status === 'hidden' ? (
-            <div className="message-hidden-notice">
-              <i className="bi bi-eye-slash" />
-              <div>
-                <b>这条留言仍处于下架状态</b>
-                <p>修改内容不会自动恢复展示，请等待管理员复核。</p>
-              </div>
+            <div className="info-callout status-warning">
+              <i className="bi bi-eye-slash" aria-hidden="true" />
+              <div><b>这条留言仍处于下架状态</b><small>修改内容不会自动恢复展示，请等待管理员复核。</small></div>
             </div>
           ) : null}
           {editingMessage?.moderation_status === 'pending' ? (
-            <div className="message-hidden-notice">
-              <i className="bi bi-hourglass-split" />
-              <div>
-                <b>这条留言正在等待审核</b>
-                <p>保存修改后仍需管理员通过才会公开。</p>
-              </div>
+            <div className="info-callout status-warning">
+              <i className="bi bi-hourglass-split" aria-hidden="true" />
+              <div><b>这条留言正在等待审核</b><small>保存修改后仍需管理员通过才会公开。</small></div>
             </div>
           ) : null}
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-[var(--text-secondary)]">留言内容</span>
-            <textarea
-              className="field min-h-40 w-full"
-              value={editText}
-              maxLength={2000}
-              onChange={(event) => setEditText(event.target.value)}
-              placeholder="写下留言内容"
-            />
-            <span className="block text-right text-xs text-[var(--text-muted)]">{editText.length} / 2000</span>
+          <label>
+            <span className="field-label">留言内容</span>
+            <textarea style={{ minHeight: 160 }} value={editText} maxLength={2000} onChange={(event) => setEditText(event.target.value)} placeholder="写下留言内容" />
+            <span className="field-hint text-right tabular">{editText.length} / 2000</span>
           </label>
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-[var(--text-secondary)]">标签</span>
-            <input
-              className="field w-full"
-              value={editTags}
-              onChange={(event) => setEditTags(event.target.value)}
-              placeholder="多个标签使用英文逗号分隔"
-            />
-            <span className="block text-xs text-[var(--text-muted)]">最多 8 个标签。附件与投票内容保持原样。</span>
+          <label>
+            <span className="field-label">标签</span>
+            <input value={editTags} onChange={(event) => setEditTags(event.target.value)} placeholder="多个标签使用英文逗号分隔" />
+            <span className="field-hint">最多 8 个标签。附件与投票内容保持原样。</span>
           </label>
 
-          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-[var(--border-color)] bg-[var(--card-secondary-bg)] p-4">
-            <span className="min-w-0">
-              <b className="block text-sm text-[var(--text-primary)]">匿名发布</b>
-              <span className="block text-xs text-[var(--text-muted)]">
-                {editAnonymous ? '公开页面不会显示你的昵称' : `公开页面将显示“${user.nickname || '未设置昵称'}”`}
-              </span>
+          <label className="check-row card-flat p-4">
+            <input type="checkbox" checked={editAnonymous} onChange={(event) => setEditAnonymous(event.target.checked)} />
+            <span>
+              <b className="text-ink">匿名发布</b><br />
+              <small className="text-muted">{editAnonymous ? '公开页面不会显示你的昵称' : `公开页面将显示“${user.nickname || '未设置昵称'}”`}</small>
             </span>
-            <input
-              className="h-5 w-5 shrink-0 accent-[var(--primary-color)]"
-              type="checkbox"
-              checked={editAnonymous}
-              onChange={(event) => setEditAnonymous(event.target.checked)}
-            />
           </label>
         </div>
       </Modal>

@@ -362,7 +362,7 @@ export default function AdminNotice() {
           </div>
 
           {loading ? <div className="page-center"><div className="spinner" /></div> : null}
-          {!loading && visibleNotices.length === 0 ? <div className="empty-state-card"><i className="bi bi-inbox text-6xl" /><p className="mt-3">没有符合条件的公告</p></div> : null}
+          {!loading && visibleNotices.length === 0 ? <div className="empty-state-card"><i className="bi bi-inbox" /><p className="mt-3">没有符合条件的公告</p></div> : null}
           <div className="notice-history-list">
             {visibleNotices.map((notice) => {
               const id = noticeId(notice)

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import CaptchaWidget from '../../components/CaptchaWidget.jsx'
+import ThemePicker from '../../components/ThemePicker.jsx'
 import api from '../../services/api'
 import { useAlert } from '../../contexts/AlertContext.jsx'
 import { useUser } from '../../contexts/UserContext.jsx'
@@ -66,45 +67,43 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="admin-login-shell grid items-stretch gap-6 lg:grid-cols-[1fr_420px]">
-      <section className="auth-hero flex flex-col justify-center p-8">
-        <div className="auth-copy max-w-xl">
-          <span className="page-kicker"><i className="bi bi-shield-lock" />管理后台</span>
-          <h1 className="mt-5 text-4xl font-black">观澜中学校园墙运营入口</h1>
-          <p className="mt-4 max-w-lg text-lg text-muted">用于审核留言、管理公告、处理举报和维护用户账号。请确认你正在使用可信设备。</p>
+    <main className="admin-login" id="main-content" tabIndex={-1}>
+      <div className="admin-login__theme"><ThemePicker /></div>
+      <div className="admin-login__box">
+        <div className="admin-login__brand">
+          <span className="brand__mark" aria-hidden="true"><img src="/school-badge.webp" alt="" width="28" height="28" /></span>
+          <b>观澜校园墙</b>
         </div>
-        <div className="auth-note-grid">
-          <div className="auth-note"><b>审核</b><p className="mt-1 text-sm text-muted">快速处理留言状态</p></div>
-          <div className="auth-note"><b>公告</b><p className="mt-1 text-sm text-muted">发布前台通知</p></div>
-          <div className="auth-note"><b>安全</b><p className="mt-1 text-sm text-muted">登录态由服务端校验</p></div>
-        </div>
-      </section>
+        <h1>管理后台</h1>
+        <p>用于审核内容、管理公告、处理举报和维护用户账号。请确认你正在使用可信设备。</p>
 
-      <form className="card admin-login-card space-y-4 p-6" onSubmit={submit}>
-        <div>
-          <span className="page-kicker"><i className="bi bi-key" />Admin</span>
-          <h2 className="mt-3 text-2xl font-bold">管理员登录</h2>
-          <p className="mt-1 text-sm text-muted">仅供审核员、管理员和超级管理员使用用户名密码。普通师生请回到前台使用飞书或用户名密码登录。</p>
-        </div>
-        <label className="block">
-          <span className="mb-2 block text-sm font-bold">用户名</span>
-          <input className="field" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="请输入管理员用户名" autoComplete="username" />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-bold">密码</span>
-          <input className="field" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="请输入密码" autoComplete="current-password" />
-        </label>
-        {captchaLoading ? <div className="captcha-loading"><div className="spinner" /><span>正在加载安全验证...</span></div> : null}
-        {captchaError ? <div className="info-callout status-danger p-3 text-sm">{captchaError}</div> : null}
-        {!captchaLoading && !captchaError && captchaRequired ? (
-          <div className="space-y-2"><span className="text-xs font-bold text-[var(--text-secondary)]">Cloudflare 人机验证</span><CaptchaWidget action="admin_login" provider={captcha.provider} siteKey={captcha.site_key} onToken={setCaptchaToken} resetKey={captchaResetKey} /></div>
-        ) : null}
-        <button className="btn btn-primary w-full" disabled={loading || captchaLoading || Boolean(captchaError) || (captchaRequired && !captchaToken)} type="submit"><i className="bi bi-box-arrow-in-right" />{loading ? '登录中...' : '登录后台'}</button>
-        <div className="flex items-center justify-between gap-3 text-sm">
+        <form className="form-stack" onSubmit={submit}>
+          <label>
+            <span className="field-label">用户名</span>
+            <input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="请输入管理员用户名" autoComplete="username" />
+          </label>
+          <label>
+            <span className="field-label">密码</span>
+            <input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="请输入密码" autoComplete="current-password" />
+          </label>
+          {captchaLoading ? <div className="auth__captcha-loading"><div className="spinner is-sm" /><span>正在加载安全验证…</span></div> : null}
+          {captchaError ? <div className="info-callout status-danger">{captchaError}</div> : null}
+          {!captchaLoading && !captchaError && captchaRequired ? (
+            <div className="auth__captcha">
+              <span className="field-label">Cloudflare 人机验证</span>
+              <CaptchaWidget action="admin_login" provider={captcha.provider} siteKey={captcha.site_key} onToken={setCaptchaToken} resetKey={captchaResetKey} />
+            </div>
+          ) : null}
+          <button className="btn btn-primary btn-lg btn-block" disabled={loading || captchaLoading || Boolean(captchaError) || (captchaRequired && !captchaToken)} type="submit">
+            <i className="bi bi-box-arrow-in-right" aria-hidden="true" />{loading ? '登录中…' : '登录后台'}
+          </button>
+        </form>
+
+        <div className="auth__foot">
           <Link to="/login">师生登录</Link>
           <Link to="/help">遇到问题？</Link>
         </div>
-      </form>
-    </div>
+      </div>
+    </main>
   )
 }

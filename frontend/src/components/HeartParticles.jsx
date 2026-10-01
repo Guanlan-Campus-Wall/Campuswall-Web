@@ -1,11 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AdditiveBlending, BufferGeometry, Float32BufferAttribute, Group, PerspectiveCamera, Points, Scene, ShaderMaterial, WebGLRenderer } from 'three'
 import { createHeartCloud } from '../utils/heartGeometry'
-
-const noteTimeLabel = (value) => {
-  const date = new Date(String(value || '').replace(' ', 'T'))
-  return Number.isNaN(date.getTime()) ? '发布时间未知' : new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
-}
 
 const vertexShader = `
   attribute float size;
@@ -33,17 +28,17 @@ const fragmentShader = `
     float radius = length(gl_PointCoord - vec2(0.5));
     if (radius > 0.5) discard;
     float glow = exp(-radius * radius * 16.0);
-    vec3 color = mix(vec3(0.95, 0.12, 0.32), vec3(1.0, 0.64, 0.72), tint * 0.65);
+    vec3 color = mix(vec3(0.88, 0.40, 0.25), vec3(0.99, 0.76, 0.62), tint * 0.7);
     gl_FragColor = vec4(color, glow * brightness * 0.9);
   }
 `
 
-export default function HeartParticles({ notes = [], activeId = null, onSelect, reducedMotion = false }) {
+// 立体粒子爱心：画布透明，浮在页面的夜空舞台上。
+export default function HeartParticles({ reducedMotion = false }) {
   const hostRef = useRef(null)
   const controllerRef = useRef(null)
   const motionRef = useRef(reducedMotion)
   const [webgl, setWebgl] = useState('loading')
-  const visibleNotes = useMemo(() => notes.slice(0, 72), [notes])
 
   useEffect(() => {
     motionRef.current = reducedMotion
@@ -55,7 +50,7 @@ export default function HeartParticles({ notes = [], activeId = null, onSelect, 
     if (!host) return undefined
     let renderer
     try {
-      renderer = new WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'low-power' })
+      renderer = new WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'low-power' })
     } catch {
       setWebgl('unavailable')
       return undefined
@@ -69,7 +64,7 @@ export default function HeartParticles({ notes = [], activeId = null, onSelect, 
     let pointer = null
     let width = 1
     let height = 1
-    renderer.setClearColor(0x120e18, 1)
+    renderer.setClearColor(0x000000, 0)
     const scene = new Scene()
     const camera = new PerspectiveCamera(38, 1, 0.1, 30)
     const heart = new Group()
@@ -88,7 +83,7 @@ export default function HeartParticles({ notes = [], activeId = null, onSelect, 
     const points = new Points(geometry, material)
     heart.add(points)
     const canvas = renderer.domElement
-    canvas.className = 'confession-particle-canvas volumetric-heart-canvas'
+    canvas.className = 'heart__canvas'
     canvas.setAttribute('aria-hidden', 'true')
     host.appendChild(canvas)
     const available = () => !disposed && !lost && inView && !document.hidden
@@ -212,17 +207,27 @@ export default function HeartParticles({ notes = [], activeId = null, onSelect, 
   }, [])
 
   return (
-    <div className="confession-note-heart volumetric-heart-layout">
-      <div className="volumetric-heart-frame">
-        <div ref={hostRef} className="volumetric-heart-viewport" data-webgl={webgl} tabIndex={0} role="group" aria-label="3D 粒子爱心，可拖动或使用方向键旋转，Home 键复位" aria-describedby="heart-controls-hint">
-          {webgl !== 'available' ? <div className="volumetric-heart-fallback" role="status"><span aria-hidden="true">♥</span><p>{webgl === 'loading' ? '正在加载粒子爱心…' : '当前设备无法显示 3D 爱心，仍可阅读公开便签。'}</p></div> : null}
-        </div>
-        <div className="volumetric-heart-caption"><span id="heart-controls-hint">拖动旋转 · 方向键也可操作</span><button type="button" onClick={() => controllerRef.current?.reset()} disabled={webgl !== 'available'}>恢复视角</button></div>
+    <div className="heart">
+      <div
+        ref={hostRef}
+        className="heart__viewport"
+        data-webgl={webgl}
+        tabIndex={0}
+        role="group"
+        aria-label="3D 粒子爱心，可拖动或使用方向键旋转，Home 键复位"
+        aria-describedby="heart-controls-hint"
+      >
+        {webgl !== 'available' ? (
+          <div className="heart__fallback" role="status">
+            <span aria-hidden="true">♥</span>
+            <p>{webgl === 'loading' ? '正在加载粒子爱心…' : '当前设备无法显示 3D 爱心，仍可阅读下方的公开便签。'}</p>
+          </div>
+        ) : null}
       </div>
-      <section className="confession-note-browser" aria-labelledby="confession-note-browser-title">
-        <div className="confession-note-browser-heading"><h2 id="confession-note-browser-title">公开便签</h2><span className="confession-note-count">{visibleNotes.length} 张</span></div>
-        {visibleNotes.length ? <div className="confession-note-list">{visibleNotes.map((note) => <button className={`confession-note-list-item${String(note.id) === String(activeId) ? ' is-featured' : ''}`} type="button" key={note.id} onClick={() => onSelect?.(note)} aria-label={`查看 ${noteTimeLabel(note.timestamp)} 发布的表白便签`}><span className="confession-note-list-pin" aria-hidden="true" /><span className="confession-note-list-text">{note.text}</span><time className="confession-note-list-time" dateTime={String(note.timestamp || '')}>{noteTimeLabel(note.timestamp)}</time></button>)}</div> : <div className="confession-note-empty" role="status"><i className="bi bi-heart" aria-hidden="true" /><b>还没有公开便签</b><span>审核通过的便签会显示在这里。</span></div>}
-      </section>
+      <div className="heart__caption">
+        <span id="heart-controls-hint">拖动旋转 · 方向键也可操作</span>
+        <button type="button" onClick={() => controllerRef.current?.reset()} disabled={webgl !== 'available'}>恢复视角</button>
+      </div>
     </div>
   )
 }

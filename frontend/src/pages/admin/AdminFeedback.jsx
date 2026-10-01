@@ -146,7 +146,7 @@ export default function AdminFeedback() {
 
       {loading ? <div className="page-center"><div className="spinner" /></div> : null}
       {!loading && tickets.length === 0 ? (
-        <div className="empty-state-card"><i className="bi bi-inbox text-6xl" /><p className="mt-3 font-bold">没有匹配的反馈工单</p></div>
+        <div className="empty-state-card"><i className="bi bi-inbox" /><p className="mt-3 font-bold">没有匹配的反馈工单</p></div>
       ) : null}
 
       {!loading ? (

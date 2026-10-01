@@ -1,0 +1,310 @@
+/* 表白墙：夜空舞台 + 便利贴墙 */
+
+@keyframes twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.95; } }
+
+@layer components {
+  .confession { display: grid; gap: 28px; }
+
+  .sky {
+    position: relative;
+    display: grid;
+    gap: 8px;
+    padding: 28px 28px 20px;
+    border: 1px solid rgb(255 255 255 / 0.06);
+    border-radius: var(--r-xl);
+    background:
+      radial-gradient(60% 80% at 50% 50%, #43271d 0%, #2a2220 46%, #1c1b1a 100%);
+    color: #faf9f5;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .sky__stars {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      radial-gradient(1.4px 1.4px at 8% 18%, #fff, transparent),
+      radial-gradient(1px 1px at 22% 62%, #fff, transparent),
+      radial-gradient(1.6px 1.6px at 36% 28%, #f3d6cd, transparent),
+      radial-gradient(1px 1px at 48% 80%, #fff, transparent),
+      radial-gradient(1.4px 1.4px at 61% 14%, #fff, transparent),
+      radial-gradient(1px 1px at 74% 70%, #f3d6cd, transparent),
+      radial-gradient(1.6px 1.6px at 86% 34%, #fff, transparent),
+      radial-gradient(1px 1px at 93% 84%, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 15% 88%, #f3d6cd, transparent),
+      radial-gradient(1px 1px at 55% 46%, #fff, transparent);
+    animation: twinkle 5s ease-in-out infinite;
+  }
+
+  .sky__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .sky__head h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(32px, 4.4vw, 46px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .sky__head p {
+    margin-top: 6px;
+    color: rgb(255 255 255 / 0.78);
+  }
+
+  .sky .btn-light {
+    --btn-bg: #faf9f5;
+    --btn-fg: #141413;
+    --btn-bd: transparent;
+  }
+
+  .sky .btn-light:hover:not(:disabled) { --btn-bg: #ffffff; --btn-bd: transparent; }
+
+  .sky .btn-glass {
+    --btn-bg: rgb(250 249 245 / 0.08);
+    --btn-fg: #faf9f5;
+    --btn-bd: rgb(250 249 245 / 0.24);
+  }
+
+  .sky .btn-glass:hover:not(:disabled) { --btn-bg: rgb(250 249 245 / 0.16); --btn-bd: rgb(250 249 245 / 0.4); }
+
+  .sky__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin-top: 4px;
+  }
+
+  .sky__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgb(255 255 255 / 0.82);
+    font-size: var(--fs-sm);
+  }
+
+  .sky__status > span > i { color: #e08a6a; }
+  .sky__status .spinner { border-color: rgb(255 255 255 / 0.25); border-top-color: #fff; }
+  .sky__error { color: #ffb4bd; }
+  .sky__tools { display: flex; gap: 8px; }
+
+  /* ---- 3D 爱心 ---- */
+  .heart { display: grid; gap: 6px; }
+
+  .heart__viewport {
+    position: relative;
+    height: clamp(320px, 52vh, 520px);
+    border-radius: var(--r-lg);
+    cursor: grab;
+    touch-action: pan-y;
+    outline-offset: 4px;
+  }
+
+  .heart__viewport[data-dragging="true"] { cursor: grabbing; }
+
+  .heart__canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .heart__fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    color: rgb(255 255 255 / 0.8);
+    text-align: center;
+  }
+
+  .heart__fallback > span { color: #e08a6a; font-size: 96px; line-height: 1; text-shadow: 0 0 40px rgb(224 138 106 / 0.6); }
+  .heart__fallback p { max-width: 24em; font-size: var(--fs-sm); }
+
+  .heart__caption {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: rgb(255 255 255 / 0.6);
+    font-size: var(--fs-xs);
+  }
+
+  .heart__caption button {
+    padding: 4px 12px;
+    border: 1px solid rgb(255 255 255 / 0.26);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: rgb(255 255 255 / 0.85);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+
+  .heart__caption button:hover:not(:disabled) { background: rgb(255 255 255 / 0.12); }
+  .heart__caption button:disabled { opacity: 0.4; }
+
+  .confession__receipt { align-items: center; }
+  .confession__receipt > span { flex: 1; }
+
+  /* ---- 便利贴墙 ---- */
+  .notes__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .notes__head h2 { font-family: var(--font-serif); font-size: var(--fs-2xl); font-weight: 500; }
+
+  .notes__grid {
+    columns: 3 260px;
+    column-gap: 20px;
+  }
+
+  .note {
+    --tilt: 0deg;
+    --paper: var(--note-1);
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    margin: 0 0 22px;
+    padding: 26px 20px 16px;
+    border: 0;
+    border-radius: 6px 6px 14px 6px;
+    background: var(--paper);
+    color: var(--note-ink);
+    box-shadow: 0 1px 1px rgb(20 20 19 / 0.05), 0 8px 18px -10px rgb(20 20 19 / 0.28);
+    text-align: left;
+    transform: rotate(var(--tilt));
+    break-inside: avoid;
+    transition: transform var(--dur-3) var(--ease), box-shadow var(--dur-2);
+  }
+
+  .note:hover,
+  .note:focus-visible {
+    z-index: 1;
+    transform: rotate(0deg) translateY(-6px) scale(1.02);
+    box-shadow: 0 2px 2px rgb(20 20 19 / 0.06), 0 20px 32px -14px rgb(20 20 19 / 0.4);
+  }
+
+  .note--c0 { --paper: var(--note-1); }
+  .note--c1 { --paper: var(--note-2); }
+  .note--c2 { --paper: var(--note-3); }
+  .note--c3 { --paper: var(--note-4); }
+  .note--c4 { --paper: var(--note-5); }
+
+  .note__tape {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    width: 74px;
+    height: 20px;
+    background: rgb(212 162 127 / 0.55);
+    box-shadow: 0 1px 2px rgb(20 20 19 / 0.12);
+    transform: translateX(-50%) rotate(-2deg);
+  }
+
+  .note__text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 9;
+    line-clamp: 9;
+    overflow: hidden;
+    font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", var(--font-sans);
+    font-size: 17px;
+    line-height: 1.85;
+    white-space: pre-wrap;
+  }
+
+  .note__time {
+    align-self: flex-end;
+    font-size: var(--fs-xs);
+    opacity: 0.62;
+  }
+
+  .note--skeleton { height: 150px; margin-bottom: 22px; transform: none; break-inside: avoid; display: block; }
+
+  /* ---- 写便签 / 便签详情 ---- */
+  .note-editor { display: grid; gap: 14px; }
+
+  .note-editor__paper,
+  .note-detail {
+    position: relative;
+    padding: 28px 22px 16px;
+    border-radius: 6px 6px 16px 6px;
+    background: var(--note-1);
+    color: var(--note-ink);
+    box-shadow: 0 8px 20px -12px rgb(20 20 19 / 0.35);
+  }
+
+  .note-editor__input {
+    display: block;
+    width: 100%;
+    min-height: 168px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", var(--font-sans);
+    font-size: 18px;
+    line-height: 1.9;
+    resize: none;
+    box-shadow: none;
+  }
+
+  .note-editor__input:focus { border: 0; box-shadow: none; }
+  .note-editor__input::placeholder { color: var(--note-ink); opacity: 0.4; }
+  .note-editor__count { display: block; text-align: right; font-size: var(--fs-xs); opacity: 0.6; }
+
+  .note-editor__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .note-editor__row .field-hint { flex: 1; min-width: 12em; margin: 0; }
+
+  .note-detail__text {
+    font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", var(--font-sans);
+    font-size: 20px;
+    line-height: 1.95;
+    white-space: pre-wrap;
+  }
+
+  .note-detail__meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px dashed rgb(0 0 0 / 0.18);
+    font-size: var(--fs-xs);
+    opacity: 0.75;
+  }
+
+  .note-detail__meta span,
+  .note-detail__meta time { display: inline-flex; align-items: center; gap: 6px; }
+
+  @media (max-width: 880px) {
+    .sky { padding: 20px 16px 14px; border-radius: var(--r-lg); }
+    .heart__viewport { height: min(88vw, 420px); }
+  }
+
+  @media (max-width: 640px) {
+    .notes__grid { columns: 2 140px; column-gap: 14px; }
+    .note { padding: 22px 14px 12px; margin-bottom: 16px; }
+    .note__text { font-size: 15px; line-height: 1.75; -webkit-line-clamp: 8; line-clamp: 8; }
+  }
+}

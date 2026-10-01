@@ -28,39 +28,34 @@ export default function NoticeCard({ notice, compact = false, showStatus = false
   const title = noticeTitle(notice)
   const summary = noticeSummary(notice)
   const content = cleanText(notice.content)
+  const className = `notice notice--${priority.tone}${compact ? ' is-compact' : ''}${onClick ? ' is-interactive' : ''}`
 
   const body = (
     <>
-      <span className={`notice-display-icon is-${priority.tone}`} aria-hidden="true">
-        <i className={`bi ${priority.icon}`} />
-      </span>
-        <span className="notice-display-copy">
+      <span className="notice__icon" aria-hidden="true"><i className={`bi ${priority.icon}`} /></span>
+      <span className="notice__copy">
         {compact ? null : (
-          <span className="notice-display-meta">
-            <b className={`notice-priority-badge is-${priority.tone}`}>{priority.label}</b>
-            {showStatus ? <b className={`notice-status-badge is-${notice.status || 'published'}`}>{statusLabels[notice.status] || '已发布'}</b> : null}
+          <span className="notice__meta">
+            <b className="notice__badge">{priority.label}</b>
+            {showStatus ? <b className={`notice__status is-${notice.status || 'published'}`}>{statusLabels[notice.status] || '已发布'}</b> : null}
             <time dateTime={noticeDateTime(publishedAt)}>{publishedAt || '尚未设置发布时间'}</time>
           </span>
         )}
         <strong>{title}</strong>
-        {summary ? <span className="notice-display-summary">{summary}</span> : null}
-        {!compact && content ? <span className="notice-display-content">{content}</span> : null}
+        {summary ? <span className="notice__summary">{summary}</span> : null}
+        {!compact && content ? <span className="notice__content">{content}</span> : null}
       </span>
-      {onClick ? <span className="notice-display-action">查看 <i className="bi bi-chevron-right" aria-hidden="true" /></span> : null}
+      {onClick ? <span className="notice__action">查看 <i className="bi bi-chevron-right" aria-hidden="true" /></span> : null}
     </>
   )
 
   if (onClick) {
     return (
-      <button className={`notice-display-card is-${priority.tone} is-interactive${compact ? ' is-compact' : ''}`} type="button" onClick={onClick} aria-label={`查看公告：${title}`}>
+      <button className={className} type="button" onClick={onClick} aria-label={`查看公告：${title}`}>
         {body}
       </button>
     )
   }
 
-  return (
-    <article className={`notice-display-card is-${priority.tone}${compact ? ' is-compact' : ''}`}>
-      {body}
-    </article>
-  )
+  return <article className={className}>{body}</article>
 }

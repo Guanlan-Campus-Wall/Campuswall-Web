@@ -320,7 +320,7 @@ export default function AdminReport() {
       {view === 'pending' && loading ? <div className="page-center"><div className="spinner" /></div> : null}
       {view === 'pending' && !loading && entries.length === 0 ? (
         <div className="empty-state-card">
-          <i className="bi bi-shield-check text-6xl" />
+          <i className="bi bi-shield-check" />
           <p className="mt-3 font-bold">暂无待处理举报</p>
           <p className="mt-1 text-sm text-muted">新的留言或评论举报会集中显示在这里。</p>
         </div>
@@ -417,7 +417,7 @@ export default function AdminReport() {
           {historyLoading ? <div className="page-center"><div className="spinner" /></div> : null}
           {!historyLoading && history.items.length === 0 ? (
             <div className="empty-state-card">
-              <i className="bi bi-archive text-6xl" />
+              <i className="bi bi-archive" />
               <p className="mt-3 font-bold">没有匹配的处理记录</p>
               <p className="mt-1 text-sm text-muted">处理待办举报后，审计记录会保存在这里。</p>
             </div>

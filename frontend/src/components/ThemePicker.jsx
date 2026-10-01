@@ -20,9 +20,7 @@ export default function ThemePicker() {
       if (!hostRef.current?.contains(event.target)) setOpen(false)
     }
     const closeOnEscape = (event) => {
-      if (event.key === 'Escape') {
-        closeAndRestoreFocus()
-      }
+      if (event.key === 'Escape') closeAndRestoreFocus()
     }
     document.addEventListener('pointerdown', closeOnOutside)
     document.addEventListener('keydown', closeOnEscape)
@@ -36,7 +34,7 @@ export default function ThemePicker() {
     <div className="theme-picker" ref={hostRef}>
       <button
         ref={triggerRef}
-        className="btn btn-sm btn-outline theme-picker-trigger"
+        className="btn btn-ghost btn-icon theme-picker-trigger"
         type="button"
         aria-label={`外观与主题：${appearanceLabel}，${paletteLabel}`}
         aria-expanded={open}
@@ -44,8 +42,8 @@ export default function ThemePicker() {
         onClick={() => setOpen((current) => !current)}
         title="外观与主题"
       >
+        <i className={`bi ${resolvedAppearance === 'dark' ? 'bi-moon-stars-fill' : 'bi-sun-fill'}`} aria-hidden="true" />
         <span className="theme-picker-trigger-swatch" aria-hidden="true" />
-        <i className={`theme-icon bi ${resolvedAppearance === 'dark' ? 'bi-moon-stars-fill' : 'bi-sun-fill'}`} aria-hidden="true" />
       </button>
 
       {open ? (

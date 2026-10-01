@@ -59,7 +59,7 @@ export default function AdminLog({ type = 'admin' }) {
           <span className="page-kicker"><i className="bi bi-terminal" />{title}</span>
           {loading ? <span className="text-sm text-muted">加载中...</span> : null}
         </div>
-        {logs.length ? <pre className="code-panel">{logs.join('\n')}</pre> : <div className="empty-state-card"><i className="bi bi-file-earmark-text text-6xl" /><p className="mt-3">暂无日志</p></div>}
+        {logs.length ? <pre className="code-panel">{logs.join('\n')}</pre> : <div className="empty-state-card"><i className="bi bi-file-earmark-text" /><p className="mt-3">暂无日志</p></div>}
       </section>
     </AdminShell>
   )

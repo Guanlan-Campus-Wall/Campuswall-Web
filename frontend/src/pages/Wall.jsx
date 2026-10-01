@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import Avatar from '../components/Avatar.jsx'
+import CampusGuide from '../components/CampusGuide.jsx'
+import EmptyState from '../components/EmptyState.jsx'
 import MessageCard from '../components/MessageCard.jsx'
 import Modal from '../components/Modal.jsx'
-import UserCard from '../components/UserCard.jsx'
-import CampusGuide from '../components/CampusGuide.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
@@ -15,9 +16,6 @@ const MAX_POST_FILES = 20
 const presetTags = ['日常', '表白', '树洞', '提问', '吐槽', '寻物', '学习', '互助']
 const DRAFT_STORAGE_PREFIX = 'campus-wall-publish-draft-v1'
 const EMPTY_POLL_OPTIONS = ['', '']
-const getScrollBehavior = () => (
-  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
-)
 
 function SelectedMediaTile({ file, index, onRemove }) {
   const [previewUrl, setPreviewUrl] = useState('')
@@ -36,25 +34,19 @@ function SelectedMediaTile({ file, index, onRemove }) {
   }, [file, isImage, isVideo])
 
   return (
-    <div className="moments-compose-media-item">
+    <div className="composer__tile">
       {isImage && previewUrl ? <img src={previewUrl} alt={`待上传图片 ${index + 1}`} /> : null}
       {isVideo && previewUrl ? <video src={previewUrl} muted playsInline aria-label={`待上传视频 ${index + 1}`} /> : null}
       {!isImage && !isVideo ? (
-        <span className="moments-compose-file-symbol" aria-hidden="true">
+        <span className="composer__tile-icon" aria-hidden="true">
           <i className={`bi ${isAudio ? 'bi-music-note-beamed' : 'bi-file-earmark'}`} />
         </span>
       ) : null}
-      {isVideo ? <span className="moments-compose-video-badge"><i className="bi bi-play-fill" />视频</span> : null}
-      <button
-        className="moments-compose-remove"
-        type="button"
-        aria-label={`移除 ${file.name}`}
-        title={`移除 ${file.name}`}
-        onClick={onRemove}
-      >
+      {isVideo ? <span className="composer__tile-badge"><i className="bi bi-play-fill" aria-hidden="true" />视频</span> : null}
+      <button className="composer__tile-remove" type="button" aria-label={`移除 ${file.name}`} title={`移除 ${file.name}`} onClick={onRemove}>
         <i className="bi bi-x-lg" aria-hidden="true" />
       </button>
-      <span className="moments-compose-file-name">{file.name}</span>
+      <span className="composer__tile-name">{file.name}</span>
     </div>
   )
 }
@@ -370,355 +362,270 @@ export default function Wall() {
     }
   }
 
+  const hasDraftContent = Boolean(publishText.trim() || publishTags.length || pollQuestion.trim() || pollOptions.some((option) => option.trim()))
+  const displayName = user ? (user.nickname || user.username) : ''
+  const hour = new Date().getHours()
+  const greeting = hour < 5 ? '夜深了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : '晚上好'
+
   return (
-    <div className="campus-wall">
-      <header className="feed-heading">
-        <div>
-          <span className="forum-breadcrumb">观澜校园墙 / 讨论区</span>
+    <div className="page">
+      <header className="page-head">
+        <div className="page-head__text">
           <h1>校园动态</h1>
           <p>看看大家最近在聊什么。</p>
         </div>
-        <Link className="feed-heading-note" to="/p">浏览话题 <i className="bi bi-arrow-right" aria-hidden="true" /></Link>
-      </header>
-      <div className="feed-layout">
-      <section className="wall-page" aria-label="校园动态列表">
-
-      <div className="feed-compose-card">
-        <span className="compose-symbol" aria-hidden="true"><i className={`bi ${user ? 'bi-pencil-square' : 'bi-chat-dots'}`} /></span>
-        <div><h2>{user ? `${user.nickname || user.username}，今天想分享什么？` : '登录后参与校园讨论'}</h2><p>{canPublish ? '支持文字、图片、附件与投票。' : publishDisabledReason}</p></div>
-        {canPublish ? <button className="btn btn-primary" type="button" onClick={openPublish}><i className="bi bi-plus-lg" aria-hidden="true" />发布动态</button> : !user ? <Link className="btn btn-primary" to="/login" state={{ from: location }}>登录参与<i className="bi bi-arrow-right" aria-hidden="true" /></Link> : null}
-      </div>
-
-      {!canPublish && user ? (
-        <div className="info-callout status-warning">
-          <i className="bi bi-info-circle-fill" />
-          <span>{publishDisabledReason}</span>
+        <div className="page-head__actions">
+          <Link className="btn btn-outline btn-sm" to="/p"><i className="bi bi-hash" aria-hidden="true" />话题广场</Link>
         </div>
-      ) : null}
+      </header>
 
-      {/* Filter & Search Bar */}
-      <div className="feed-toolbar">
-        <form className="feed-search" role="search" onSubmit={(event) => { event.preventDefault(); refresh() }}>
-          <label className="sr-only" htmlFor="wall-search">搜索留言关键词或标签</label>
-            <i className="bi bi-search" aria-hidden="true" />
-            <input
-              id="wall-search"
-              className="field"
-              value={searchWord}
-              onChange={(event) => setSearchWord(event.target.value)}
-              placeholder="搜索动态或标签"
-            />
-            {searchWord ? (
-              <button
-                type="button"
-                className="feed-search-clear"
-                onClick={() => { setSearchWord(''); loadMessages({ reset: true, wordValue: '' }) }}
-                aria-label="清空搜索关键词"
-              >
-                <i className="bi bi-x-circle-fill" />
+      <div className="split">
+        <section className="split__main" aria-label="校园动态列表">
+          <div className="composer-card">
+            <p className="composer-card__hello"><i className="bi bi-sun" aria-hidden="true" />{greeting}，{displayName || '同学'}</p>
+            {canPublish ? (
+              <button className="composer-card__input" type="button" onClick={openPublish}>
+                分享一下今天的校园见闻…
               </button>
-            ) : null}
-          <button className="feed-search-submit" type="submit" aria-label="搜索动态"><i className="bi bi-arrow-right" aria-hidden="true" /></button>
-        </form>
+            ) : (
+              <div className="composer-card__input is-static">
+                <b>{user ? '暂时无法发布' : '登录后参与校园讨论'}</b>
+                <small>{publishDisabledReason}</small>
+              </div>
+            )}
+            <div className="composer-card__bar">
+              <div className="composer-card__tools">
+                <button className="btn btn-ghost btn-icon btn-sm" type="button" onClick={openPublish} disabled={!canPublish} aria-label="添加图片或视频" title="添加图片或视频"><i className="bi bi-image" aria-hidden="true" /></button>
+                <button className="btn btn-ghost btn-icon btn-sm" type="button" onClick={() => { setPublishMode('poll'); openPublish() }} disabled={!canPublish} aria-label="发起投票" title="发起投票"><i className="bi bi-ui-radios-grid" aria-hidden="true" /></button>
+                <button className="btn btn-ghost btn-icon btn-sm" type="button" onClick={openPublish} disabled={!canPublish} aria-label="添加话题" title="添加话题"><i className="bi bi-hash" aria-hidden="true" /></button>
+              </div>
+              {canPublish ? (
+                <button className="composer-card__send" type="button" onClick={openPublish} aria-label="写动态"><i className="bi bi-arrow-up" aria-hidden="true" /></button>
+              ) : !user ? (
+                <Link className="btn btn-primary btn-sm" to="/login" state={{ from: location }}>登录</Link>
+              ) : null}
+            </div>
+          </div>
 
-        <div className="feed-filter-row">
-          <div className="feed-tabs" role="group" aria-label="内容类型">
-            {[['all', '全部动态'], ['files', '图影音'], ['polls', '投票']].map(([value, label]) => (
-              <button type="button" key={value} aria-pressed={filter === value} onClick={() => handleFilterChange(value)}>{label}</button>
+          <div className="toolbar card">
+            <form className="searchbox" role="search" onSubmit={(event) => { event.preventDefault(); refresh() }}>
+              <label className="sr-only" htmlFor="wall-search">搜索留言关键词或标签</label>
+              <i className="bi bi-search" aria-hidden="true" />
+              <input
+                id="wall-search"
+                type="search"
+                value={searchWord}
+                onChange={(event) => setSearchWord(event.target.value)}
+                placeholder="搜索动态或标签"
+              />
+              {searchWord ? (
+                <button type="button" className="searchbox__clear" onClick={() => { setSearchWord(''); loadMessages({ reset: true, wordValue: '' }) }} aria-label="清空搜索关键词">
+                  <i className="bi bi-x-circle-fill" aria-hidden="true" />
+                </button>
+              ) : null}
+              <button className="btn btn-primary btn-sm" type="submit">搜索</button>
+            </form>
+
+            <div className="toolbar__row">
+              <div className="seg" role="group" aria-label="内容类型">
+                {[['all', '全部'], ['files', '图影音'], ['polls', '投票']].map(([value, label]) => (
+                  <button type="button" key={value} aria-pressed={filter === value} onClick={() => handleFilterChange(value)}>{label}</button>
+                ))}
+              </div>
+              <div className="toolbar__side">
+                <label className="sr-only" htmlFor="wall-sort-order">排序方式</label>
+                <select id="wall-sort-order" className="field field--compact" value={sortBy} onChange={(event) => handleSortChange(event.target.value)}>
+                  <option value="newest">最新发布</option>
+                  <option value="likes">点赞最多</option>
+                  <option value="dislikes">点踩最多</option>
+                </select>
+                <button className="btn btn-ghost btn-icon btn-sm" type="button" onClick={refresh} disabled={loading} title="刷新列表" aria-label="刷新列表">
+                  <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {searchWord && !loading ? (
+            <div className="info-callout">
+              <i className="bi bi-search" aria-hidden="true" />
+              <span>关键词「<b>{searchWord}</b>」共找到 <b>{messages.length}</b> 条动态</span>
+            </div>
+          ) : null}
+
+          {loading && messages.length === 0 ? (
+            <div className="feed-list" aria-hidden="true">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="post">
+                  <div className="flex items-center gap-3">
+                    <div className="skeleton h-11 w-11 rounded-full shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="skeleton h-4 w-32" />
+                      <div className="skeleton h-3 w-20" />
+                    </div>
+                  </div>
+                  <div className="skeleton mt-4 h-16 w-full" />
+                  <div className="skeleton mt-4 h-8 w-48" />
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {!loading && messages.length === 0 ? (
+            <EmptyState
+              icon="bi-chat-square-dots"
+              title={searchWord || filter !== 'all' ? '还没有找到相关动态' : '还没有公开动态'}
+              action={canPublish
+                ? <button className="btn btn-primary" type="button" onClick={openPublish}><i className="bi bi-pencil-square" aria-hidden="true" />立即发帖</button>
+                : (!user ? <Link className="btn btn-primary" to="/login" state={{ from: location }}>登录参与</Link> : null)}
+            >
+              {searchWord || filter !== 'all' ? '试试其他关键词，或切换到全部动态。' : '发布一条动态，发起讨论。'}
+            </EmptyState>
+          ) : null}
+
+          <div className="feed-list" aria-busy={loading}>
+            {messages.map((message) => (
+              <MessageCard key={message.id} message={message} variant="moments" onRefresh={refreshSpecificMessage} />
             ))}
           </div>
 
-          <div className="feed-sort">
-          <label className="sr-only" htmlFor="wall-sort-order">排序方式</label>
-          <select id="wall-sort-order" className="field w-auto" value={sortBy} onChange={(e) => handleSortChange(e.target.value)}>
-            <option value="newest">最新发布</option>
-            <option value="likes">点赞最多</option>
-            <option value="dislikes">点踩最多</option>
-          </select>
+          {!loading && !hasMore && messages.length > 0 ? <p className="feed-end">— 已显示全部动态 —</p> : null}
 
-          <button className="btn btn-ghost" type="button" onClick={refresh} disabled={loading} title="刷新列表" aria-label="刷新列表">
-            <i className="bi bi-arrow-clockwise" />
-          </button>
-          </div>
-        </div>
-      </div>
-
-      {searchWord ? (
-        <div className="flex items-center justify-between rounded-[var(--radius-md)] bg-[var(--primary-light)] px-4 py-3 text-sm text-[var(--text-primary)]">
-          <span>找到关键词 <b>"{searchWord}"</b> 相关的 <b>{messages.length}</b> 条留言</span>
-          <button
-            className="text-xs text-[var(--primary-color)] hover:underline font-bold"
-            type="button"
-            onClick={() => { setSearchWord(''); loadMessages({ reset: true, wordValue: '' }) }}
-          >
-            清空搜索
-          </button>
-        </div>
-      ) : null}
-
-      {/* Loading Skeleton */}
-      {loading && messages.length === 0 ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="card p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="skeleton h-11 w-11 rounded-full shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="skeleton h-4 w-32" />
-                  <div className="skeleton h-3 w-20" />
-                </div>
-              </div>
-              <div className="skeleton h-16 w-full" />
-              <div className="skeleton h-8 w-48" />
+          {hasMore && messages.length ? (
+            <div className="text-center">
+              <button className="btn btn-outline min-w-44" disabled={loadingMore} onClick={loadMore}>
+                {loadingMore ? (<><span className="spinner" /><span>加载中…</span></>) : (<><i className="bi bi-chevron-down" aria-hidden="true" /><span>加载更多</span></>)}
+              </button>
             </div>
-          ))}
-        </div>
-      ) : null}
+          ) : null}
+        </section>
 
-      {/* Empty State */}
-      {!loading && messages.length === 0 ? (
-        <div className="empty-state-card">
-          <i className="bi bi-chat-square-dots" />
-          <p className="mt-4 text-base font-bold text-[var(--text-primary)]">{searchWord || filter !== 'all' ? '还没有找到相关动态' : '还没有公开动态'}</p>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">{searchWord || filter !== 'all' ? '试试其他关键词，或切换到全部动态。' : '发布一条动态，发起讨论。'}</p>
-          {canPublish ? <button className="btn btn-primary mt-5" type="button" onClick={openPublish}>
-            <i className="bi bi-pencil-square" />
-            <span>立即发帖</span>
-          </button> : !user ? <Link className="btn btn-primary mt-5" to="/login" state={{ from: location }}>登录参与</Link> : null}
-        </div>
-      ) : null}
-
-      {/* Messages Stream */}
-      <div className="feed-stream" aria-busy={loading}>
-        {messages.map((message) => (
-          <MessageCard key={message.id} message={message} variant="moments" onRefresh={refreshSpecificMessage} />
-        ))}
+        <CampusGuide />
       </div>
 
-      {!loading && !hasMore && messages.length > 0 ? <p className="feed-end">已显示全部动态</p> : null}
-
-      {/* Load More */}
-      {hasMore && messages.length ? (
-        <div className="text-center pt-4">
-          <button
-            className="btn btn-lg btn-outline min-w-48"
-            disabled={loadingMore}
-            onClick={loadMore}
-          >
-            {loadingMore ? (
-              <>
-                <div className="spinner h-4 w-4 border-2" />
-                <span>加载中...</span>
-              </>
-            ) : (
-              <>
-                <i className="bi bi-chevron-down" />
-                <span>加载更多留言</span>
-              </>
-            )}
-          </button>
-        </div>
-      ) : null}
-
-      {/* Floating Action Buttons */}
-      <div className="floating-actions">
-        <button
-          className="floating-action-primary"
-          type="button"
-          aria-label="发布留言"
-          title="发帖"
-          onClick={openPublish}
-          disabled={!canPublish}
-        >
-          <i className="bi bi-pencil-fill text-xl" />
-        </button>
-        <button
-          className="floating-action-secondary"
-          type="button"
-          aria-label="返回顶部"
-          title="回到顶部"
-          onClick={() => window.scrollTo({ top: 0, behavior: getScrollBehavior() })}
-        >
-          <i className="bi bi-arrow-up text-lg" />
-        </button>
-      </div>
-
-      {/* Publish Modal */}
       <Modal
         visible={publishOpen}
         title="发布校园动态"
-        width="760px"
+        width="680px"
         onClose={() => setPublishOpen(false)}
         footer={(
           <>
-            <button className="btn btn-outline" type="button" onClick={() => setPublishOpen(false)}>
-              取消
-            </button>
-            <button
-              className="btn btn-primary px-6"
-              type="button"
-              disabled={!canPublish || publishing}
-              onClick={submitPublish}
-            >
-              {publishing ? '正在发布...' : '发布'}
+            <button className="btn btn-outline" type="button" onClick={() => setPublishOpen(false)}>取消</button>
+            <button className="btn btn-primary" type="button" disabled={!canPublish || publishing} onClick={submitPublish}>
+              {publishing ? <><span className="spinner" />正在发布…</> : <><i className="bi bi-send-fill" aria-hidden="true" />发布</>}
             </button>
           </>
         )}
       >
-        <div className="moments-composer">
-          <div className="moments-composer-identity">
-            <UserCard
-              user={(!user || publishAnonymous) ? anonymousUser : { ...user, description: user.bio }}
-              compact
-            />
+        <div className="composer">
+          <div className="composer__who">
+            <div className="user-card">
+              <Avatar user={(!user || publishAnonymous) ? anonymousUser : user} size="md" anonymous={!user || publishAnonymous} />
+              <div className="user-card__body">
+                <div className="user-card__name"><span>{(!user || publishAnonymous) ? '匿名用户' : displayName}</span></div>
+                <p className="user-card__sub">{(!user || publishAnonymous) ? '公开页面不会显示你的身份' : '公开页面将显示你的昵称'}</p>
+              </div>
+            </div>
             {user ? (
-              <button
-                className="moments-composer-privacy"
-                type="button"
-                aria-pressed={!publishAnonymous}
-                onClick={() => setPublishAnonymous((current) => !current)}
-              >
+              <button className="chip" type="button" aria-pressed={!publishAnonymous} onClick={() => setPublishAnonymous((current) => !current)}>
                 <i className={`bi ${publishAnonymous ? 'bi-incognito' : 'bi-person-badge'}`} aria-hidden="true" />
                 {publishAnonymous ? '匿名发布' : '展示昵称'}
               </button>
             ) : (
-              <span className="moments-composer-privacy">
-                <i className="bi bi-incognito" aria-hidden="true" />
-                游客仅能匿名发布
-              </span>
+              <span className="chip is-static"><i className="bi bi-incognito" aria-hidden="true" />游客仅能匿名发布</span>
             )}
           </div>
 
-          <div className="moments-composer-mode" role="group" aria-label="动态类型">
-            <button
-              className={publishMode === 'post' ? 'is-active' : ''}
-              type="button"
-              aria-pressed={publishMode === 'post'}
-              onClick={() => setPublishMode('post')}
-            >
-              <i className="bi bi-chat-square-text" />
-              图文动态
+          <div className="seg" role="group" aria-label="动态类型">
+            <button type="button" aria-pressed={publishMode === 'post'} onClick={() => setPublishMode('post')}>
+              <i className="bi bi-chat-square-text" aria-hidden="true" /> 图文动态
             </button>
-            <button
-              className={publishMode === 'poll' ? 'is-active' : ''}
-              type="button"
-              aria-pressed={publishMode === 'poll'}
-              onClick={() => setPublishMode('poll')}
-            >
-              <i className="bi bi-ui-radios-grid" />
-              发起投票
+            <button type="button" aria-pressed={publishMode === 'poll'} onClick={() => setPublishMode('poll')}>
+              <i className="bi bi-ui-radios-grid" aria-hidden="true" /> 发起投票
             </button>
           </div>
 
-          <section className="moments-composer-surface" aria-label="动态内容">
+          <section className="composer__surface" aria-label="动态内容">
             <textarea
-              className="moments-composer-textarea"
+              className="composer__text"
               value={publishText}
               onChange={(event) => setPublishText(event.target.value)}
               placeholder={publishMode === 'poll' ? '补充投票背景或说明（选填）' : '这一刻，想和大家分享什么？'}
               maxLength={2000}
+              aria-label="动态正文"
             />
 
-            <div className={`moments-compose-media-grid ${files.length === 1 ? 'has-single' : ''}`}>
-              {files.map((file, index) => (
-                <SelectedMediaTile
-                  file={file}
-                  index={index}
-                  key={`${file.name}-${file.lastModified}-${index}`}
-                  onRemove={() => setFiles((items) => items.filter((_, itemIndex) => itemIndex !== index))}
-                />
-              ))}
-              {files.length < MAX_POST_FILES ? (
-                <label className="moments-compose-add-media">
-                  <i className="bi bi-plus-lg" aria-hidden="true" />
-                  <span>{files.length ? '继续添加' : '媒体文件'}</span>
-                  <small>{files.length}/{MAX_POST_FILES}</small>
-                  <input
-                    hidden
-                    multiple
-                    type="file"
-                    accept="image/*,audio/*,video/*"
-                    onChange={handleFileSelection}
+            {files.length || publishMode === 'post' ? (
+              <div className="composer__media">
+                {files.map((file, index) => (
+                  <SelectedMediaTile
+                    file={file}
+                    index={index}
+                    key={`${file.name}-${file.lastModified}-${index}`}
+                    onRemove={() => setFiles((items) => items.filter((_, itemIndex) => itemIndex !== index))}
                   />
-                </label>
-              ) : null}
-            </div>
-
-            <div className="moments-composer-counter">{publishText.length} / 2000</div>
-            {publishText.trim() || publishTags.length || pollQuestion.trim() || pollOptions.some((option) => option.trim()) ? (
-              <div className="moments-draft-status">
-                <span className="flex items-center gap-1.5">
-                  <i className="bi bi-check-circle text-[var(--primary-color)]" />
-                  {draftSavedAt
-                    ? `草稿已自动保存 ${new Date(draftSavedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
-                    : '正在保存草稿...'}
-                </span>
-                <button
-                  className="font-bold text-[var(--primary-color)] hover:underline"
-                  type="button"
-                  onClick={clearPublishDraft}
-                >
-                  清空草稿
-                </button>
+                ))}
+                {files.length < MAX_POST_FILES ? (
+                  <label className="composer__add">
+                    <i className="bi bi-plus-lg" aria-hidden="true" />
+                    <span>{files.length ? '继续添加' : '图片 / 视频'}</span>
+                    <small>{files.length}/{MAX_POST_FILES}</small>
+                    <input hidden multiple type="file" accept="image/*,audio/*,video/*" onChange={handleFileSelection} />
+                  </label>
+                ) : null}
               </div>
             ) : null}
+
+            <div className="composer__foot">
+              {hasDraftContent ? (
+                <span className="composer__draft">
+                  <i className="bi bi-check-circle" aria-hidden="true" />
+                  {draftSavedAt
+                    ? `草稿已自动保存 ${new Date(draftSavedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+                    : '正在保存草稿…'}
+                  <button type="button" onClick={clearPublishDraft}>清空</button>
+                </span>
+              ) : <span />}
+              <span className="tabular text-muted">{publishText.length} / 2000</span>
+            </div>
           </section>
 
           {publishMode === 'poll' ? (
-            <section className="poll-editor space-y-3">
-              <div className="flex items-center justify-between gap-3">
+            <section className="composer__poll" aria-label="投票设置">
+              <div className="composer__poll-head">
                 <div>
-                  <h3 className="text-sm font-bold text-[var(--text-primary)]">投票设置</h3>
-                  <p className="mt-0.5 text-xs text-[var(--text-muted)]">每个访问者只能选择一项，投票后不可修改。</p>
+                  <h3>投票设置</h3>
+                  <p>每个访问者只能选择一项，投票后不可修改。</p>
                 </div>
                 <span className="badge">单选</span>
               </div>
-              <input
-                className="field w-full"
-                value={pollQuestion}
-                onChange={(event) => setPollQuestion(event.target.value)}
-                placeholder="输入投票问题"
-                maxLength={200}
-              />
-              <div className="space-y-2">
+              <input value={pollQuestion} onChange={(event) => setPollQuestion(event.target.value)} placeholder="输入投票问题" maxLength={200} aria-label="投票问题" />
+              <div className="composer__poll-options">
                 {pollOptions.map((option, index) => (
-                  <div className="flex items-center gap-2" key={`poll-option-${index}`}>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-light)] text-xs font-black text-[var(--primary-color)]">
-                      {index + 1}
-                    </span>
+                  <div className="composer__poll-option" key={`poll-option-${index}`}>
+                    <span className="composer__poll-index">{index + 1}</span>
                     <input
-                      className="field min-w-0 flex-1"
                       value={option}
                       onChange={(event) => setPollOptions((items) => items.map((item, itemIndex) => itemIndex === index ? event.target.value : item))}
                       placeholder={`选项 ${index + 1}`}
                       maxLength={80}
+                      aria-label={`选项 ${index + 1}`}
                     />
                     {pollOptions.length > 2 ? (
-                      <button
-                        className="btn btn-sm btn-ghost shrink-0 px-2 text-rose-500"
-                        type="button"
-                        title="删除选项"
-                        onClick={() => setPollOptions((items) => items.filter((_, itemIndex) => itemIndex !== index))}
-                      >
-                        <i className="bi bi-x-lg" />
+                      <button className="btn btn-ghost btn-icon btn-sm" type="button" title="删除选项" aria-label={`删除选项 ${index + 1}`} onClick={() => setPollOptions((items) => items.filter((_, itemIndex) => itemIndex !== index))}>
+                        <i className="bi bi-x-lg" aria-hidden="true" />
                       </button>
                     ) : null}
                   </div>
                 ))}
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  className="btn btn-sm btn-outline"
-                  type="button"
-                  disabled={pollOptions.length >= 6}
-                  onClick={() => setPollOptions((items) => [...items, ''])}
-                >
-                  <i className="bi bi-plus-circle" />
-                  添加选项
+              <div className="composer__poll-foot">
+                <button className="btn btn-outline btn-sm" type="button" disabled={pollOptions.length >= 6} onClick={() => setPollOptions((items) => [...items, ''])}>
+                  <i className="bi bi-plus-circle" aria-hidden="true" />添加选项
                 </button>
-                <label className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)]">
-                  结束时间
-                  <select className="field py-2 text-sm" value={pollDuration} onChange={(event) => setPollDuration(event.target.value)}>
+                <label className="composer__poll-time">
+                  <span>结束时间</span>
+                  <select value={pollDuration} onChange={(event) => setPollDuration(event.target.value)}>
                     <option value="1">1 天后</option>
                     <option value="3">3 天后</option>
                     <option value="7">7 天后</option>
@@ -729,76 +636,50 @@ export default function Wall() {
             </section>
           ) : null}
 
-          {/* Tags Section */}
-          <section className="moments-composer-options" aria-labelledby="publish-tags-title">
-            <div className="moments-composer-option-heading">
-              <span id="publish-tags-title"><i className="bi bi-hash" aria-hidden="true" /> 添加话题</span>
+          <section className="composer__tags" aria-labelledby="publish-tags-title">
+            <div className="composer__tags-head">
+              <span id="publish-tags-title"><i className="bi bi-hash" aria-hidden="true" />添加话题</span>
               <small>最多 8 个</small>
             </div>
             {publishTags.length ? (
-              <div className="flex flex-wrap gap-1.5 px-4 pt-3">
+              <div className="chip-row">
                 {publishTags.map((tag, index) => (
-                  <span className="badge" key={tag}>
+                  <span className="tag" key={tag}>
                     #{tag}
-                    <button
-                      className="tag-remove"
-                      type="button"
-                      aria-label={`移除标签 ${tag}`}
-                      onClick={() => setPublishTags((items) => items.filter((_, i) => i !== index))}
-                    >
-                      ×
-                    </button>
+                    <button className="tag-remove" type="button" aria-label={`移除标签 ${tag}`} onClick={() => setPublishTags((items) => items.filter((_, i) => i !== index))}>×</button>
                   </span>
                 ))}
               </div>
             ) : null}
             <input
-              className="moments-composer-tag-input"
               value={tagInput}
               onChange={(event) => setTagInput(event.target.value)}
               onKeyDown={handleTagKey}
-              placeholder="输入标签按回车确认（如：表白、日常、寻物）"
+              placeholder="输入标签后按回车确认，如：日常、寻物"
+              aria-label="输入话题标签"
             />
-            <div className="moments-composer-tag-suggestions">
-              {presetTags.filter(t => !publishTags.includes(t)).map((tag) => (
-                <button
-                  type="button"
-                  key={tag}
-                  className="badge hover:bg-[var(--action-fill)] hover:text-white"
-                  onClick={() => addTag(tag)}
-                >
-                  +{tag}
-                </button>
+            <div className="chip-row">
+              {presetTags.filter((tag) => !publishTags.includes(tag)).map((tag) => (
+                <button type="button" key={tag} className="chip chip--sm" onClick={() => addTag(tag)}>+ {tag}</button>
               ))}
             </div>
             {suggestions.length ? (
-              <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+              <div className="chip-row">
                 {suggestions.map((tag) => (
-                  <button className="badge" type="button" key={tag} onClick={() => addTag(tag)}>
-                    #{tag}
-                  </button>
+                  <button className="chip chip--sm is-active" type="button" key={tag} onClick={() => addTag(tag)}>#{tag}</button>
                 ))}
               </div>
             ) : null}
           </section>
 
-          {/* Upload Progress */}
           {statusText ? (
-            <div className="moments-upload-progress">
-              <div className="progress-track h-2">
-                <div
-                  className="upload-progress-bar h-full bg-[var(--primary-color)] rounded-full transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="text-center text-xs font-semibold text-[var(--text-secondary)]">{statusText}</p>
+            <div className="composer__progress" role="status">
+              <div className="progress"><span style={{ width: `${progress}%` }} /></div>
+              <p>{statusText}</p>
             </div>
           ) : null}
         </div>
       </Modal>
-      </section>
-      <CampusGuide />
-      </div>
     </div>
   )
 }

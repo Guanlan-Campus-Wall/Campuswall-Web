@@ -6,18 +6,23 @@ export const appearanceOptions = Object.freeze([
   Object.freeze({ id: 'dark', label: '深色' })
 ])
 
+// 默认「赤陶」取自 Anthropic 风格的暖橙色；其余是同一套调色板里的辅助色。
 export const paletteOptions = Object.freeze([
-  Object.freeze({ id: 'blue', label: '海蓝', color: '#1765d1' }),
-  Object.freeze({ id: 'rose', label: '樱粉', color: '#c23159' }),
-  Object.freeze({ id: 'violet', label: '紫藤', color: '#6b4dcc' }),
-  Object.freeze({ id: 'green', label: '青绿', color: '#087b5c' }),
-  Object.freeze({ id: 'orange', label: '暖橙', color: '#ae4c0b' })
+  Object.freeze({ id: 'clay', label: '赤陶', color: '#b85636' }),
+  Object.freeze({ id: 'sky', label: '天青', color: '#2f6a99' }),
+  Object.freeze({ id: 'olive', label: '橄榄', color: '#566a3c' }),
+  Object.freeze({ id: 'fig', label: '无花果', color: '#a8476b' }),
+  Object.freeze({ id: 'slate', label: '石墨', color: '#2b2b28' })
 ])
+
+const defaultPalette = 'clay'
+const themeColors = Object.freeze({ light: '#faf9f5', dark: '#262624' })
 
 const appearanceIds = new Set(appearanceOptions.map((option) => option.id))
 const paletteIds = new Set(paletteOptions.map((option) => option.id))
 const appearanceStorageKey = 'theme-preference'
-const paletteStorageKey = 'theme-palette'
+// 视觉改版后换用新的存储键，让所有设备都先看到新的默认主题色。
+const paletteStorageKey = 'theme-palette-v3'
 
 const readStorage = (key, allowed, fallback) => {
   if (typeof window === 'undefined') return fallback
@@ -46,7 +51,7 @@ const ThemeContext = createContext(null)
 
 export function ThemeProvider({ children }) {
   const [appearance, setAppearance] = useState(() => readStorage(appearanceStorageKey, appearanceIds, 'system'))
-  const [palette, setPalette] = useState(() => readStorage(paletteStorageKey, paletteIds, 'green'))
+  const [palette, setPalette] = useState(() => readStorage(paletteStorageKey, paletteIds, defaultPalette))
   const [systemAppearance, setSystemAppearance] = useState(getSystemAppearance)
   const resolvedAppearance = appearance === 'system' ? systemAppearance : appearance
 
@@ -68,7 +73,7 @@ export function ThemeProvider({ children }) {
         setAppearance(appearanceIds.has(event.newValue) ? event.newValue : 'system')
       }
       if (event.key === paletteStorageKey) {
-        setPalette(paletteIds.has(event.newValue) ? event.newValue : 'green')
+        setPalette(paletteIds.has(event.newValue) ? event.newValue : defaultPalette)
       }
     }
     window.addEventListener('storage', syncAcrossTabs)
@@ -80,7 +85,7 @@ export function ThemeProvider({ children }) {
     root.dataset.theme = resolvedAppearance
     root.dataset.palette = palette
     const themeMeta = document.querySelector('meta[name="theme-color"]')
-    if (themeMeta) themeMeta.content = resolvedAppearance === 'dark' ? '#17191c' : '#f2f3f5'
+    if (themeMeta) themeMeta.content = themeColors[resolvedAppearance]
   }, [palette, resolvedAppearance])
 
   useEffect(() => writeStorage(appearanceStorageKey, appearance), [appearance])
@@ -91,7 +96,7 @@ export function ThemeProvider({ children }) {
     setAppearance: (next) => setAppearance(appearanceIds.has(next) ? next : 'system'),
     resolvedAppearance,
     palette,
-    setPalette: (next) => setPalette(paletteIds.has(next) ? next : 'green'),
+    setPalette: (next) => setPalette(paletteIds.has(next) ? next : defaultPalette),
     appearanceOptions,
     paletteOptions
   }), [appearance, palette, resolvedAppearance])

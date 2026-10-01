@@ -1,40 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../services/api'
+import EmptyState from '../components/EmptyState.jsx'
 import MessageCard from '../components/MessageCard.jsx'
+import Pager from '../components/Pager.jsx'
 
 const topicPageSize = 24
 const messagePageSize = 15
+const topicTones = ['clay', 'kraft', 'olive', 'sky', 'fig', 'heather']
 
 const topicDateTime = (value) => value ? String(value).replace(' ', 'T') : undefined
-
-function Pagination({ label, loading, page, totalPages, onPageChange }) {
-  if (totalPages <= 1) return null
-
-  return (
-    <nav className="mt-6 flex flex-wrap items-center justify-center gap-3" aria-label={label}>
-      <button
-        className="btn btn-sm btn-outline"
-        type="button"
-        disabled={loading || page <= 1}
-        onClick={() => onPageChange(Math.max(1, page - 1))}
-      >
-        <i className="bi bi-chevron-left" aria-hidden="true" />
-        上一页
-      </button>
-      <span className="text-sm text-muted" aria-live="polite">第 {page} / {totalPages} 页</span>
-      <button
-        className="btn btn-sm btn-outline"
-        type="button"
-        disabled={loading || page >= totalPages}
-        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-      >
-        下一页
-        <i className="bi bi-chevron-right" aria-hidden="true" />
-      </button>
-    </nav>
-  )
-}
+const toneFor = (tag) => topicTones[[...String(tag)].reduce((sum, char) => sum + char.charCodeAt(0), 0) % topicTones.length]
 
 export default function Partition() {
   const { tag = '' } = useParams()
@@ -126,151 +102,125 @@ export default function Partition() {
   const retry = () => setReloadKey((value) => value + 1)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Link to={directoryMode ? '/wall' : '/p'} className="btn btn-sm btn-outline">
-          <i className="bi bi-arrow-left" aria-hidden="true" />
-          <span>{directoryMode ? '返回校园动态' : '返回全部话题'}</span>
-        </Link>
-      </div>
+    <div className="page">
+      <Link to={directoryMode ? '/wall' : '/p'} className="back-link">
+        <i className="bi bi-arrow-left" aria-hidden="true" />
+        {directoryMode ? '返回校园动态' : '返回全部话题'}
+      </Link>
 
-      <header className="card-flat p-5 md:p-6">
-        <span className="page-kicker">
-          <i className={`bi ${directoryMode ? 'bi-tags' : 'bi-hash'}`} aria-hidden="true" />
-          <span>{directoryMode ? '话题目录' : '话题动态'}</span>
-        </span>
-        <h1 className="mt-3 text-3xl font-black tracking-tight text-[var(--text-primary)] md:text-4xl">
-          {directoryMode ? '按标签浏览话题' : `#${selectedTag}`}
-        </h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]" role="status" aria-live="polite">
-          {loading
-            ? (directoryMode ? '正在整理公开话题…' : '正在加载该话题的公开动态…')
-            : (directoryMode ? `共找到 ${total} 个公开话题` : `共找到 ${total} 条公开动态`)}
-        </p>
+      <header className="page-head">
+        <div className="page-head__text">
+          <h1>{directoryMode ? '话题广场' : `#${selectedTag}`}</h1>
+          <p role="status" aria-live="polite">
+            {loading
+              ? (directoryMode ? '正在整理公开话题…' : '正在加载该话题的公开动态…')
+              : (directoryMode ? `共 ${total} 个公开话题，按标签找到感兴趣的讨论。` : `共 ${total} 条公开动态`)}
+          </p>
+        </div>
       </header>
 
       {directoryMode ? (
-        <div className="search-panel">
-          <form className="flex min-w-64 flex-1 gap-2" role="search" onSubmit={submitSearch}>
+        <div className="toolbar card topic-toolbar">
+          <form className="searchbox" role="search" onSubmit={submitSearch}>
             <label className="sr-only" htmlFor="topic-search">搜索话题名称</label>
-            <div className="relative min-w-0 flex-1">
-              <i className="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
-              <input
-                id="topic-search"
-                className="field w-full pl-10 pr-10"
-                value={query}
-                maxLength={50}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="搜索话题名称"
-              />
-              {query ? (
-                <button
-                  className="absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                  type="button"
-                  aria-label="清空话题搜索"
-                  onClick={clearSearch}
-                >
-                  <i className="bi bi-x-circle-fill" aria-hidden="true" />
-                </button>
-              ) : null}
-            </div>
-            <button className="btn btn-primary" type="submit" disabled={loading}>搜索</button>
+            <i className="bi bi-search" aria-hidden="true" />
+            <input id="topic-search" type="search" value={query} maxLength={50} onChange={(event) => setQuery(event.target.value)} placeholder="搜索话题名称" />
+            {query ? (
+              <button className="searchbox__clear" type="button" aria-label="清空话题搜索" onClick={clearSearch}>
+                <i className="bi bi-x-circle-fill" aria-hidden="true" />
+              </button>
+            ) : null}
+            <button className="btn btn-primary btn-sm" type="submit" disabled={loading}>搜索</button>
           </form>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="toolbar__side">
             <label className="sr-only" htmlFor="topic-sort">话题排序方式</label>
-            <select id="topic-sort" className="field w-auto" value={sort} onChange={changeSort}>
+            <select id="topic-sort" className="field field--compact" value={sort} onChange={changeSort}>
               <option value="popular">动态最多</option>
               <option value="newest">最近更新</option>
               <option value="name">名称排序</option>
             </select>
-            <button className="btn btn-outline" type="button" disabled={loading} onClick={retry}>
+            <button className="btn btn-ghost btn-icon btn-sm" type="button" disabled={loading} onClick={retry} aria-label="刷新">
               <i className="bi bi-arrow-clockwise" aria-hidden="true" />
-              <span className="hidden sm:inline">刷新</span>
             </button>
           </div>
         </div>
       ) : null}
 
       {loading ? (
-        <div className="page-center py-12" role="status" aria-live="polite">
-          <div className="spinner" aria-hidden="true" />
-          <p className="mt-3 text-sm text-[var(--text-secondary)]">
-            {directoryMode ? '正在加载话题目录…' : '正在加载该话题动态…'}
-          </p>
-        </div>
+        directoryMode ? (
+          <div className="topic-grid" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => <div className="skeleton topic-card" style={{ minHeight: 120 }} key={i} />)}
+          </div>
+        ) : (
+          <div className="page-center" role="status"><div className="spinner" /><p>正在加载该话题动态…</p></div>
+        )
       ) : null}
 
       {!loading && error ? (
-        <div className="empty-state-card" role="alert">
-          <i className="bi bi-exclamation-octagon-fill" aria-hidden="true" />
-          <p className="mt-4 text-base font-bold text-[var(--text-primary)]">暂时无法加载话题</p>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">{error}</p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {/登录/.test(error) ? <Link to="/login" className="btn btn-primary">去登录</Link> : null}
-            <button className="btn btn-outline" type="button" onClick={retry}>
-              <i className="bi bi-arrow-clockwise" aria-hidden="true" />重试
-            </button>
-          </div>
-        </div>
+        <EmptyState
+          icon="bi-exclamation-octagon-fill"
+          title="暂时无法加载话题"
+          role="alert"
+          action={(
+            <div className="chip-row" style={{ justifyContent: 'center' }}>
+              {/登录/.test(error) ? <Link to="/login" className="btn btn-primary">去登录</Link> : null}
+              <button className="btn btn-outline" type="button" onClick={retry}><i className="bi bi-arrow-clockwise" aria-hidden="true" />重试</button>
+            </div>
+          )}
+        >
+          {error}
+        </EmptyState>
       ) : null}
 
       {!loading && !error && directoryMode && topics.length === 0 ? (
-        <div className="empty-state-card">
-          <i className="bi bi-tags" aria-hidden="true" />
-          <p className="mt-4 text-base font-bold text-[var(--text-primary)]">
-            {appliedQuery ? '没有匹配的话题' : '暂时还没有公开话题'}
-          </p>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            {appliedQuery ? `没有找到包含“${appliedQuery}”的话题，请换个关键词试试。` : '公开动态添加标签后，会自动出现在这里。'}
-          </p>
-          {appliedQuery ? <button className="btn btn-primary mt-4" type="button" onClick={clearSearch}>查看全部话题</button> : null}
-        </div>
+        <EmptyState
+          icon="bi-tags"
+          title={appliedQuery ? '没有匹配的话题' : '暂时还没有公开话题'}
+          action={appliedQuery ? <button className="btn btn-primary" type="button" onClick={clearSearch}>查看全部话题</button> : null}
+        >
+          {appliedQuery ? `没有找到包含“${appliedQuery}”的话题，请换个关键词试试。` : '公开动态添加标签后，会自动出现在这里。'}
+        </EmptyState>
       ) : null}
 
       {!loading && !error && directoryMode && topics.length > 0 ? (
         <section aria-label="话题列表">
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="topic-grid">
             {topics.map((topic) => (
               <li key={topic.tag}>
                 <Link
-                  className="card-flat flex min-h-32 h-full flex-col justify-between gap-4 p-5 transition-transform active:scale-[0.98]"
+                  className={`topic-card tone-${toneFor(topic.tag)}`}
                   to={`/p/${encodeURIComponent(topic.tag)}`}
                   aria-label={`话题 ${topic.tag}，${topic.count} 条公开动态`}
                 >
-                  <span className="flex items-start justify-between gap-3">
-                    <strong className="min-w-0 break-words text-lg font-black text-[var(--text-primary)]">#{topic.tag}</strong>
-                    <span className="badge shrink-0">{topic.count} 条</span>
-                  </span>
-                  <span className="flex items-center justify-between gap-3 text-xs text-[var(--text-secondary)]">
-                    <span><i className="bi bi-clock mr-1" aria-hidden="true" />最近更新</span>
-                    {topic.latest_at ? <time dateTime={topicDateTime(topic.latest_at)}>{topic.latest_at}</time> : <span>暂无</span>}
+                  <span className="topic-card__tag">#{topic.tag}</span>
+                  <span className="topic-card__foot">
+                    <span className="topic-card__count"><b>{topic.count}</b> 条动态</span>
+                    {topic.latest_at ? <time dateTime={topicDateTime(topic.latest_at)}>{String(topic.latest_at).slice(5, 16)}</time> : <span>暂无</span>}
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
-          <Pagination label="话题目录分页" loading={loading} page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pager label="话题目录分页" loading={loading} page={page} totalPages={totalPages} onPageChange={setPage} />
         </section>
       ) : null}
 
       {!loading && !error && !directoryMode && messages.length === 0 ? (
-        <div className="empty-state-card">
-          <i className="bi bi-tags" aria-hidden="true" />
-          <p className="mt-4 text-base font-bold text-[var(--text-primary)]">该话题下暂无公开内容</p>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">发布动态时带上 #{selectedTag}，审核通过后即可出现在这里。</p>
-          <Link to="/wall" className="btn btn-primary mt-4">
-            <i className="bi bi-pencil-square" aria-hidden="true" />
-            <span>发布动态</span>
-          </Link>
-        </div>
+        <EmptyState
+          icon="bi-tags"
+          title="该话题下暂无公开内容"
+          action={<Link to="/wall" className="btn btn-primary"><i className="bi bi-pencil-square" aria-hidden="true" />发布动态</Link>}
+        >
+          发布动态时带上 #{selectedTag}，审核通过后即可出现在这里。
+        </EmptyState>
       ) : null}
 
       {!directoryMode && !error && messages.length > 0 ? (
-        <section aria-label={`话题 ${selectedTag} 的动态`}>
-          <div className="space-y-5">
-            {messages.map((message) => <MessageCard key={message.id} message={message} />)}
+        <section className="page--reading" aria-label={`话题 ${selectedTag} 的动态`}>
+          <div className="feed-list">
+            {messages.map((message) => <MessageCard key={message.id} message={message} variant="moments" />)}
           </div>
-          <Pagination label={`话题 ${selectedTag} 分页`} loading={loading} page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pager label={`话题 ${selectedTag} 分页`} loading={loading} page={page} totalPages={totalPages} onPageChange={setPage} />
         </section>
       ) : null}
     </div>

@@ -22,8 +22,7 @@ export const featureModules = Object.freeze([
     component: Home,
     label: '首页',
     icon: 'bi-house',
-    mobileLabel: '首页',
-    navigation: ['desktop', 'mobile', 'footer']
+    navigation: ['desktop', 'footer']
   }),
   freezeModule({
     id: 'wall',

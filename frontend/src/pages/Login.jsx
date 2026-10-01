@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import CaptchaWidget from '../components/CaptchaWidget.jsx'
+import Collage from '../components/Collage.jsx'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
 import api from '../services/api'
@@ -152,35 +153,43 @@ export default function Login() {
   const isRegister = mode === 'register'
 
   return (
-    <div className="auth-page campus-auth">
-      <aside className="auth-welcome">
-        <Link className="auth-home-link" to="/"><i className="bi bi-arrow-left" aria-hidden="true" />返回首页</Link>
-        <img src="/school-badge.webp" alt="观澜中学校徽" width="68" height="68" />
-        <h2>观澜中学校园墙</h2>
-        <p>使用本校学号注册和登录，再参与校园讨论。</p>
-        <div className="auth-welcome-bottom"><i className="bi bi-chat-square-heart" aria-hidden="true" />观澜中学 · 校园墙</div>
+    <div className="page auth">
+      <aside className="auth__brand">
+        <Link className="auth__back" to="/"><i className="bi bi-arrow-left" aria-hidden="true" />返回首页</Link>
+        <div className="auth__brand-body">
+          <span className="auth__badge"><img src="/school-badge.webp" alt="观澜中学校徽" width="64" height="64" /></span>
+          <h2>观澜校园墙</h2>
+          <p>使用本校学号注册和登录，参与校园讨论。</p>
+          <ul>
+            <li><i className="bi bi-incognito" aria-hidden="true" />可以匿名发声，也可以展示昵称</li>
+            <li><i className="bi bi-search" aria-hidden="true" />失物招领、表白墙、话题广场</li>
+            <li><i className="bi bi-bell" aria-hidden="true" />评论与回复第一时间通知你</li>
+          </ul>
+        </div>
+        <Collage className="auth__art" />
       </aside>
-      <section className="card auth-form-card space-y-5 p-5 sm:p-6">
-        <div className="space-y-2">
-          <h1 className="text-[1.75rem] font-bold leading-9 text-[var(--text-primary)]">{isRegister ? '学号注册' : '学号登录'}</h1>
-          <p className="text-[0.9375rem] leading-6 text-[var(--text-secondary)]">
+
+      <section className="auth__form">
+        <div className="auth__head">
+          <h1>{isRegister ? '学号注册' : '学号登录'}</h1>
+          <p>
             {isRegister
               ? '请填写本校学号。提交后需审核员通过才能登录。'
               : '学生使用学号登录。后台人员请走管理员入口。'}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 rounded-[12px] bg-[var(--card-secondary-bg)] p-1 auth-tabs" role="tablist" aria-label="账号操作">
-          <button className={!isRegister ? 'is-active' : ''} type="button" role="tab" aria-selected={!isRegister} onClick={() => switchMode('login')}>登录</button>
-          <button className={isRegister ? 'is-active' : ''} type="button" role="tab" aria-selected={isRegister} onClick={() => switchMode('register')}>注册</button>
+        <div className="seg seg--full" role="tablist" aria-label="账号操作">
+          <button type="button" role="tab" aria-selected={!isRegister} onClick={() => switchMode('login')}>登录</button>
+          <button type="button" role="tab" aria-selected={isRegister} onClick={() => switchMode('register')}>注册</button>
         </div>
 
-        <form className="space-y-4" onSubmit={submit}>
-          <label className="block space-y-1.5" htmlFor="account-student-id">
-            <span className="text-sm font-medium text-[var(--text-secondary)]">{isRegister ? '学号' : '学号或用户名'}</span>
+        <form className="form-stack" onSubmit={submit}>
+          <label htmlFor="account-student-id">
+            <span className="field-label">{isRegister ? '学号' : '学号或用户名'}</span>
             <input
               id="account-student-id"
-              className="field auth-field w-full"
+              className="auth__input"
               value={studentId}
               onChange={(event) => setStudentId(isRegister ? event.target.value.replace(/\D/g, '').slice(0, STUDENT_ID_INPUT_MAX) : event.target.value)}
               inputMode={isRegister ? 'numeric' : 'text'}
@@ -191,58 +200,60 @@ export default function Login() {
           </label>
 
           {isRegister ? (
-            <label className="block space-y-1.5" htmlFor="account-nickname">
-              <span className="text-sm font-medium text-[var(--text-secondary)]">昵称（选填）</span>
-              <input id="account-nickname" className="field auth-field w-full" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={40} placeholder="不填则使用默认昵称" />
+            <label htmlFor="account-nickname">
+              <span className="field-label">昵称（选填）</span>
+              <input id="account-nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={40} placeholder="不填则使用默认昵称" />
             </label>
           ) : null}
 
-          <label className="block space-y-1.5" htmlFor="account-password">
-            <span className="text-sm font-medium text-[var(--text-secondary)]">{isRegister ? '设置密码' : '登录密码'}</span>
-            <div className="relative">
-              <input id="account-password" className="field auth-field w-full pr-12" value={password} onChange={(event) => setPassword(event.target.value)} type={showPassword ? 'text' : 'password'} autoComplete={isRegister ? 'new-password' : 'current-password'} maxLength={128} placeholder={isRegister ? '至少 8 个字符' : '请输入密码'} />
-              <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? '隐藏密码' : '显示密码'} aria-pressed={showPassword}><i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" /></button>
+          <label htmlFor="account-password">
+            <span className="field-label">{isRegister ? '设置密码' : '登录密码'}</span>
+            <div className="input-affix">
+              <input id="account-password" value={password} onChange={(event) => setPassword(event.target.value)} type={showPassword ? 'text' : 'password'} autoComplete={isRegister ? 'new-password' : 'current-password'} maxLength={128} placeholder={isRegister ? '至少 8 个字符' : '请输入密码'} />
+              <button type="button" className="input-affix__btn" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? '隐藏密码' : '显示密码'} aria-pressed={showPassword}>
+                <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
+              </button>
             </div>
           </label>
 
           {isRegister ? (
-            <label className="block space-y-1.5" htmlFor="account-password-confirm">
-              <span className="text-sm font-medium text-[var(--text-secondary)]">确认密码</span>
-              <input id="account-password-confirm" className="field auth-field w-full" value={passwordConfirm} onChange={(event) => setPasswordConfirm(event.target.value)} type={showPassword ? 'text' : 'password'} autoComplete="new-password" maxLength={128} placeholder="再次输入密码" />
+            <label htmlFor="account-password-confirm">
+              <span className="field-label">确认密码</span>
+              <input id="account-password-confirm" value={passwordConfirm} onChange={(event) => setPasswordConfirm(event.target.value)} type={showPassword ? 'text' : 'password'} autoComplete="new-password" maxLength={128} placeholder="再次输入密码" />
             </label>
           ) : null}
 
           {isRegister ? (
-            <div className="auth-email-block space-y-3">
-              <label className="block space-y-1.5" htmlFor="account-email">
-                <span className="text-sm font-medium text-[var(--text-secondary)]">邮箱（选填）</span>
-                <input id="account-email" className="field auth-field w-full" value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" maxLength={320} placeholder="用于接收消息，可稍后在个人中心添加" />
+            <div className="form-stack auth__email">
+              <label htmlFor="account-email">
+                <span className="field-label">邮箱（选填）</span>
+                <input id="account-email" value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" maxLength={320} placeholder="用于接收消息，可稍后在个人中心添加" />
               </label>
-              <label className="flex items-start gap-2 text-xs leading-5 text-[var(--text-secondary)]">
-                <input className="mt-0.5" type="checkbox" checked={emailNotify} onChange={(event) => setEmailNotify(event.target.checked)} />
+              <label className="check-row">
+                <input type="checkbox" checked={emailNotify} onChange={(event) => setEmailNotify(event.target.checked)} />
                 <span>验证邮箱后接收消息通知。未验证前不会发信。</span>
               </label>
             </div>
           ) : null}
 
-          {captchaLoading ? <div className="captcha-loading"><div className="spinner" /><span>正在加载安全验证...</span></div> : null}
-          {captchaError ? <div className="info-callout status-danger p-3 text-sm">{captchaError}</div> : null}
+          {captchaLoading ? <div className="auth__captcha-loading"><div className="spinner is-sm" /><span>正在加载安全验证…</span></div> : null}
+          {captchaError ? <div className="info-callout status-danger">{captchaError}</div> : null}
           {!captchaLoading && !captchaError && captchaRequired ? (
-            <div className="auth-captcha-slot space-y-2">
-              <span className="text-xs font-bold text-[var(--text-secondary)]">人机验证</span>
+            <div className="auth__captcha">
+              <span className="field-label">人机验证</span>
               <CaptchaWidget action={captchaAction} provider={captcha.provider} siteKey={captcha.site_key} onToken={setCaptchaToken} resetKey={captchaResetKey} />
             </div>
           ) : null}
 
-          <button className="btn btn-primary mt-2 w-full justify-center min-h-12" type="submit" disabled={submitting || captchaLoading || Boolean(captchaError) || (captchaRequired && !captchaToken)}>
-            <i className={`bi ${isRegister ? 'bi-person-plus' : 'bi-box-arrow-in-right'}`} />
-            <span>{submitting ? (isRegister ? '正在提交...' : '正在登录...') : (isRegister ? '提交学号注册' : '学号登录')}</span>
+          <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={submitting || captchaLoading || Boolean(captchaError) || (captchaRequired && !captchaToken)}>
+            <i className={`bi ${isRegister ? 'bi-person-plus' : 'bi-box-arrow-in-right'}`} aria-hidden="true" />
+            <span>{submitting ? (isRegister ? '正在提交…' : '正在登录…') : (isRegister ? '提交学号注册' : '登录')}</span>
           </button>
         </form>
 
-        <div className="mt-6 flex items-center justify-between border-t border-[var(--border-color)] pt-4 text-xs">
-          <Link className="font-semibold text-[var(--primary-color)] hover:underline" to="/wall">← 返回校园动态</Link>
-          <Link className="text-[var(--text-muted)] hover:underline" to="/admin/login">管理员入口</Link>
+        <div className="auth__foot">
+          <Link to="/wall"><i className="bi bi-arrow-left" aria-hidden="true" /> 先逛逛校园动态</Link>
+          <Link to="/admin/login">管理员入口</Link>
         </div>
       </section>
     </div>

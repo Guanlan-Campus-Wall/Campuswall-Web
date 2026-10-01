@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../services/api'
+import EmptyState from '../components/EmptyState.jsx'
 import MessageCard from '../components/MessageCard.jsx'
 
 export default function MessageDetail() {
@@ -10,6 +11,8 @@ export default function MessageDetail() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    setLoading(true)
+    setError('')
     api.getMessageDetail(id)
       .then((response) => {
         if (response.data?.success) setMessage(response.data.message)
@@ -21,51 +24,34 @@ export default function MessageDetail() {
 
   if (loading) {
     return (
-      <div className="page-center py-16">
+      <div className="page-center" role="status">
         <div className="spinner" />
-        <p className="text-sm text-[var(--text-secondary)] mt-3">正在加载留言详情...</p>
+        <p>正在加载留言详情…</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="page-center py-16 text-center space-y-4">
-        <div className="empty-state-card max-w-md mx-auto">
-          <i className="bi bi-exclamation-circle text-rose-500" />
-          <p className="mt-3 text-base font-bold text-[var(--text-primary)]">{error}</p>
-          <Link className="btn btn-primary mt-4" to="/wall">
-            <i className="bi bi-arrow-left" />
-            <span>返回校园墙</span>
-          </Link>
-        </div>
+      <div className="page page--narrow">
+        <EmptyState
+          icon="bi-exclamation-circle"
+          title={error}
+          action={<Link className="btn btn-primary" to="/wall"><i className="bi bi-arrow-left" aria-hidden="true" />返回校园动态</Link>}
+        />
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      {/* Top Breadcrumb & Actions */}
-      <div className="flex items-center justify-between">
-        <Link to="/wall" className="btn btn-sm btn-outline">
-          <i className="bi bi-arrow-left" />
-          <span>返回全部动态</span>
-        </Link>
-        <span className="text-xs text-[var(--text-muted)] font-mono">
-          Message #{id}
-        </span>
-      </div>
-
-      <div className="hero-section hero-section-compact">
-        <div className="hero-content space-y-1">
-          <span className="page-kicker hero-kicker">
-            <i className="bi bi-chat-square-quote-fill text-indigo-300" />
-            <span>Detail View</span>
-          </span>
+    <div className="page page--narrow">
+      <Link to="/wall" className="back-link"><i className="bi bi-arrow-left" aria-hidden="true" />返回全部动态</Link>
+      <header className="page-head">
+        <div className="page-head__text">
           <h1>留言详情</h1>
+          <p className="tabular">#{id}</p>
         </div>
-      </div>
-
+      </header>
       {message ? <MessageCard message={message} /> : null}
     </div>
   )

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AdminShell from '../../components/AdminShell.jsx'
+import Menu from '../../components/Menu.jsx'
 import Modal from '../../components/Modal.jsx'
 import { useAlert } from '../../contexts/AlertContext.jsx'
 import { useUser } from '../../contexts/UserContext.jsx'
@@ -446,11 +447,6 @@ export default function AdminUsers() {
     }
   }
 
-  const menuAction = (event, action) => {
-    event.currentTarget.closest('details')?.removeAttribute('open')
-    action()
-  }
-
   const firstVisible = total === 0 ? 0 : ((page - 1) * pageSize) + 1
   const lastVisible = Math.min(page * pageSize, total)
   const pages = paginationItems(page, totalPages)
@@ -462,80 +458,6 @@ export default function AdminUsers() {
 
   return (
     <AdminShell title="用户与权限">
-      <style>{`
-        .admin-users-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(132px, 1fr)); gap: 10px; align-items: center; }
-        .admin-users-toolbar .admin-users-search-actions { grid-column: 1; }
-        .admin-users-toolbar > .btn:last-child { justify-self: start; }
-        .admin-users-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 10px; }
-        .admin-users-list { display: grid; gap: 10px; }
-        .admin-user-card { position: relative; display: grid; grid-template-columns: minmax(190px, 1.4fr) minmax(220px, .9fr) minmax(190px, 1fr) auto; gap: 18px; align-items: center; min-width: 0; padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--card-solid-bg); }
-        .admin-user-card:hover { background: var(--admin-table-row-hover); }
-        .admin-user-identity, .admin-user-meta { min-width: 0; }
-        .admin-user-name { overflow-wrap: anywhere; font-weight: 750; }
-        .admin-user-nickname { overflow: hidden; margin-top: 3px; color: var(--text-secondary); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
-        .admin-user-id { margin-top: 3px; color: var(--text-muted); font-size: .74rem; }
-        .admin-user-badges { display: flex; flex-wrap: nowrap; gap: 7px; min-width: max-content; }
-        .admin-user-badges .badge { flex-shrink: 0; white-space: nowrap; }
-        .admin-user-activity { display: grid; gap: 5px; color: var(--text-secondary); font-size: .8rem; }
-        .admin-user-activity b { color: var(--text-primary); font-weight: 650; white-space: nowrap; }
-        .admin-user-actions { position: relative; justify-self: end; white-space: nowrap; }
-        .admin-user-actions summary { list-style: none; cursor: pointer; }
-        .admin-user-actions summary::-webkit-details-marker { display: none; }
-        .admin-user-action-menu { position: absolute; z-index: 30; top: calc(100% + 7px); right: 0; display: grid; min-width: 178px; padding: 6px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--card-solid-bg); box-shadow: 0 12px 32px rgba(0, 0, 0, .14); }
-        .admin-user-action-menu button { justify-content: flex-start; width: 100%; border: 0; background: transparent; color: var(--text-primary); white-space: nowrap; }
-        .admin-user-action-menu button:hover { background: var(--hover-bg); }
-        .admin-user-action-menu .danger { color: #ef4444; }
-        .admin-users-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
-        .admin-users-pages { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-        .admin-users-page-button { min-width: 36px; justify-content: center; padding-inline: 9px; }
-        .admin-users-page-button[aria-current='page'] { border-color: var(--primary-color); background: var(--primary-light); color: var(--primary-color); }
-        .permission-editor { display: grid; gap: 16px; max-height: min(66vh, 720px); overflow: auto; padding-right: 4px; }
-        .permission-group { border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; background: var(--card-solid-bg); }
-        .permission-group h3 { padding: 11px 14px; border-bottom: 1px solid var(--border-color); background: var(--hover-bg); font-size: .9rem; }
-        .permission-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(155px, auto); gap: 14px; align-items: center; padding: 12px 14px; }
-        .permission-row + .permission-row { border-top: 1px solid var(--border-color); }
-        .permission-copy { min-width: 0; }
-        .permission-copy code { display: block; overflow-wrap: anywhere; margin-top: 3px; color: var(--text-muted); font-size: .7rem; }
-        .permission-copy small { display: block; margin-top: 4px; color: var(--text-secondary); }
-        .permission-choice { min-width: 155px; }
-        .permission-effective { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; font-size: .72rem; }
-        .permission-reason { min-height: 76px; }
-        @media (max-width: 1120px) {
-          .admin-users-toolbar { grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(132px, 1fr)); }
-          .admin-users-toolbar .admin-users-search-actions { grid-column: 1 / -1; }
-          .admin-user-card { grid-template-columns: minmax(180px, 1fr) max-content auto; gap: 12px 18px; }
-          .admin-user-identity { grid-column: 1; grid-row: 1; }
-          .admin-user-badges { grid-column: 2; grid-row: 1; }
-          .admin-user-activity { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); padding-top: 10px; border-top: 1px solid var(--border-color); }
-          .admin-user-actions { grid-column: 3; grid-row: 1; }
-        }
-        @media (max-width: 760px) {
-          .admin-users-toolbar { grid-template-columns: 1fr 1fr; }
-          .admin-users-toolbar .admin-users-query { grid-column: 1 / -1; }
-          .admin-users-toolbar .admin-users-sort { grid-column: 1 / -1; }
-          .admin-users-toolbar .admin-users-search-actions { display: grid; grid-template-columns: 1fr 1fr; }
-          .admin-user-card { grid-template-columns: 1fr auto; gap: 12px; }
-          .admin-user-identity { grid-column: 1; grid-row: 1; }
-          .admin-user-badges { grid-column: 1; grid-row: 2; }
-          .admin-user-activity { grid-column: 1 / -1; grid-row: 3; grid-template-columns: 1fr; padding-top: 10px; border-top: 1px solid var(--border-color); }
-          .admin-user-actions { grid-column: 2; grid-row: 1 / span 2; align-self: start; }
-          .admin-users-pagination { align-items: stretch; flex-direction: column; }
-          .admin-users-pages { justify-content: center; }
-          .permission-row { grid-template-columns: 1fr; }
-          .permission-choice { width: 100%; }
-        }
-        @media (max-width: 440px) {
-          .admin-users-toolbar { grid-template-columns: 1fr; }
-          .admin-users-toolbar .admin-users-query, .admin-users-toolbar .admin-users-sort, .admin-users-toolbar .admin-users-search-actions { grid-column: 1; }
-          .admin-user-card { padding: 14px; }
-        }
-        @media (max-width: 360px) {
-          .admin-user-identity, .admin-user-badges, .admin-user-actions { grid-column: 1 / -1; }
-          .admin-user-actions { grid-row: 3; justify-self: start; }
-          .admin-user-activity { grid-row: 4; }
-        }
-      `}</style>
-
       <div className="info-callout mb-5 p-4 text-sm">
         <i className="bi bi-shield-lock-fill" />
         <div><b>{canManagePermissions ? '你可以逐项设置用户权限。' : (canManageRoles ? '你可以修改账号角色。' : '你只能执行已授予的用户管理操作。')}</b><p className="mt-1 text-muted">个人“拒绝”高于角色默认与个人“允许”；审核员保持全员同权，超级管理员始终拥有全权。飞书登录立即生效；用户名密码注册需在此通过后才能登录。后台人员账号只能由超级管理员创建。</p></div>
@@ -631,21 +553,20 @@ export default function AdminUsers() {
               {user.mute_reason ? <span title={user.mute_reason}>原因：{user.mute_reason}</span> : null}
             </div>
             <div className="admin-user-actions">
-              {canManageTarget ? <details>
-                <summary className="btn btn-sm btn-outline" aria-label={`管理用户 ${user.username}`} onClick={(event) => { if (busy) event.preventDefault() }}><i className="bi bi-three-dots" />管理</summary>
-                <div className="admin-user-action-menu" role="menu">
-                  {canSetRole ? <button className="btn btn-sm" type="button" disabled={busy} onClick={(event) => menuAction(event, () => openRole(user))}><i className="bi bi-shield-check" />设置角色</button> : null}
-                  {canOpenPermissions ? <button className="btn btn-sm" type="button" disabled={busy} onClick={(event) => menuAction(event, () => openPermissions(user))}><i className="bi bi-sliders" />细分权限</button> : null}
-                  {canEditTarget ? <button className="btn btn-sm" type="button" disabled={busy} onClick={(event) => menuAction(event, () => setEditing({ ...user, _original_status: user.status || 'active' }))}><i className="bi bi-pencil" />编辑资料</button> : null}
+              {canManageTarget ? (
+                <Menu label={`管理用户 ${user.username}`} triggerClassName="btn btn-sm btn-outline" triggerContent={<><i className="bi bi-three-dots" aria-hidden="true" />管理</>} disabled={busy}>
+                  {canSetRole ? <button className="menu__item" type="button" disabled={busy} onClick={() => openRole(user)}><i className="bi bi-shield-check" aria-hidden="true" />设置角色</button> : null}
+                  {canOpenPermissions ? <button className="menu__item" type="button" disabled={busy} onClick={() => openPermissions(user)}><i className="bi bi-sliders" aria-hidden="true" />细分权限</button> : null}
+                  {canEditTarget ? <button className="menu__item" type="button" disabled={busy} onClick={() => setEditing({ ...user, _original_status: user.status || 'active' })}><i className="bi bi-pencil" aria-hidden="true" />编辑资料</button> : null}
                   {canMuteTarget && user.is_muted
-                    ? <button className="btn btn-sm" type="button" disabled={busy} onClick={(event) => menuAction(event, () => unmute(user))}><i className="bi bi-check-circle" />解除禁言</button>
-                    : (canMuteTarget ? <button className="btn btn-sm" type="button" disabled={busy} onClick={(event) => menuAction(event, () => openMute(user))}><i className="bi bi-shield-exclamation" />设置禁言</button> : null)}
-                  {canResetTarget ? <button className="btn btn-sm" type="button" disabled={busy} onClick={(event) => menuAction(event, () => setResetTarget(user))}><i className="bi bi-key" />重置密码</button> : null}
-                  {canApproveRegistration ? <button className="btn btn-sm" type="button" disabled={busy} onClick={(event) => menuAction(event, () => approveRegistration(user))}><i className="bi bi-check-circle" />通过注册</button> : null}
-                  {canRejectRegistration ? <button className="btn btn-sm danger" type="button" disabled={busy} onClick={(event) => menuAction(event, () => rejectRegistration(user))}><i className="bi bi-x-circle" />拒绝注册</button> : null}
-                  {canDisableTarget ? <button className="btn btn-sm danger" type="button" disabled={busy || user.status === 'disabled'} onClick={(event) => menuAction(event, () => disableUser(user))}><i className="bi bi-person" />停用账号</button> : null}
-                </div>
-              </details> : <span className="text-xs text-muted">无可用操作</span>}
+                    ? <button className="menu__item" type="button" disabled={busy} onClick={() => unmute(user)}><i className="bi bi-check-circle" aria-hidden="true" />解除禁言</button>
+                    : (canMuteTarget ? <button className="menu__item" type="button" disabled={busy} onClick={() => openMute(user)}><i className="bi bi-shield-exclamation" aria-hidden="true" />设置禁言</button> : null)}
+                  {canResetTarget ? <button className="menu__item" type="button" disabled={busy} onClick={() => setResetTarget(user)}><i className="bi bi-key" aria-hidden="true" />重置密码</button> : null}
+                  {canApproveRegistration ? <button className="menu__item" type="button" disabled={busy} onClick={() => approveRegistration(user)}><i className="bi bi-check-circle" aria-hidden="true" />通过注册</button> : null}
+                  {canRejectRegistration ? <button className="menu__item is-danger" type="button" disabled={busy} onClick={() => rejectRegistration(user)}><i className="bi bi-x-circle" aria-hidden="true" />拒绝注册</button> : null}
+                  {canDisableTarget ? <button className="menu__item is-danger" type="button" disabled={busy || user.status === 'disabled'} onClick={() => disableUser(user)}><i className="bi bi-person" aria-hidden="true" />停用账号</button> : null}
+                </Menu>
+              ) : <span className="text-xs text-muted">无可用操作</span>}
             </div>
           </article>
         })}
@@ -698,8 +619,8 @@ export default function AdminUsers() {
             <div>
               <b>{roleMeta(permissionState.role).label}默认 + 个人允许/拒绝</b>
               <p className="mt-1 text-muted">解析顺序：个人拒绝 → 个人允许 → 角色默认。拒绝始终优先，权限依赖会自动联动。</p>
-              {permissionState.overrides_locked ? <p className="mt-1 status-warning">超级管理员始终拥有全部权限，不能设置个人覆盖。</p> : <p className="mt-1 text-muted">可以为普通用户、审核员和管理员逐项允许或拒绝。系统级 AI 审核密钥不能通过这里下放。</p>}
-              {Number(permissionTarget?.id) === currentUserId ? <p className="mt-1 status-warning">为避免自我授权或锁定，不能修改当前账号的个人权限。</p> : null}
+              {permissionState.overrides_locked ? <p className="mt-1 text-warning">超级管理员始终拥有全部权限，不能设置个人覆盖。</p> : <p className="mt-1 text-muted">可以为普通用户、审核员和管理员逐项允许或拒绝。系统级 AI 审核密钥不能通过这里下放。</p>}
+              {Number(permissionTarget?.id) === currentUserId ? <p className="mt-1 text-warning">为避免自我授权或锁定，不能修改当前账号的个人权限。</p> : null}
             </div>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
@@ -737,7 +658,7 @@ export default function AdminUsers() {
               })}
             </section>)}
           </div>
-          {!permissionReadOnly ? <label className="block"><span className="mb-2 block text-sm font-bold">调整原因 <span className="status-danger">*</span></span><textarea className="field permission-reason" maxLength={300} value={permissionReason} onChange={(event) => setPermissionReason(event.target.value)} placeholder="必填，将与变更前后权限一起写入操作审计" /><small className="mt-1 block text-muted">保存前会再次确认；保存后目标用户的旧会话立即失效。</small></label> : null}
+          {!permissionReadOnly ? <label className="block"><span className="mb-2 block text-sm font-bold">调整原因 <span className="text-danger">*</span></span><textarea className="field permission-reason" maxLength={300} value={permissionReason} onChange={(event) => setPermissionReason(event.target.value)} placeholder="必填，将与变更前后权限一起写入操作审计" /><small className="mt-1 block text-muted">保存前会再次确认；保存后目标用户的旧会话立即失效。</small></label> : null}
         </div> : null}
       </Modal>
 

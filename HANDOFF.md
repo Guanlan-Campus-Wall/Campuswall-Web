@@ -1,7 +1,7 @@
 # 龙华区观澜中学校园墙——项目交接文档
 
-> - 最后更新：2026-09-11
-> - 文档版本：3.12
+> - 最后更新：2026-10-01
+> - 文档版本：3.13
 > - 适用分支：`main`
 > - 代码仓库：<https://github.com/Guanlan-Campus-Wall/Campuswall-Web>（**public**）
 > - 学校名称：龙华区观澜中学
@@ -217,21 +217,23 @@ campuswall-react/
 
 ### 6.1 前端视觉、主题与动效
 
-- 前台公共路由视觉基线是论坛阅读面：中性浅灰底、白卡片、细边框、讨论列表与板块目录优先，不要用营销大标语、霓虹光晕、全屏玻璃或 iOS Settings 式彩色图标方块。权威应用语义仍在 `frontend/src/apple-design-tokens.css` 与 `frontend/src/styles.css`；前台覆盖在 `frontend/src/campus-ui.css`，只作用在 `.public-shell`，后台保持原样式。新增颜色、圆角、字号、间距前优先复用已有 token；
-- 字体栈优先系统字体、苹方与微软雅黑。浅色与深色必须分别验收。Web 仓库现为组织下的公开仓库，前台仍不放 GitHub 入口，公开联系入口是「联系我」→ `/help/form`；
-- `ThemePicker` 已提供完整主题入口：`theme-preference` 保存 `system/light/dark`，`theme-palette` 保存 `blue/rose/violet/green/orange`；未选过强调色时默认 `green`。用户可在界面中随时恢复“跟随系统”，不需要清 localStorage。解析后的明暗写入 `<html data-theme>`，强调色写入 `<html data-palette>`，同时更新 `meta[name=theme-color]`；同源标签页通过 `storage` 事件同步，存储不可用时安全回退；
-- 所有页面组件已经通过 `React.lazy` 按路由拆分。页面路径变化时由 `.route-transition` 提供轻量进入动效，路由切换同时回到页面顶部；
-- CSS 和 Three.js 场景都尊重 `prefers-reduced-motion`，毛玻璃降级尊重 `prefers-reduced-transparency`，高对比偏好使用 `prefers-contrast: more`。新增动效必须是非阻塞、可中断的辅助反馈，不能影响点击、键盘焦点或阅读；
-- 响应式基线：游客不宽于 1080px 时底部五栏为首页、动态、表白、失物、我的；已登录隐藏首页入口，默认打开校园动态。不宽于 768px 时后台侧栏折叠、共享 Modal 呈底部 sheet；不宽于 520px 时失物字段单列；不宽于 360px 时品牌和发帖文案进一步收缩。布局已处理 iOS safe-area；新增固定按钮、sheet 或底部表单时必须继续加上 `env(safe-area-inset-*)`，并在窄屏、横屏及软键盘弹出场景验收；
-- 共享 `Modal.jsx` 通过 Portal 挂到 `document.body`，负责背景锁滚动、焦点圈闭、Escape/遮罩关闭、关闭后恢复原焦点。新增弹层优先复用它；当前没有禁用 Escape/遮罩关闭的配置，如果业务不允许这种关闭方式，必须先扩展 Modal API，并继续保留可见关闭按钮与焦点管理；
-- `styles.css` 是长期演进的层叠文件：前部有基础主题/Modal/media，约 3087 行后是当前 SwiftUI 覆盖，底部导航与路由动效在后半部，表白墙新版样式位于更后。后定义的同名 selector 会覆盖前文，仅修改早期规则可能看似无效；`mobile-menu-toggle/mobile-nav-drawer` 等规则目前没有 JSX 引用，清理前先用 `rg` 和浏览器回归确认；
-- 图标来自本地 Bootstrap Icons 子集，不依赖外网字体。新增图标后必须同步子集文件并在生产构建中确认显示，避免再次出现空方框。网站 favicon 与顶栏品牌使用 `frontend/public/school-badge.webp` 校徽，不要再换回聊天气泡；
-- 页面标题只保留一行主标题。不要再加营销大标语或英文 eyebrow。论坛首页和校园动态允许面包屑 + 主标题 + 一句导语；其它页面不要用 `page-kicker` + `h1` 或双行标题。提示放到操作按钮旁或社区公约。后续新功能同样遵守；
-- 深色主题使用近墨底和抬升卡片分层；弹层才强调阴影。当前 `meta[name=theme-color]` 浅色为 `#f2f3f5`，深色为 `#17191c`。
+3.13 起前端视觉完全重做，设计语言参考 Anthropic / Claude：暖象牙白纸面、近黑墨色、赤陶橙强调、衬线标题、扁平少阴影。后续改动必须沿用，不要回到旧的论坛灰白或 Apple/SwiftUI 风格，也不要引入渐变大 Hero、霓虹光晕或全屏玻璃。
+
+- **样式结构**：入口 `frontend/src/styles.css` 只做 `@import`，实际规则在 `frontend/src/styles/`：`tokens.css`（颜色/字号/圆角/动效/层级令牌，含浅深色与五种强调色）→ `base.css` → `components.css`（按钮、表单、卡片、徽章、弹窗、Toast、灯箱等原语）→ `layout.css`（顶栏、移动标签栏、页脚、容器）→ `feed.css`（帖子卡片）→ `wall.css` / `home.css` / `confession.css` / `pages.css` / `account.css` / `admin.css`。旧的 `apple-design-tokens.css`、`campus-ui.css` 和 6900 行叠加式 `styles.css` 已删除。组件样式写在 `@layer components` 内，Tailwind 工具类仍可在其上微调。新增颜色、圆角、字号前先用 `tokens.css` 里的令牌，不要写死色值；后台个别页面仍引用 `--text-primary` 等旧变量名，已在 `tokens.css` 末尾保留别名；
+- **配色与对比度**：浅色底 `#faf9f5`、卡片 `#ffffff`、墨色 `#141413`；深色底 `#262624`。所有正文/强调色组合已按 WCAG AA 核对：浅色按钮底 `#b85636` 配白字，深色按钮用亮赤陶 `#e08a6a` 配深色字（`--accent-ink`）。改色后必须重新核对对比度；
+- **字体**：只用系统字体。标题用 `--font-serif`（西文 Georgia，中文优先宋体，缺失时落回黑体，故意不写通用 `serif` 以免 Windows 中文落到 SimSun），正文用 `--font-sans`。大号数字（统计、话题计数）用衬线并加 `tabular-nums`；
+- **主题**：`ThemePicker` 提供明暗三态与五种强调色。`theme-preference` 保存 `system/light/dark`；强调色改存 `theme-palette-v3`，取值 `clay/sky/olive/fig/slate`（赤陶/天青/橄榄/无花果/石墨），默认 `clay`。改版时更换了存储键，所有设备首次访问都会看到新的默认色，旧键 `theme-palette`/`theme-palette-v2` 不再读取。解析后的明暗写入 `<html data-theme>`，强调色写入 `<html data-palette>`，`index.html` 内联脚本在首屏前设置以避免闪烁，并同步 `meta[name=theme-color]`（浅色 `#faf9f5`、深色 `#262624`）；同源标签页通过 `storage` 事件同步，存储不可用时安全回退；
+- **版式**：前台是顶部导航（桌面）+ 底部标签栏（≤880px，正中是「发布」按钮，首页入口只在桌面导航与品牌链接中）；后台 `AdminShell` 是左侧分组侧边栏（≤960px 变抽屉）+ 顶部标题栏，`/admin/*` 路由不渲染前台顶栏。内容宽度由 `.page`（1120px）、`.page--narrow`（800px）、`.page--form`（560px）和双栏 `.split` 控制；
+- **动效**：所有页面组件通过 `React.lazy` 按路由拆分，切换时 `.route` 做轻量淡入并回到顶部。CSS、Three.js 与首页插画的漂浮动画都尊重 `prefers-reduced-motion`（`base.css` 末尾统一降级）。新增动效必须是非阻塞、可中断的辅助反馈；
+- **响应式与 safe-area**：共享 `Modal.jsx` 在 ≤640px 呈底部抽屉；固定底部元素（标签栏、抽屉页脚、回到顶部）都用 `env(safe-area-inset-bottom)`。新增固定按钮或底部表单时必须继续处理，并在窄屏、横屏及软键盘场景验收；输入框在窄屏强制 16px 以免 iOS 聚焦缩放；
+- **共享组件**：`Modal.jsx` 通过 Portal 挂到 `document.body`，负责背景锁滚动、焦点圈闭、Escape/遮罩关闭与焦点恢复，宽度由 `--modal-w` 控制；`Menu.jsx` 是带外部点击/Escape 关闭的弹出菜单（帖子「更多」、后台用户管理）；`Avatar`、`EmptyState`、`Pager`、`BackToTop` 为通用小组件；Toast 是深色胶囊（深色主题下反转为米色）。`Collage.jsx` 是首页/登录页的纯 SVG 便签墙插画，不含外部资源；
+- **图标**：本地 Bootstrap Icons 子集，不依赖外网字体。`frontend/src/bootstrap-icons-subset.css` 由 `node frontend/scripts/generate-icon-subset.mjs` 扫描源码中的 `bi-*` 类生成，**新增图标后必须运行该脚本**再构建，不要手改子集文件。网站 favicon 与顶栏品牌使用 `frontend/public/school-badge.webp` 校徽；
+- **页面标题**：只保留一行衬线主标题加一句导语，不加英文 eyebrow 或 `page-kicker` 双行标题（后台个别旧页仍保留 `.page-kicker` 样式用于小标签）；
+- 3.13 新增了帖子卡片上的「收藏」按钮（登录后可见），接上原本已存在却无入口的 `/me/favorites` 与 `/api/user/me/favorites/:id`；校园动态右侧新增「热门话题」小组件，数据来自既有 `GET /api/topics`，无后端改动。
 
 ### 6.2 校园动态与发布器
 
-- `/wall` 的动态流参考微信朋友圈的熟悉阅读层级，但只参考“作者 → 正文 → 媒体 → 时间/状态 → 互动/讨论”的信息组织，不复制微信品牌、图标、颜色、文案或像素尺寸。页面继续使用本项目的 Apple/SwiftUI token、圆角、材质、焦点样式和浅深色主题；后续不能为了更像参考图而引入品牌素材；
+- `/wall` 的动态流参考微信朋友圈的熟悉阅读层级，但只参考“作者 → 正文 → 媒体 → 时间/状态 → 互动/讨论”的信息组织，不复制微信品牌、图标、颜色、文案或像素尺寸。页面使用 6.1 节的 Claude 风格令牌、圆角、焦点样式和浅深色主题；后续不能为了更像参考图而引入品牌素材；
 - 动态页顶部保留栏目标签与主标题，其下是发帖引导卡、搜索/筛选/排序和信息流；宽屏右侧有校园指南。旧版“当前已展示/全部分类/最新发布”三格概览已删除，不应以另一组重复摘要重新引入；
 - `Wall.jsx` 只为动态列表传入 `MessageCard variant="moments"`。详情、个人发布、收藏和其他复用 `MessageCard` 的页面默认仍使用通用卡片；修改朋友圈式布局前应先确认目标 selector 带有 `.is-moments`，避免样式泄漏到后台和详情页；
 - 桌面端头像/作者位于卡片顶部，正文与头像左缘对齐、不再向右缩进整列；正文、投票、标签、媒体和操作组成连续主列。置顶、精华、待审、下架、已编辑、匿名或公开身份仍按真实数据展示，视觉重排不得改变公开性或审核状态。公开接口对 `anonymous === false` 的帖子保留 `user_id` 与 `display_name_snapshot`（仍删除登录 `username` 与审核操作者字段），匿名帖继续去掉 `user_id` 并把快照改成「匿名用户」。作者名下一行显示相对时间与「展示昵称」或「匿名动态」，不得写死匿名；
@@ -538,7 +540,7 @@ CREATE TABLE user_permission_overrides (
 - localStorage 不可用时按更安全的“尚未读”处理，重要/紧急公告仍会自动打开，但关闭后无法持久记住已读，后续重新进入可能再次提示；
 - 当前没有 WebSocket、SSE 或轮询。已经停留在首页的用户需要重新载入或重新进入首页，才能看到另一标签页刚发布/归档的公告。
 
-首页公告使用 SwiftUI 风格 inset 卡片，手机端公告详情沿用可访问的底部 sheet/模态框。当前 React 首页使用文本节点渲染正文，不会执行公告里的 HTML。
+首页公告使用带描边的圆角卡片，手机端公告详情沿用可访问的底部 sheet/模态框。当前 React 首页使用文本节点渲染正文，不会执行公告里的 HTML。
 
 仓库遗留的 `frontend/public/static/js/main.js` 和 `frontend/public/static/js/notice.js` 属于旧页面兼容代码，仍使用 `innerHTML` 拼装公告，旧清洗逻辑不足以阻止所有事件属性型 HTML。不要重新启用引用这些脚本的旧 HTML；若必须保留旧页面兼容，应先把公告正文改为 `textContent`/DOM 文本节点并增加 XSS 回归测试。安全验收可用无害的 `<img src=x onerror=...>` 字符串确认页面只显示文字且不会执行事件，但不得在生产公告中做测试。
 
@@ -947,7 +949,7 @@ GitHub Actions 使用 Node.js 22，并固定跑在仓库自托管 Runner `instan
 36. 用至少 10,000 条脱敏测试用户验证用户管理前缀/ID 搜索、角色/状态/禁言筛选、五种排序、25/50/100 每页、越界页夹取与全局统计；桌面和手机都不横向滚动，角色/状态标签绝不拆字，所有操作菜单按 capability 显示；列表权限数据不得出现逐用户 N+1；
 37. `/p` 目录只从真实、非删除且对当前访问者可见的消息标签聚合；搜索、三种排序、24 条分页、空状态和失物招领登录边界正确，`/p/:tag` 使用精确标签且不会把“全部话题”当标签；
 38. Three.js 爱心覆盖点击/触控命中、拖动不误点、悬停/按压、精选 3–5 条稳定抽样、4 秒旧到新轮播、波纹过渡、离屏/隐藏/悬停/弹窗/reduced-motion 暂停、WebGL 失败和普通便签列表降级；
-39. ThemePicker 可在 system/light/dark 与 blue/rose/violet/green/orange 间选择，刷新持久化、系统主题变化、跨标签页同步、存储禁用回退、键盘/Escape/焦点恢复和所有后台/前台页面变量均正常；
+39. ThemePicker 可在 system/light/dark 与 clay/sky/olive/fig/slate 间选择，刷新持久化、系统主题变化、跨标签页同步、存储禁用回退、键盘/Escape/焦点恢复和所有后台/前台页面变量均正常；
 40. 权限解析覆盖角色默认、allow、deny 最终优先、未知/受保护/重叠项拒绝、依赖缺失、reviewer/super_admin 锁定、角色变化清覆盖和旧粗权限“完整 bundle 才暴露”；
 41. 权限详情/替换/恢复默认 API 覆盖仅超级管理员、禁止自己、原因必填、确认串、`permission_version` 冲突 409、事务批量写、`session_version` 即时失效和完整审计 metadata；
 42. 普通 `user` 获得单项 capability 后可从顶部进入首个有权后台页面，直接刷新可通过；未获权页面/接口拒绝。admin 被 deny 后对应菜单、路由和动作同时消失或 403，不能靠旧角色/粗权限绕过；用已公开、待审、隐藏、删除、无举报、有关联举报的 ID 交叉验证详情对象域，`content.author_identity.read` 只能增字段，`report.read` 只能读关联举报对象；
@@ -1594,7 +1596,7 @@ curl -fsS http://127.0.0.1:5412/health
 
 3.0 的权限表/列是加法式且旧版本不会主动读取，代码回滚时默认**保留** `users.permission_version` 与 `user_permission_overrides`，不要为了回滚应用立即 `DROP TABLE/COLUMN`。若旧版本再次上线，它会按旧角色逻辑运行，个人覆盖将暂时不生效，这是降级安全风险；应优先修复并恢复 3.0，而不是长期停留在旧授权模型。确需数据库时间点恢复时，必须连同 3.0 上线后的用户、权限及其他业务写入一起评估，不能只从 dump 中抽回单表造成账号版本不一致。
 
-公告旧记录可能已被规范化写回，但新字段对旧读取兼容；通常保留规范化后的 JSON。只有文件损坏或业务数据错误时才从上线前 `runtime-files.tar.gz` 精确恢复 `backend/static/notice.json`，恢复会丢失上线后的合法公告写入，必须由业务负责人确认。前端主题偏好保存在用户浏览器，无服务器回滚；回滚前端后遗留 `theme-palette` localStorage 不会破坏旧页面。
+公告旧记录可能已被规范化写回，但新字段对旧读取兼容；通常保留规范化后的 JSON。只有文件损坏或业务数据错误时才从上线前 `runtime-files.tar.gz` 精确恢复 `backend/static/notice.json`，恢复会丢失上线后的合法公告写入，必须由业务负责人确认。前端主题偏好保存在用户浏览器，无服务器回滚；回滚前端后遗留 `theme-palette-v3` localStorage 不会破坏旧页面。
 
 ### 18.3 数据异常
 
@@ -1897,6 +1899,7 @@ sudo -u postgres psql -d campus_wall -c "SELECT 1;"
 
 变更记录：
 
+- `3.13`（2026-10-01）：前端视觉完全重做为 Anthropic / Claude 风格（暖象牙白 + 赤陶橙 + 衬线标题 + 扁平描边），拆分为 `frontend/src/styles/` 下的令牌/原语/页面样式，删除 `campus-ui.css`、`apple-design-tokens.css` 与旧 `styles.css`；前台改为顶栏 + 移动端标签栏（居中发布键），后台改为分组侧边栏；校园动态发布入口改为输入框式卡片，表白墙改为暖色夜空舞台 + 便利贴墙，首页换成便签墙插画 Hero；强调色改为 clay/sky/olive/fig/slate 并更换存储键为 `theme-palette-v3`；新增帖子「收藏」按钮、热门话题小组件、图标子集生成脚本。**仅前端改动，后端与 API 契约未变。** 构建与原有 `frontend/tests` 通过；本轮没有执行压力、容量或渗透测试，上线记录须由部署人在 15 节补录。
 - `3.8`（2026-08-29）：完成 Turnstile 正式上线与三端交付。创建仅绑定 `wall.zongtech.xyz` 的 Managed Widget，Secret 经受控加密通道写入 PostgreSQL；登录、注册与后台登录三项保护全部启用。生产先关闭开关部署，再以虚构账号完成真实 Widget → API → Cloudflare Siteverify 冒烟后开启；记录 CI、Pages deployment、root-only 备份、源站 129/129 回归、公网健康与浏览器无错误证据。后台统一从「平台与验证」维护配置，详细操作见 `docs/TURNSTILE.md`。
 - `3.7`（2026-08-29）：Cloudflare Turnstile 升级为后台可管理的完整安全链路：导航明确显示“平台与验证”，Site/Secret、允许 hostname、师生登录/注册/后台登录三类范围可分别管理；Secret write-only 加密保存并支持显式清除。前端 SPA 使用显式 Widget 与独立 action，后端强制 Siteverify、2048 字符上限、action/hostname 校验和 fail-closed；后台新增真实 `admin_test` 完整链路自检与限流。生产启用拒绝官方测试密钥，新增后端设置/验证测试与 `docs/TURNSTILE.md` 运维文档。
 - `3.6`（2026-08-26）：深色改为 grouped 抬升底与轻阴影；校徽替换 favicon 与顶栏图标；删除动态/表白墙双行标题，后续新功能只用单行主标题。失物招领公开浏览、填写必须登录并以实名身份发布。登录用户可关闭默认匿名。用户名注册可选邮箱，主页可验证邮箱、开关邮件通知并连接飞书账户（绑定后尝试拉进登录校验群）。审核提醒新增可开关邮箱渠道，SMTP 只进服务器环境。验证链接走 API 源站。密码注册 INSERT 为 `pending_email` 等参数加 PostgreSQL 类型转换，避免 node-pg 对 `null` 无法推断类型导致 500。公开实名帖保留 `user_id` 以便展示昵称/头像，匿名帖继续脱敏；动态卡按 `anonymous` 显示身份而不是写死匿名。主页验证信 SMTP 失败返回 400 而不是 500。
