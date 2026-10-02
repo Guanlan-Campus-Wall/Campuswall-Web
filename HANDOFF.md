@@ -1272,6 +1272,7 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 
 - 本地验证：`npm run build`、`npm --workspace backend run check` 与 `npm --workspace backend test` 均通过，后端 143/143；源码、环境示例和部署资产中已无优选功能引用。构建仍有既有的表白墙 chunk 超过 500 kB 提示。本轮没有执行压力、容量或长稳测试。
 - 部署状态：按用户的三端同步要求执行发布，最终提交、CI、备份与公网验收结果将在本节补录；上文 15.19–15.22 中的优选与 homelab 记录为历史事实，不再作为当前部署要求。CI 增加手动触发入口，以便推送未自动触发检查时仍可验证待部署的同一提交。
+- 发布验证限制：GitHub workflow dispatch 返回 HTTP 422 `Actions has been disabled for this user`，无可用 GitHub CI 结果；本轮改用隔离目录、独立 Node.js 22 与临时 PostgreSQL 角色/数据库执行工作流的全部检查并保存日志，不能把该结果标为 GitHub CI 成功。首次依赖审计未通过，因此把 Wrangler 更新至 4.146.0，并使用不跨声明范围的依赖修复更新锁文件；修复后本地审计为 0 漏洞。
 - 上线时须同步发布前后端，并从生产环境文件移除 `TELECOM_PREFER_*`，把生产 `ALLOWED_ORIGINS` 与 `CAPTCHA_ALLOWED_HOSTNAMES` 收敛到正式入口；在后台「平台与验证」及 Cloudflare Widget 中核对已有验证码 hostname 配置，移除旧优选主机。数据库已保存的验证码配置不会随默认值变化自动改写。
 - 旧优选机的校园墙 vhost/12345 入口须单独退役；先确认实际配置归属再禁用该站点。`home.zongtech.xyz` 可能承载其他家庭服务，不应删除其整个 DNS、证书或停掉整台机器的 Nginx。
 
