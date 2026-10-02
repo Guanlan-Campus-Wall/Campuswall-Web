@@ -6,7 +6,7 @@
 > - 代码仓库：<https://github.com/Guanlan-Campus-Wall/Campuswall-Web>（**public**）
 > - 学校名称：龙华区观澜中学
 > - 最近一次架构基线：宝塔 Nginx 直出前端 + 独立 HTTPS API 源站；所有运营商统一使用正式入口
-> - 最近一次生产发布：见 §15.22
+> - 最近一次生产发布：见 §15.23
 
 本文档用于开发、审核、运维和应急接管。它说明当前产品规则、代码结构、账号权限、审核流程、数据位置、本地运行、生产部署、备份恢复和常见故障。功能细节以 `main` 分支代码为最终事实来源；每次完成新功能、修复、主要交互或运维变更，都必须在同一提交同步更新本文件，不能把交接文档留到后续补写。
 
@@ -1271,10 +1271,12 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 2026-10-02 按用户要求移除电信优选。删除前端运营商查询和自动跳转、优选域名的 API/静态资源特殊处理、后端 `/api/network/prefer` 接口与运营商识别服务、对应测试及 homelab Nginx 部署模板；移除 `TELECOM_PREFER_*` 配置和默认验证码域名中的优选主机。所有运营商统一使用正式入口。
 
 - 本地验证：`npm run build`、`npm --workspace backend run check` 与 `npm --workspace backend test` 均通过，后端 143/143；源码、环境示例和部署资产中已无优选功能引用。构建仍有既有的表白墙 chunk 超过 500 kB 提示。本轮没有执行压力、容量或长稳测试。
-- 部署状态：按用户的三端同步要求执行发布，最终提交、CI、备份与公网验收结果将在本节补录；上文 15.19–15.22 中的优选与 homelab 记录为历史事实，不再作为当前部署要求。CI 增加手动触发入口，以便推送未自动触发检查时仍可验证待部署的同一提交。
+- 部署状态：2026-10-02 18:14 CST 已发布应用提交 `01f116b`（含优选移除、依赖修复与三端交付规则），源站工作区干净，后端服务 active，正式站 `/wall`、`/login` 与 API `/health` 正常，`/api/network/prefer` 返回 404。公网 HTML 与源站 `frontend/dist/index.html` 的 SHA-256 均为 `ab562a2f17d91f52baa6989de32ee4d5a4bfbb092b61d3141f7fc6f81cce71bb`。本次文档补录也同步本地、GitHub 主线与生产仓库；上文 15.19–15.22 中的优选与 homelab 记录为历史事实，不再作为当前部署要求。CI 增加手动触发入口，以便账户恢复后验证同一待部署提交。
 - 发布验证限制：GitHub workflow dispatch 返回 HTTP 422 `Actions has been disabled for this user`，无可用 GitHub CI 结果；本轮改用隔离目录、独立 Node.js 22 与临时 PostgreSQL 角色/数据库执行工作流的全部检查并保存日志，不能把该结果标为 GitHub CI 成功。首次依赖审计未通过，因此把 Wrangler 更新至 4.146.0，并使用不跨声明范围的依赖修复更新锁文件；修复后本地审计为 0 漏洞。
-- 上线时须同步发布前后端，并从生产环境文件移除 `TELECOM_PREFER_*`，把生产 `ALLOWED_ORIGINS` 与 `CAPTCHA_ALLOWED_HOSTNAMES` 收敛到正式入口；在后台「平台与验证」及 Cloudflare Widget 中核对已有验证码 hostname 配置，移除旧优选主机。数据库已保存的验证码配置不会随默认值变化自动改写。
-- 旧优选机的校园墙 vhost/12345 入口须单独退役；先确认实际配置归属再禁用该站点。`home.zongtech.xyz` 可能承载其他家庭服务，不应删除其整个 DNS、证书或停掉整台机器的 Nginx。
+- 隔离验证：对完整提交 `01f116bddb3725376583061b22669cb951c463e7` 使用 Node.js 22.22.1 执行 `npm ci`、依赖审计、后端 143/143、前端 4/4、构建、全部后端 JS 语法检查与真实 PostgreSQL 启动冒烟，全部通过，审计 0 漏洞；移除接口冒烟为 404。测试使用独立角色/数据库与 15412 端口，验证后清理。日志保存在下述备份目录的 `manual-verification/`。
+- 上线备份：`/www/backups/campuswall/20261002-175842-before-remove-telecom`，含数据库 dump、旧前端构建、生产环境和部署配置，SHA-256 校验通过；数字资产同时备份到 OCI US SanJose 与 Grok Bot，均成功。
+- 生产配置：已移除 `TELECOM_PREFER_*`，生产 `ALLOWED_ORIGINS=https://wall.zongtech.xyz`、`CAPTCHA_ALLOWED_HOSTNAMES=wall.zongtech.xyz`；已从数据库保存的验证码配置中移除旧主机，Cloudflare 对应 Widget 的 domains 经 API 核对仅为 `wall.zongtech.xyz`。正式站 CORS 预检返回 204 并包含正式来源，旧优选来源不再返回允许来源头。
+- 旧优选机：2026-10-02 18:19 CST 已停用 `/etc/nginx/conf.d/home.zongtech.xyz.conf`，配置备份在 `/var/backups/campuswall/20261002-181913-retire-telecom`；Nginx 配置检查通过，服务保持 active，12345 已无监听，公网 IPv4/IPv6 均不再提供该入口。保留共享 DNS、证书与其他家庭服务。
 
 ## 16. Git 工作流
 
@@ -1284,8 +1286,8 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 2. 功能分支建议使用 `codex/<主题>`；
 3. 提交前确认 `git status --short`，不要加入数据库、上传文件、`.env`、日志、备份或 `artifacts/`；
 4. 测试通过后将目标提交推送到 GitHub `main`；
-5. 等待该 `main` 提交对应的 GitHub Actions CI 全部通过；CI 未完成或失败时不得部署；
-6. 生产服务器只部署该已通过 CI 的同一个 GitHub `main` 提交；前端在源站构建 `frontend/dist` 并由宝塔 Nginx 直出，不再上传 Cloudflare Pages；
+5. 等待该 `main` 提交对应的 GitHub Actions CI 全部通过；验证未完成或失败时不得部署。若 Actions 因账户限制无法运行，按 `AGENTS.md` 在隔离环境对同一提交执行全部工作流检查，记录限制和日志，不得把人工结果标为 GitHub CI 成功；
+6. 生产服务器只部署上述检查全部通过的同一个 GitHub `main` 提交；前端在源站构建 `frontend/dist` 并由宝塔 Nginx 直出，不再上传 Cloudflare Pages；
 7. 记录上线前提交、上线后提交、备份目录、CI 结果、双重异机备份结果和验证结果。
 
 生产交付仓库只使用 `schoolrepo/main`。本机即使保留其他只读远端用于追溯，也不得把学校定制代码、生产文档或部署配置推送到该远端；发布前必须同时核对远端名称、目标 URL 和目标分支。
@@ -1904,7 +1906,7 @@ sudo -u postgres psql -d campus_wall -c "SELECT 1;"
 
 变更记录：
 
-- `3.14`（2026-10-02）：移除电信优选的自动跳转、运营商识别接口、专用 URL 处理、环境开关和 homelab 部署模板；统一使用正式入口，更新 CORS/验证码默认域名与部署退役说明。本地构建、后端检查及 143/143 后端测试通过；尚未推送或部署。
+- `3.14`（2026-10-02）：移除电信优选的自动跳转、运营商识别接口、专用 URL 处理、环境开关和 homelab 部署模板；统一使用正式入口，完成生产 CORS/验证码配置清理及旧 12345 入口退役，补齐三端交付规则和依赖修复。本地与隔离环境验证通过，后端 143/143、前端 4/4、审计 0 漏洞；生产发布与备份结果见 15.23。GitHub Actions 因账户限制不可用，本轮使用记录完整的隔离验证。
 - `3.13`（2026-10-01）：前端视觉完全重做为 Anthropic / Claude 风格（暖象牙白 + 赤陶橙 + 衬线标题 + 扁平描边），拆分为 `frontend/src/styles/` 下的令牌/原语/页面样式，删除 `campus-ui.css`、`apple-design-tokens.css` 与旧 `styles.css`；前台改为顶栏 + 移动端标签栏（居中发布键），后台改为分组侧边栏；校园动态发布入口改为输入框式卡片，表白墙改为暖色夜空舞台 + 便利贴墙，首页换成便签墙插画 Hero；强调色改为 clay/sky/olive/fig/slate 并更换存储键为 `theme-palette-v3`；新增帖子「收藏」按钮、热门话题小组件、图标子集生成脚本。**仅前端改动，后端与 API 契约未变。** 构建与原有 `frontend/tests` 通过；本轮没有执行压力、容量或渗透测试，上线记录须由部署人在 15 节补录。
 - `3.8`（2026-08-29）：完成 Turnstile 正式上线与三端交付。创建仅绑定 `wall.zongtech.xyz` 的 Managed Widget，Secret 经受控加密通道写入 PostgreSQL；登录、注册与后台登录三项保护全部启用。生产先关闭开关部署，再以虚构账号完成真实 Widget → API → Cloudflare Siteverify 冒烟后开启；记录 CI、Pages deployment、root-only 备份、源站 129/129 回归、公网健康与浏览器无错误证据。后台统一从「平台与验证」维护配置，详细操作见 `docs/TURNSTILE.md`。
 - `3.7`（2026-08-29）：Cloudflare Turnstile 升级为后台可管理的完整安全链路：导航明确显示“平台与验证”，Site/Secret、允许 hostname、师生登录/注册/后台登录三类范围可分别管理；Secret write-only 加密保存并支持显式清除。前端 SPA 使用显式 Widget 与独立 action，后端强制 Siteverify、2048 字符上限、action/hostname 校验和 fail-closed；后台新增真实 `admin_test` 完整链路自检与限流。生产启用拒绝官方测试密钥，新增后端设置/验证测试与 `docs/TURNSTILE.md` 运维文档。
