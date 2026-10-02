@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { useAlert } from '../contexts/AlertContext.jsx'
 import { usePlatform } from '../contexts/PlatformContext.jsx'
 import { useUser } from '../contexts/UserContext.jsx'
-import api from '../services/api'
 import { firstAdminDestination } from '../services/permissions.js'
 import { navigationModules } from '../modules/registry.jsx'
 import Avatar from './Avatar.jsx'
@@ -61,24 +60,6 @@ export default function Layout() {
     if (isAdminRoute) return
     document.querySelector('.subnav a.active')?.scrollIntoView({ inline: 'center', block: 'nearest' })
   }, [isAdminRoute, location.pathname, userLoading, user])
-
-  useEffect(() => {
-    const host = window.location.hostname
-    if (host !== 'wall.zongtech.xyz') return undefined
-    let alive = true
-    api.getNetworkPrefer()
-      .then((response) => {
-        if (!alive || !response.data?.redirect || !response.data?.prefer_origin) return
-        const preferred = new URL(response.data.prefer_origin)
-        if (preferred.hostname === host) return
-        const next = new URL(window.location.href)
-        next.protocol = preferred.protocol
-        next.host = preferred.host
-        window.location.replace(next.toString())
-      })
-      .catch(() => {})
-    return () => { alive = false }
-  }, [])
 
   const openPublish = () => {
     if (!canPublish) {

@@ -227,9 +227,6 @@ const api = {
   getCaptchaConfig() {
     return http.get('/api/user/captcha/config')
   },
-  getNetworkPrefer() {
-    return http.get('/api/network/prefer')
-  },
   userLogin(data) {
     const formData = new FormData()
     formData.append('student_id', data.student_id || data.username || '')

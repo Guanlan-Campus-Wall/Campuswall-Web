@@ -135,9 +135,7 @@ const normalizeCaptchaHostname = (value) => {
 const defaultCaptchaHostnames = () => [...new Set([
   ...(config.captchaAllowedHostnames || []),
   hostnameFromUrl(config.publicSiteUrl),
-  hostnameFromUrl(config.telecomPreferHost),
   'wall.zongtech.xyz',
-  'home.zongtech.xyz',
   ...(config.allowedOrigins || []).map(hostnameFromUrl)
 ].map(normalizeCaptchaHostname).filter(Boolean))].slice(0, 20)
 

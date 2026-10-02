@@ -2,7 +2,7 @@
 
 面向龙华区观澜中学的校园交流平台，采用 React、Node.js/Express 与 PostgreSQL 构建。
 
-> 当前文档版本：**3.13**（2026-10-01）。本轮代码验收与部署状态不在 README 中预先宣告，最终记录见 [HANDOFF.md 的“本轮验收记录”](./HANDOFF.md#1519-312-学号登录ai-审核源站前端权限开关电信优选与双重备份)。
+> 当前文档版本：**3.14**（2026-10-02）。电信优选已从代码移除，本轮验收与部署状态见 [HANDOFF.md 的“移除电信优选”](./HANDOFF.md#1523-314-移除电信优选)。
 
 代码仓库：[Guanlan-Campus-Wall/Campuswall-Web](https://github.com/Guanlan-Campus-Wall/Campuswall-Web)
 
@@ -17,13 +17,14 @@
 ## 生产架构
 
 - 正式前端：`https://wall.zongtech.xyz`，由源站宝塔 Nginx 直出 `frontend/dist`；Cloudflare 橙云代理后 Origin Rule 回源 8443。
-- 电信优选：`https://home.zongtech.xyz:12345` 提供同一套前端，并把 `/api` `/static` 转到正式 API。不走家里机 443。
 - 正式 API：`https://api-wall.zongtech.xyz`，Cloudflare 橙云代理后通过 Origin Rule 回源到服务器 Nginx 的 HTTPS 8443，再反向代理到 `127.0.0.1:5412`。
 - Origin Rule：`api-wall.zongtech.xyz` 与 `wall.zongtech.xyz` 的边缘 443 都回源 `8443`。
 - 源站 443 被同机既有服务占用，不能为本项目抢占。8443 只允许 Cloudflare 官方 IPv4/IPv6 网段；PostgreSQL 5432 与 Node 5412 不向公网开放。
 - 不要恢复旧名 `api.wall.zongtech.xyz`。
 
-权威部署资产为 `deploy/nginx-campuswall-web.conf`、`deploy/nginx-campuswall-api.conf`、`deploy/nginx-campuswall-legacy-redirect.conf`、`deploy/nginx-campuswall-homelab.conf`、`deploy/cloudflare-realip.conf` 与 `deploy/campuswall.service`。
+所有运营商统一访问 `https://wall.zongtech.xyz`，前端不再查询运营商或自动切换线路。
+
+权威部署资产为 `deploy/nginx-campuswall-web.conf`、`deploy/nginx-campuswall-api.conf`、`deploy/nginx-campuswall-legacy-redirect.conf`、`deploy/cloudflare-realip.conf` 与 `deploy/campuswall.service`。
 
 ## 产品规则
 
