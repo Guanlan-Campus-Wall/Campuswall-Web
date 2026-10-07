@@ -14,6 +14,10 @@
 - [飞书登录文档](./docs/FEISHU_LOGIN.md)：前台飞书 OAuth 已停用，改为学号注册登录；审核提醒 Webhook 仍见提醒文档；
 - [模块开发文档](./docs/MODULE_DEVELOPMENT.md)：用前端注册表、后端模块清单与版本化 API 新增功能板块。
 
+## 开发贡献
+
+[Codex](https://github.com/codex)（OpenAI 编程助手）参与了本项目的开发与维护。由 Codex 协助完成的后续提交使用 GitHub 可识别的共同作者署名，具体贡献以提交记录为准。
+
 ## 生产架构
 
 - 正式前端：`https://wall.zongtech.xyz`，由源站宝塔 Nginx 直出 `frontend/dist`；Cloudflare 橙云代理后 Origin Rule 回源 8443。

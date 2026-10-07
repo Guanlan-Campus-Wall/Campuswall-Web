@@ -1,6 +1,6 @@
 # 龙华区观澜中学校园墙——项目交接文档
 
-> - 最后更新：2026-10-02
+> - 最后更新：2026-10-07
 > - 文档版本：3.14
 > - 适用分支：`main`
 > - 代码仓库：<https://github.com/Guanlan-Campus-Wall/Campuswall-Web>（**public**）
@@ -1277,6 +1277,10 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 - 上线备份：`/www/backups/campuswall/20261002-175842-before-remove-telecom`，含数据库 dump、旧前端构建、生产环境和部署配置，SHA-256 校验通过；数字资产同时备份到 OCI US SanJose 与 Grok Bot，均成功。
 - 生产配置：已移除 `TELECOM_PREFER_*`，生产 `ALLOWED_ORIGINS=https://wall.zongtech.xyz`、`CAPTCHA_ALLOWED_HOSTNAMES=wall.zongtech.xyz`；已从数据库保存的验证码配置中移除旧主机，Cloudflare 对应 Widget 的 domains 经 API 核对仅为 `wall.zongtech.xyz`。正式站 CORS 预检返回 204 并包含正式来源，旧优选来源不再返回允许来源头。
 - 旧优选机：2026-10-02 18:19 CST 已停用 `/etc/nginx/conf.d/home.zongtech.xyz.conf`，配置备份在 `/var/backups/campuswall/20261002-181913-retire-telecom`；Nginx 配置检查通过，服务保持 active，12345 已无监听，公网 IPv4/IPv6 均不再提供该入口。保留共享 DNS、证书与其他家庭服务。
+
+### 15.24 Codex 贡献署名（2026-10-07）
+
+按用户要求，在 README 增加 Codex 的开发贡献说明，并在 `AGENTS.md` 约定：由 Codex 实际协助完成的提交保留用户的作者身份，使用 `Co-authored-by: Codex <267193182+codex@users.noreply.github.com>` 关联 GitHub 官方 `codex` 账号。本次提交同样带有该共同作者署名；历史提交保持原样。此项仅修改项目文档和提交约定，生产同步不需要重启应用。
 
 ## 16. Git 工作流
 
