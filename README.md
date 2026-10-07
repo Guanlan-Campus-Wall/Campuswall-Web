@@ -18,6 +18,15 @@
 
 [Codex](https://github.com/codex)（OpenAI 编程助手）参与了本项目的开发与维护。由 Codex 协助完成的后续提交使用 GitHub 可识别的共同作者署名，具体贡献以提交记录为准。
 
+项目同时记录以下开发辅助与代码审查贡献：
+
+| 工具 | 贡献 |
+| --- | --- |
+| [Gemini](https://github.com/apps/gemini-code-assist) | 按维护者要求补录开发辅助贡献，使用 Gemini Code Assist 的 GitHub 机器人账号署名 |
+| [Codex Review](https://github.com/apps/chatgpt-codex-connector) | 自动代码审查；已参与 [PR #1 的审查](https://github.com/Guanlan-Campus-Wall/Campuswall-Web/pull/1#pullrequestreview-5003113748) |
+
+本次贡献补录提交为上述工具保留共同作者署名。后续提交仅在实际使用或采纳相应工具的开发、审查建议时添加该工具署名。
+
 ## 生产架构
 
 - 正式前端：`https://wall.zongtech.xyz`，由源站宝塔 Nginx 直出 `frontend/dist`；Cloudflare 橙云代理后 Origin Rule 回源 8443。

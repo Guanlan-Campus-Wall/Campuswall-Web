@@ -1282,6 +1282,12 @@ Web 仓库改为 public，改名为 `Campuswall-Web`，并转移到组织 `Guanl
 
 按用户要求，在 README 增加 Codex 的开发贡献说明，并在 `AGENTS.md` 约定：由 Codex 实际协助完成的提交保留用户的作者身份，使用 `Co-authored-by: Codex <267193182+codex@users.noreply.github.com>` 关联 GitHub 官方 `codex` 账号。本次提交同样带有该共同作者署名；历史提交保持原样。此项仅修改项目文档和提交约定，生产同步不需要重启应用。
 
+### 15.25 Gemini 与 Codex Review 贡献补录（2026-10-07）
+
+按用户要求补录 Gemini 的开发辅助贡献；用户确认所指审查机器人是 Codex Review（`chatgpt-codex-connector[bot]`），其自动审查记录见 [PR #1](https://github.com/Guanlan-Campus-Wall/Campuswall-Web/pull/1#pullrequestreview-5003113748)。README 分别说明两者的贡献，贡献补录提交使用经 GitHub API 核实的账号 ID 与共同作者署名。`AGENTS.md` 同步约定后续只在实际使用或采纳相应工具建议时添加其署名。此项仅修改文档和提交约定，不需要重启应用。
+
+- 验证与同步限制：本地文档差异检查和 GitHub 提交署名核对用于验收此次补录。GitHub Actions 当前因账户限制禁用（手动触发返回 HTTP 422 `Actions has been disabled for this user`）；生产同步尚未完成，不将本地与 GitHub 同步表述为三端交付完成。
+
 ## 16. Git 工作流
 
 用户要求每次改动均完成本地、学校 GitHub `main` 与正式生产服务器三端同步，包括补录交接文档。三端提交一致且生产验收通过后才算交付完成；具体执行要求同步保存在根目录 `AGENTS.md`。

@@ -9,3 +9,4 @@
 ## Codex 贡献署名
 
 - 用户要求为 Codex 的开发贡献署名。由 Codex 协助完成的提交保留用户的作者身份，并在提交消息末尾添加 `Co-authored-by: Codex <267193182+codex@users.noreply.github.com>`；署名只用于 Codex 实际参与的提交。
+- 用户同时要求记录 Gemini 与 Codex Review 的贡献。实际使用或采纳对应工具的开发、审查建议时，分别添加 `Co-authored-by: Gemini Code Assist <176961590+gemini-code-assist[bot]@users.noreply.github.com>` 或 `Co-authored-by: Codex Review <199175422+chatgpt-codex-connector[bot]@users.noreply.github.com>`。本次贡献补录提交用于记录维护者要求补录的 Gemini 辅助贡献，以及 PR #1 中已有记录的 Codex Review 审查贡献。
